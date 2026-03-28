@@ -1,0 +1,48 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: latest
+    commands:
+      # Install CDK & jq, upgrade npm
+      - yum install -y jq
+      - npm install -g npm@latest
+      - npm install -g aws-cdk
+
+  pre_build:
+    commands:
+      # Set up environment variables like image tag and repo
+      - TIME=$(date +"%H.%M.%m%d%y")
+      - cd $CODEBUILD_SRC_DIR
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}-$TIME
+      - AWS_ACCOUNT_ID=`echo $CODEBUILD_BUILD_ARN | awk -F":" '{print $5}'`
+      - ECR_REPO=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - $(aws ecr get-login --no-include-email)
+
+      # Set up Registry name
+      - REGISTRY_NAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+      # Consume base image
+      # - export BASE_IMAGE=`jq -r '.ImageURI' <$CODEBUILD_SRC_DIR_BaseImage/imageDetail.json`
+      # - sed -i "s|reinvent-trivia-backend-base:release|$BASE_IMAGE|g" Dockerfile
+      - echo $ENV_FILE | tr " " "\n" > .env.example
+
+  build:
+    commands:
+      # Build Docker image
+      - docker build --build-arg REGISTRY=$REGISTRY_NAME -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $ECR_REPO:$IMAGE_TAG
+      - docker push $ECR_REPO:$IMAGE_TAG
+
+      # Synthesize CloudFormation templates
+      - cd $CODEBUILD_SRC_DIR/cdk
+      - npm install
+      - npm run build
+      - cdk synth UserApiStack -c contxt=$CONTXT_ENV -o build
+      # - cp StackConfig.json build/
+
+artifacts:
+  files:
+    - cdk/build/*
+  discard-paths: yes

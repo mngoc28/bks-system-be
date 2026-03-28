@@ -1,0 +1,251 @@
+{
+  "vpc-provider:account=684295086767:filter.tag:Name=rental-car-cdk-vpc-dev:region=ap-northeast-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0f8a4796ab23dd5bc",
+    "vpcCidrBlock": "10.0.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-08db42790f9f05bd1",
+            "cidr": "10.0.13.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0e32cb04a39e53709"
+          },
+          {
+            "subnetId": "subnet-0f920e45b78d587c8",
+            "cidr": "10.0.14.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-0b00844d2b2ff5406"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-0def8ebd756b3d364",
+            "cidr": "10.0.12.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0b5cc097520fbc434"
+          },
+          {
+            "subnetId": "subnet-03df3ab87d1188891",
+            "cidr": "10.0.11.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-0774427f34a577fbc"
+          }
+        ]
+      }
+    ]
+  },
+  "hosted-zone:account=684295086767:domainName=dev-freekey.hitseries.com:region=ap-northeast-1": {
+    "Id": "/hostedzone/Z084019530OGLY761SLVM",
+    "Name": "dev-freekey.hitseries.com."
+  },
+  "load-balancer:account=684295086767:loadBalancerArn=arn$:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/awseb-AWSEB-1HL8M2VSDS91N/eefed9518572266c:loadBalancerType=application:region=ap-northeast-1": {
+    "loadBalancerArn": "arn:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/awseb-AWSEB-1HL8M2VSDS91N/eefed9518572266c",
+    "loadBalancerCanonicalHostedZoneId": "Z14GRHDCWA56QT",
+    "loadBalancerDnsName": "awseb-AWSEB-1HL8M2VSDS91N-1411746411.ap-northeast-1.elb.amazonaws.com",
+    "vpcId": "vpc-06924e4d7025b3364",
+    "securityGroupIds": [
+      "sg-0bd775292661aded2"
+    ],
+    "ipAddressType": "ipv4"
+  },
+  "vpc-provider:account=684295086767:filter.vpc-id=vpc-06924e4d7025b3364:region=ap-northeast-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-06924e4d7025b3364",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-09d20bda04da30b93",
+            "cidr": "172.31.32.0/20",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-01bce8cf97be10762"
+          },
+          {
+            "subnetId": "subnet-0536c605a05ad3ab2",
+            "cidr": "172.31.0.0/20",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-01bce8cf97be10762"
+          },
+          {
+            "subnetId": "subnet-00b7ec70f5ab975ae",
+            "cidr": "172.31.16.0/20",
+            "availabilityZone": "ap-northeast-1d",
+            "routeTableId": "rtb-01bce8cf97be10762"
+          }
+        ]
+      }
+    ]
+  },
+  "security-group:account=684295086767:region=ap-northeast-1:securityGroupId=sg-0bd775292661aded2": {
+    "securityGroupId": "sg-0bd775292661aded2",
+    "allowAllOutbound": false
+  },
+  "load-balancer:account=684295086767:loadBalancerArn=arn$:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/Deplo-ALBAE-T81SUI5Z14ON/c493d898a052a869:loadBalancerType=application:region=ap-northeast-1": {
+    "loadBalancerArn": "arn:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/Deplo-ALBAE-T81SUI5Z14ON/c493d898a052a869",
+    "loadBalancerCanonicalHostedZoneId": "Z14GRHDCWA56QT",
+    "loadBalancerDnsName": "Deplo-ALBAE-T81SUI5Z14ON-830700486.ap-northeast-1.elb.amazonaws.com",
+    "vpcId": "vpc-0f8a4796ab23dd5bc",
+    "securityGroupIds": [
+      "sg-0635adf4160bccafb"
+    ],
+    "ipAddressType": "ipv4"
+  },
+  "vpc-provider:account=684295086767:filter.vpc-id=vpc-0f8a4796ab23dd5bc:region=ap-northeast-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0f8a4796ab23dd5bc",
+    "vpcCidrBlock": "10.0.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-08db42790f9f05bd1",
+            "cidr": "10.0.13.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0e32cb04a39e53709"
+          },
+          {
+            "subnetId": "subnet-0f920e45b78d587c8",
+            "cidr": "10.0.14.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-0b00844d2b2ff5406"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-0def8ebd756b3d364",
+            "cidr": "10.0.12.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0b5cc097520fbc434"
+          },
+          {
+            "subnetId": "subnet-03df3ab87d1188891",
+            "cidr": "10.0.11.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-0774427f34a577fbc"
+          }
+        ]
+      }
+    ]
+  },
+  "security-group:account=684295086767:region=ap-northeast-1:securityGroupId=sg-0635adf4160bccafb": {
+    "securityGroupId": "sg-0635adf4160bccafb",
+    "allowAllOutbound": false
+  },
+  "load-balancer:account=684295086767:loadBalancerArn=arn$:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/Deplo-ALBAE-WKATTOAD9FQJ/503e73a91e025ac5:loadBalancerType=application:region=ap-northeast-1": {
+    "loadBalancerArn": "arn:aws:elasticloadbalancing:ap-northeast-1:684295086767:loadbalancer/app/Deplo-ALBAE-WKATTOAD9FQJ/503e73a91e025ac5",
+    "loadBalancerCanonicalHostedZoneId": "Z14GRHDCWA56QT",
+    "loadBalancerDnsName": "Deplo-ALBAE-WKATTOAD9FQJ-1402323578.ap-northeast-1.elb.amazonaws.com",
+    "vpcId": "vpc-0f8a4796ab23dd5bc",
+    "securityGroupIds": [
+      "sg-0635adf4160bccafb"
+    ],
+    "ipAddressType": "ipv4"
+  },
+  "hosted-zone:account=684295086767:domainName=dev-freekey.hitseries.com:region=ap-northeast-2": {
+    "Id": "/hostedzone/Z084019530OGLY761SLVM",
+    "Name": "dev-freekey.hitseries.com."
+  },
+  "vpc-provider:account=684295086767:filter.vpc-id=vpc-02726a43fa7c14e9b:region=ap-northeast-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-02726a43fa7c14e9b",
+    "vpcCidrBlock": "10.0.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-0e2a5de90eed1e011",
+            "cidr": "10.0.13.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-09219c8b92d33339e"
+          },
+          {
+            "subnetId": "subnet-07a5c4a350fd43f74",
+            "cidr": "10.0.14.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-07beaaa46c677f13d"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-040e9c613e50bb9eb",
+            "cidr": "10.0.12.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0e1987302d5c7e0e2"
+          },
+          {
+            "subnetId": "subnet-09b9adb8770e71e79",
+            "cidr": "10.0.11.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-036d1b649cb3b1fe9"
+          }
+        ]
+      }
+    ]
+  },
+  "vpc-provider:account=684295086767:filter.vpc-id=vpc-0d41b0ec43338db08:region=ap-northeast-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0d41b0ec43338db08",
+    "vpcCidrBlock": "10.0.0.0/16",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-0ba2c46543e7706af",
+            "cidr": "10.0.13.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-069c742efbf4cfc51"
+          },
+          {
+            "subnetId": "subnet-0db796f45898ba519",
+            "cidr": "10.0.14.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-02220d3a23b4d616a"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-06b564821487d30d3",
+            "cidr": "10.0.12.0/24",
+            "availabilityZone": "ap-northeast-1a",
+            "routeTableId": "rtb-0c5145f978c1a6cda"
+          },
+          {
+            "subnetId": "subnet-0ac24cd3a3370f229",
+            "cidr": "10.0.11.0/24",
+            "availabilityZone": "ap-northeast-1c",
+            "routeTableId": "rtb-0aafb33c4b38883f3"
+          }
+        ]
+      }
+    ]
+  }
+}

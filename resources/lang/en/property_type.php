@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'messages' => [
+        'fetch_success' => 'Fetch property types successfully.',
+        'fetch_error' => 'Failed to fetch property types.',
+        'not_found' => 'Property type not found.',
+        'create_success' => 'Create property type successfully.',
+        'create_error' => 'Failed to create property type.',
+        'update_success' => 'Update property type successfully.',
+        'update_error' => 'Failed to update property type.',
+        'activate_success' => 'Property type activated successfully.',
+        'deactivate_success' => 'Property type deactivated successfully.',
+        'update_status_error' => 'Failed to update property type status.',
+    ],
+    'validation_error' => 'Validation error.',
+    'pagination_integer' => 'Pagination must be an integer.',
+    'pagination_min' => 'Pagination must be at least 1.',
+    'id_required' => 'Property type id is required.',
+    'id_integer' => 'Property type id must be an integer.',
+    'id_not_found' => 'The selected property type does not exist.',
+    'name_required' => 'Name is required.',
+    'name_string' => 'Name must be a string.',
+    'name_max' => 'Name may not be greater than 255 characters.',
+    'slug_string' => 'Slug must be a string.',
+    'slug_max' => 'Slug may not be greater than 255 characters.',
+    'slug_unique' => 'Slug has already been taken.',
+    'description_string' => 'Description must be a string.',
+    'icon_url_string' => 'Icon URL must be a string.',
+    'icon_url_max' => 'Icon URL may not be greater than 255 characters.',
+    'is_active_required' => 'Active status is required.',
+    'is_active_boolean' => 'Active status must be true or false.',
+];

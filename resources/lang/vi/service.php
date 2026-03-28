@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'validation' => [
+        'id_required' => 'ID dịch vụ là bắt buộc',
+        'id_integer'  => 'ID dịch vụ phải là số nguyên',
+        'id_exists'   => 'ID dịch vụ không tồn tại',
+        'name_required' => 'Tên dịch vụ là bắt buộc',
+        'name_string'   => 'Tên dịch vụ phải là chuỗi ký tự hợp lệ',
+        'name_max'      => 'Tên dịch vụ không được vượt quá 100 ký tự',
+        'name_unique'   => 'Tên dịch vụ đã tồn tại',
+        'type_required' => 'Loại dịch vụ là bắt buộc',
+        'type_in'       => 'Loại dịch vụ phải là basic, optional hoặc other',
+        'price_required'=> 'Giá dịch vụ là bắt buộc',
+        'price_numeric' => 'Giá dịch vụ phải là số',
+        'price_min'     => 'Giá dịch vụ không được nhỏ hơn 0',
+        'description_string' => 'Mô tả phải là chuỗi ký tự hợp lệ',
+    ],
+    'messages' => [
+        'found_success' => 'Tìm dịch vụ thành công.',
+        'not_found' => 'Dịch vụ không tìm thấy.',
+        'create_success' => 'Tạo dịch vụ thành công.',
+        'create_failed' => 'Tạo dịch vụ thất bại.',
+        'update_success' => 'Cập nhật dịch vụ thành công.',
+        'update_failed' => 'Cập nhật dịch vụ thất bại.',
+        'delete_success' => 'Xóa dịch vụ thành công.',
+        'delete_failed' => 'Xóa dịch vụ thất bại.',
+        'fetch_failed' => 'Lấy dịch vụ thất bại.',
+        'fetch_success' => 'Lấy dịch vụ thành công.',
+        'search_error' => 'Tìm kiếm dịch vụ thất bại.',
+    ],
+    'attributes' => [
+        'id'          => 'ID dịch vụ',
+        'name'        => 'Tên dịch vụ',
+        'type'        => 'Loại dịch vụ',
+        'price'       => 'Giá dịch vụ',
+        'description' => 'Mô tả dịch vụ',
+    ],
+    'controller' => [
+        'validation_failed' => 'Xác thực thất bại.',
+        'not_found' => 'Dịch vụ không tìm thấy.',
+        'found_success' => 'Tìm dịch vụ thành công.',
+        'created_success' => 'Tạo dịch vụ thành công.',
+        'updated_success' => 'Cập nhật dịch vụ thành công.',
+        'deleted_success' => 'Xóa dịch vụ thành công.',
+        'internal_error' => 'Lỗi máy chủ nội bộ.',
+    ],
+];

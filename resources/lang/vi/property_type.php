@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'messages' => [
+        'fetch_success' => 'Lấy danh sách loại bất động sản thành công.',
+        'fetch_error' => 'Không thể lấy danh sách loại bất động sản.',
+        'not_found' => 'Không tìm thấy loại bất động sản.',
+        'create_success' => 'Tạo loại bất động sản thành công.',
+        'create_error' => 'Tạo loại bất động sản không thành công.',
+        'update_success' => 'Cập nhật loại bất động sản thành công.',
+        'update_error' => 'Cập nhật loại bất động sản không thành công.',
+        'activate_success' => 'Kích hoạt loại bất động sản thành công.',
+        'deactivate_success' => 'Vô hiệu hóa loại bất động sản thành công.',
+        'update_status_error' => 'Cập nhật trạng thái loại bất động sản không thành công.',
+    ],
+    'validation_error' => 'Dữ liệu không hợp lệ.',
+    'pagination_integer' => 'Giá trị phân trang phải là số nguyên.',
+    'pagination_min' => 'Giá trị phân trang phải lớn hơn hoặc bằng 1.',
+    'id_required' => 'Vui lòng cung cấp mã loại bất động sản.',
+    'id_integer' => 'Mã loại bất động sản phải là số nguyên.',
+    'id_not_found' => 'Loại bất động sản được chọn không tồn tại.',
+    'name_required' => 'Vui lòng nhập tên loại bất động sản.',
+    'name_string' => 'Tên loại bất động sản phải là chuỗi ký tự.',
+    'name_max' => 'Tên loại bất động sản không được vượt quá 255 ký tự.',
+    'slug_string' => 'Slug phải là chuỗi ký tự.',
+    'slug_max' => 'Slug không được vượt quá 255 ký tự.',
+    'slug_unique' => 'Slug đã được sử dụng.',
+    'description_string' => 'Mô tả phải là chuỗi ký tự.',
+    'icon_url_string' => 'Đường dẫn icon phải là chuỗi ký tự.',
+    'icon_url_max' => 'Đường dẫn icon không được vượt quá 255 ký tự.',
+    'is_active_required' => 'Vui lòng chọn trạng thái hoạt động.',
+    'is_active_boolean' => 'Trạng thái hoạt động phải là true hoặc false.',
+];

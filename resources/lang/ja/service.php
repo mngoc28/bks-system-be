@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'validation' => [
+        'id_required' => 'サービスIDは必須です。',
+        'id_integer'  => 'サービスIDは整数でなければなりません。',
+        'id_exists'   => 'サービスIDが存在しません。',
+        'name_required' => 'サービス名は必須です。',
+        'name_string'   => 'サービス名は有効な文字列でなければなりません。',
+        'name_max'      => 'サービス名は100文字以内でなければなりません。',
+        'name_unique'   => 'サービス名はすでに存在します。',
+        'type_required' => 'サービスの種類は必須です。',
+        'type_in'       => 'サービスの種類は basic、optional、または other のいずれかでなければなりません。',
+        'price_required'=> 'サービスの価格は必須です。',
+        'price_numeric' => 'サービスの価格は数値でなければなりません。',
+        'price_min'     => 'サービスの価格は0以上でなければなりません。',
+        'description_string' => '説明は有効な文字列でなければなりません。',
+    ],
+    'messages' => [
+        'found_success' => 'サービスの取得に成功しました。',
+        'not_found' => 'サービスが見つかりません。',
+        'create_success' => 'サービスの作成に成功しました。',
+        'create_failed' => 'サービスの作成に失敗しました。',
+        'update_success' => 'サービスの更新に成功しました。',
+        'update_failed' => 'サービスの更新に失敗しました。',
+        'delete_success' => 'サービスの削除に成功しました。',
+        'delete_failed' => 'サービスの削除に失敗しました。',
+        'fetch_failed' => 'サービスの取得に失敗しました。',
+        'fetch_success' => 'サービスの取得に成功しました。',
+        'search_error' => 'サービスの検索に失敗しました。',
+    ],
+    'attributes' => [
+        'id'          => 'サービスID',
+        'name'        => 'サービス名',
+        'type'        => 'サービスの種類',
+        'price'       => 'サービスの価格',
+        'description' => 'サービスの説明',
+    ],
+    'controller' => [
+        'validation_failed' => '検証に失敗しました。',
+        'not_found' => 'サービスが見つかりません。',
+        'found_success' => 'サービスの取得に成功しました。',
+        'created_success' => 'サービスの作成に成功しました。',
+        'updated_success' => 'サービスの更新に成功しました。',
+        'deleted_success' => 'サービスの削除に成功しました。',
+        'internal_error' => 'サーバー内部エラーが発生しました。',
+    ],
+];

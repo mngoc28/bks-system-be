@@ -1,0 +1,148 @@
+stages:
+  - preparation
+#  - building
+  # - testing
+  # - security
+
+image: composer:latest
+
+variables:
+  COMPOSER_MEMORY_LIMIT: -1
+# Variables
+#variables:
+#  MYSQL_ROOT_PASSWORD: root
+#  MYSQL_USER: test
+#  MYSQL_PASSWORD: root
+#  MYSQL_DATABASE: laravel
+#  DB_HOST: mysql
+
+cache:
+  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+
+# composer:
+codestyle:
+  stage: preparation
+  cache:
+    paths:
+      - vendor/
+  script:
+      - composer update --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts --ignore-platform-reqs
+      - cp .env.testing .env
+      - php artisan key:generate
+      - ./vendor/bin/phpcs --standard=phpcs.xml ./
+  # artifacts:
+  #   paths:
+  #     - vendor/
+  #     - .env
+  #   expire_in: 1 days
+  #   when: always
+  only:
+    - develop
+    - merge_requests
+
+#npm:
+#  stage: preparation
+#  cache:
+#    paths:
+#      - node_modules/
+#  script:
+#      - npm --version
+#      - npm install
+#  artifacts:
+#    paths:
+#      - node_modules/
+#    expire_in: 1 days
+#    when: always
+#  only:
+#    - develop
+#    - merge_requests
+
+# build-assets:
+#   stage: building
+#   # Download the artifacts for these jobs
+#   dependencies:
+#     - composer
+#     - npm
+#   script:
+#     - npm --version
+#     - npm run build
+#   artifacts:
+#     paths:
+#       - public/css/
+#       - public/js/
+#       - public/fonts/
+#       - public/mix-manifest.json
+#     expire_in: 1 days
+#     when: always
+#   only:
+#     - develop
+#     - merge_requests
+
+#db-seeding:
+#  stage: building
+#  services:
+#    - name: mysql:8.0
+#      command: ["--default-authentication-plugin=mysql_native_password"]
+#  # Download the artifacts for these jobs
+#  dependencies:
+#    - composer
+#    - npm
+#  script:
+#    # - composer dump-autoload
+#    - mysql --version
+#    - php artisan migrate:refresh --seed
+#    - mysqldump --host="${DB_HOST}" --user="${MYSQL_USER}" --password="${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" > db.sql
+#  artifacts:
+#    paths:
+#      - storage/logs # for debugging
+#      - db.sql
+#    expire_in: 1 days
+#    when: always
+#  only:
+#    - develop
+#    - merge_requests
+
+# codestyle:
+#   stage: testing
+#   dependencies:
+#     - composer
+#   script:
+#     - ./vendor/bin/phpstan analyse
+#     - ./vendor/bin/phpcs --standard=phpcs.xml ./
+#   only:
+#     - develop
+#     - merge_requests
+
+#phpunit:
+#  stage: testing
+#  services:
+#    - name: mysql:8.0
+#      command: ["--default-authentication-plugin=mysql_native_password"]
+#  dependencies:
+#    # - build-assets
+#    - composer
+#    - db-seeding
+#  script:
+#    - mysql --host="${DB_HOST}" --user="${MYSQL_USER}" --password="${MYSQL_PASSWORD}" "${MYSQL_DATABASE}" < db.sql
+#    - ./vendor/bin/phpunit --testsuite Unit --coverage-text --colors=never
+#    - ./vendor/bin/phpunit --testsuite Feature --coverage-text --colors=never
+#  artifacts:
+#    paths:
+#      - ./storage/logs # for debugging
+#    expire_in: 1 days
+#    when: on_failure
+#  only:
+#    - develop
+#    - merge_requests
+
+# sensiolabs:
+#   stage: security
+#   script:
+#     - test -d security-checker || git clone https://github.com/sensiolabs/security-checker.git
+#     - cd security-checker
+#     - composer install
+#     - php security-checker security:check ../composer.lock
+#   dependencies: []
+#   cache:
+#     paths:
+#       - security-checker/

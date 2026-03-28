@@ -1,0 +1,24 @@
+{
+  "name": "BKS MINI PROJECT",
+  "version": "1.0.0",
+  "description": "BKS MINI API Documentation",
+  "title": "BKS MINI API",
+  "url": "http://localhost",
+  "order": [
+    "Auth",
+    "Dashboard",
+    "Buildings",
+    "BuildingImages",
+    "Rooms",
+    "Services",
+    "Bookings",
+    "Provinces",
+    "Cloudinary",
+    "Wards",
+    "News"
+  ],
+  "exclude": [
+    "vendor",
+    "node_modules"
+  ]
+}

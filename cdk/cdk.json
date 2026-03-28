@@ -1,0 +1,199 @@
+{
+  "app": "npx ts-node --prefer-ts-exts bin/cdk.ts",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "**/*.d.ts",
+      "**/*.js",
+      "tsconfig.json",
+      "package*.json",
+      "yarn.lock",
+      "node_modules",
+      "test"
+    ]
+  },
+  "context": {
+    "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": true,
+    "@aws-cdk/core:stackRelativeExports": true,
+    "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
+    "@aws-cdk/aws-lambda:recognizeVersionProps": true,
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+    "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
+    "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": true,
+    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
+    "@aws-cdk/aws-codepipeline:crossAccountKeyAliasStackSafeResourceName": true,
+    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
+    "@aws-cdk/aws-sns-subscriptions:restrictSqsDescryption": true,
+    "@aws-cdk/core:target-partitions": [
+      "aws",
+      "aws-cn"
+    ],
+    "global": {
+      "prefix": "cdk-tr-uqey"
+    },
+    "dev": {
+      "env": {
+        "account": "684295086767",
+        "region": "ap-northeast-1",
+        "environment": "dev"
+      },
+      "rds": {
+        "arn": "arn:aws:rds:ap-northeast-1:684295086767:cluster:cdk-tr-uqey-dev-rds",
+        "databaseName": "cdk_tr_uqey_dev"
+      },
+      "secretmanager": {
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:684295086767:secret:cdk-tr-uqey-dev-secret-rds-IyQD1j"
+      },
+      "route53": {
+        "domainName": "dev-freekey.hitseries.com"
+      },
+      "vpc" : {
+        "vpcId": "vpc-081d83ed69ae1a107"
+      },
+      "ecs": {
+        "arn": "arn:aws:ecs:ap-northeast-1:684295086767:cluster/cdk-tr-uqey-dev-cluster",
+        "clusterName": "cdk-tr-uqey-dev-cluster"
+      },
+      "ecr": {
+        "name": "cdk-tr-uqey-dev-user-api-ecr"
+      },
+      "fargate": {
+        "certificateArn": "arn:aws:acm:ap-northeast-1:684295086767:certificate/855a6f70-e851-43b7-896b-b169bb7e7795",
+        "domainName": "dev-api-uqey.dev-freekey.hitseries.com",
+        "memory": "4096",
+        "cpu": "2048",
+        "desiredCount": "2"
+      },
+      "log":{
+        "name": "/cdk-tr-uqey-dev/userapi",
+        "streamPrefix": "userapi",
+        "removalPolicy": "delete"
+      }
+    },
+    "staging": {
+      "env": {
+        "account": "695745666982",
+        "region": "ap-northeast-1",
+        "environment": "staging"
+      },
+      "rds": {
+        "arn": "arn:aws:rds:ap-northeast-1:695745666982:cluster:cdk-tr-uqey-staging-rds",
+        "databaseName": "cdk_tr_uqey_stg"
+      },
+      "secretmanager": {
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:695745666982:secret:cdk-tr-uqey-staging-secret-rds-SLyaJm"
+      },
+      "route53": {
+        "domainName": "stg.rent.uqey.com"
+      },
+      "vpc" : {
+        "vpcId": "vpc-0d6a9d8b5ca50052b"
+      },
+      "ecs": {
+        "arn": "arn:aws:ecs:ap-northeast-1:695745666982:cluster/cdk-tr-uqey-staging-cluster",
+        "clusterName": "cdk-tr-uqey-staging-cluster"
+      },
+      "ecr": {
+        "name": "cdk-tr-uqey-staging-user-api-ecr"
+      },
+      "fargate": {
+        "certificateArn": "arn:aws:acm:ap-northeast-1:695745666982:certificate/1a9f4c63-12a3-4930-8e4f-ffcee713efc3",
+        "domainName": "api.stg.rent.uqey.com",
+        "memory": "4096",
+        "cpu": "2048",
+        "desiredCount": "2"
+      },
+      "log":{
+        "name": "/cdk-tr-uqey-stg/userapi",
+        "streamPrefix": "userapi",
+        "removalPolicy": "delete"
+      }
+    },
+    "ppr": {
+      "env": {
+        "account": "695745666982",
+        "region": "ap-northeast-1",
+        "environment": "ppr"
+      },
+      "rds": {
+        "arn": "arn:aws:rds:ap-northeast-1:695745666982:cluster:tr-rental-car-cdk-sharestack-stag-databaseb269d8bb-ikxiyio2fhdr",
+        "databaseName": "cdk_tr_uqey_ppr"
+      },
+      "secretmanager": {
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:695745666982:secret:AuroraSecret41E6E877-a2y6ZIs7NGhk-i9J6lH"
+      },
+      "route53": {
+        "domainName": "ppr.rent.uqey.com"
+      },
+      "vpc" : {
+        "vpcId": "vpc-0550bb46ce485bdf9"
+      },
+      "ecs": {
+        "arn": "arn:aws:ecs:ap-northeast-1:695745666982:cluster/tr-rental-car-cdk-cluster",
+        "clusterName": "tr-rental-car-cdk-cluster"
+      },
+      "ecr": {
+        "name": "user-api-tr-rental-car-cdk-ecr"
+      },
+      "fargate": {
+        "certificateArn": "arn:aws:acm:ap-northeast-1:509293022898:certificate/7f206478-13a5-4860-af90-61343bcafe12",
+        "domainName": "api.ppr.rent.uqey.com",
+        "memory": "4096",
+        "cpu": "2048",
+        "desiredCount": "1"
+      },
+      "log":{
+        "name": "/cdk-tr-uqey-ppr/userapi",
+        "streamPrefix": "userapi",
+        "removalPolicy": "delete"
+      }
+    },
+    "prd": {
+      "env": {
+        "account": "485587923732",
+        "region": "ap-northeast-1",
+        "environment": "prd"
+      },
+      "rds": {
+        "arn": "arn:aws:rds:ap-northeast-1:485587923732:cluster:cdk-tr-uqey-prd-rds",
+        "databaseName": "cdk_tr_uqey_prd"
+      },
+      "secretmanager": {
+        "arn": "arn:aws:secretsmanager:ap-northeast-1:485587923732:secret:cdk-tr-uqey-prd-secret-rds-2caI78"
+      },
+      "route53": {
+        "domainName": "rent.dev-freekey.hitseries.com"
+      },
+      "vpc" : {
+        "vpcId": "vpc-0895d7fdf1afa68bf"
+      },
+      "ecs": {
+        "arn": "arn:aws:ecs:ap-northeast-1:485587923732:cluster/cdk-tr-uqey-prd-cluster",
+        "clusterName": "cdk-tr-uqey-prd-cluster"
+      },
+      "ecr": {
+        "name": "cdk-tr-uqey-prd-user-api-ecr"
+      },
+      "fargate": {
+        "certificateArn": "arn:aws:acm:ap-northeast-1:485587923732:certificate/66d8ad5b-6ce2-453d-a8d3-d234c246db04",
+        "domainName": "api.rent.dev-freekey.hitseries.com",
+        "memory": "4096",
+        "cpu": "2048",
+        "desiredCount": "1"
+      },
+      "log":{
+        "name": "/cdk-tr-uqey-prd/userapi",
+        "streamPrefix": "userapi",
+        "removalPolicy": "delete"
+      }
+    }
+  }
+}

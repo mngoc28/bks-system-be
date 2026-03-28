@@ -1,0 +1,383 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
+use App\Repositories\RoomServiceRepository\RoomServiceRepository;
+use App\Repositories\RoomAmenityRepository\RoomAmenityRepository;
+use App\Repositories\RoomPriceRepository\RoomPriceRepository;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+
+final class RoomsService
+{
+    /**
+     * Repository layer that handles data operations for rooms.
+     */
+    protected RoomsRepositoryInterface $roomsRepository;
+    protected RoomServiceRepository $roomServiceRepository;
+    protected RoomAmenityRepository $roomAmenityRepository;
+    protected RoomPriceRepository $roomPriceRepository;
+    private RoomServiceService $roomServiceService;
+    private RoomAmenityService $roomAmenityService;
+    private RoomPriceService $roomPriceService;
+
+    /**
+     * Constructor method.
+     *
+     * Laravel automatically injects the dependency (RoomsRepositoryInterface)
+     * using Dependency Injection.
+     *
+     * @param RoomsRepositoryInterface $roomsRepository Handles data operations for rooms
+     * @param RoomServiceService $roomServiceService Handles business logic for room services
+     * @param RoomImageService $roomImageService Handles business logic for room images
+     * @param RoomAmenityService $roomAmenityService Handles business logic for room amenities
+     * @param RoomPriceService $roomPriceService Handles business logic for room prices
+     */
+
+    public function __construct(
+        RoomsRepositoryInterface $roomsRepository,
+        RoomServiceRepository $roomServiceRepository,
+        RoomAmenityRepository $roomAmenityRepository,
+        RoomPriceRepository $roomPriceRepository,
+        RoomServiceService $roomServiceService,
+        RoomAmenityService $roomAmenityService,
+        RoomPriceService $roomPriceService
+    ) {
+        $this->roomsRepository = $roomsRepository;
+        $this->roomServiceRepository = $roomServiceRepository;
+        $this->roomAmenityRepository = $roomAmenityRepository;
+        $this->roomPriceRepository = $roomPriceRepository;
+        $this->roomServiceService = $roomServiceService;
+        $this->roomAmenityService = $roomAmenityService;
+        $this->roomPriceService = $roomPriceService;
+    }
+    /**
+     * Get all rooms or search by criteria with pagination
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getAllOrSearchRooms($request): array
+    {
+        try {
+            $rooms = $this->roomsRepository->getAllOrSearchRooms($request);
+
+            return [
+                "success" => true,
+                "data" => $rooms,
+                "message" => __("room.messages.retrieved_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching rooms: " . $e->getMessage());
+
+            return [
+                "success" => false,
+                "message" => __("room.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get a room by its ID
+     *
+     * @param int $id
+     * @return array{success: bool, data: Room|null, message: string}
+     */
+    public function getRoomById($id): array
+    {
+        try {
+            $room = $this->roomsRepository->roomDetail($id);
+
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => __("room.messages.found_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching room by ID: " . $e->getMessage());
+
+            return [
+                "success" => false,
+                "message" => __("room.messages.not_found"),
+            ];
+        }
+    }
+
+    /**
+     * Create a new room
+     *
+     * @param Request $request
+     * @return array{success: bool, data: Room|null, message: string}
+     */
+    public function createRoom($request): array
+    {
+        try {
+            DB::beginTransaction();
+
+            // 1. Create room with basic info
+            $roomData = $request->except(["amenities", "services", "prices"]);
+
+            $roomData["created_by"] = Auth::id();
+            $roomData["updated_by"] = Auth::id();
+            $room = $this->roomsRepository->create($roomData);
+
+            // 2. Save room amenities
+            if (
+                $request->filled("amenities") &&
+                is_array($request->amenities)
+            ) {
+                $this->roomAmenityService->saveRoomAmenities(
+                    $room->id,
+                    $request->amenities
+                );
+            }
+
+            // 3. Save room services
+            if ($request->filled("services") && is_array($request->services)) {
+                $this->roomServiceService->saveServiceCheckbox(
+                    $room->id,
+                    $request->services
+                );
+            }
+
+            // 4. Save room prices
+            if ($request->filled("prices") && is_array($request->prices)) {
+                $priceResult = $this->roomPriceService->saveRoomPrices(
+                    $room->id,
+                    $request->prices
+                );
+                if (is_array($priceResult) && isset($priceResult['success']) && !$priceResult['success']) {
+                    DB::rollBack();
+                    return [
+                        "success" => false,
+                        "data" => null,
+                        "message" => $priceResult['message'],
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $room->load(["amenities", "services", "prices"]);
+
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => __("room.messages.created_successfully"),
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error storing room: " . $e->getMessage(), [
+                "trace" => $e->getTraceAsString(),
+            ]);
+
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("room.messages.create_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Update an existing room
+     *
+     * @param Request $request
+     * @param int $id
+     * @return array{success: bool, data: Room|null, message: string}
+     */
+    public function updateRoom($request, $id): array
+    {
+        DB::beginTransaction();
+        try {
+            // not update amenities, services, prices into rooms table
+            $roomData = $request->except(["amenities", "services", "prices"]);
+            $roomData["updated_by"] = Auth::id();
+            $room = $this->roomsRepository->update($id, $roomData);
+
+            // Handle relationships separately
+            $this->roomServiceRepository->deleteBy(["room_id" => $id]);
+            $this->roomServiceService->saveServiceCheckbox(
+                $id,
+                $request->services ?? []
+            );
+            $this->roomAmenityRepository->deleteBy(["room_id" => $id]);
+            $this->roomAmenityService->saveRoomAmenities(
+                $id,
+                $request->amenities ?? []
+            );
+            $priceResult = $this->roomPriceService->saveRoomPrices(
+                $id,
+                $request->prices ?? []
+            );
+            if (is_array($priceResult) && isset($priceResult['success']) && !$priceResult['success']) {
+                DB::rollBack();
+                return [
+                    "success" => false,
+                    "data" => null,
+                    "message" => $priceResult['message'],
+                ];
+            }
+            DB::commit();
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => __("room.messages.updated_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error updating room: " . $e->getMessage());
+            DB::rollBack();
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("room.messages.update_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Summary of deleteRoom
+     * @param int $id
+     * @return array{data: null, message: array|string|null, success: bool}
+     */
+    public function deleteRoom($id): array
+    {
+        DB::beginTransaction();
+        try {
+            // Delete room
+            $deleted = $this->roomsRepository->delete($id);
+            DB::commit();
+            if (!$deleted) {
+                return [
+                    "success" => false,
+                    "message" => __("room.messages.not_found"),
+                    "data" => null,
+                ];
+            }
+            return [
+                "success" => true,
+                "message" => __("room.messages.deleted_successfully"),
+                "data" => null,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error deleting room: " . $e->getMessage(), [
+                "trace" => $e->getTraceAsString(),
+            ]);
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("room.messages.delete_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Summary of getRoomNamesByBuildingId
+     * @param int $buildingId
+     * @return mixed
+     */
+    public function getRoomNamesByBuildingId($buildingId): mixed
+    {
+        try {
+            $buildingId = (int) $buildingId;
+            $roomNames = $this->roomsRepository->getRoomNamesByBuildingId($buildingId);
+            return [
+                "success" => true,
+                "data" => $roomNames,
+                "message" => __("room.messages.retrieved_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching room names by building ID: " . $e->getMessage());
+            return [
+                "success" => false,
+                "message" => __("room.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    // ====== The functions below are APIs for the end user ======
+    /**
+     * Get latest rooms
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getLatestRooms(Request $request): array
+    {
+        try {
+            $rooms = $this->roomsRepository->getLatestRooms($request);
+
+            return [
+                "success" => true,
+                "data" => $rooms,
+                "message" => __("room.messages.retrieved_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching rooms: " . $e->getMessage());
+
+            return [
+                "success" => false,
+                "message" => __("room.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get room list with filters
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function handleRoomList($request): array
+    {
+        try {
+            $rooms = $this->roomsRepository->getRoomList($request);
+
+            return [
+                "success" => true,
+                "data" => $rooms,
+                "message" => __("room.messages.retrieved_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching rooms: " . $e->getMessage());
+
+            return [
+                "success" => false,
+                "message" => __("room.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get public room detail by ID
+     *
+     * @param int $id
+     * @return array{success: bool, data: Room|null, message: string}
+     */
+    public function handlePublicRoomDetail($id): array
+    {
+        try {
+            $room = $this->roomsRepository->getPublicRoomDetail((int)$id);
+
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => __("room.messages.found_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error fetching room by ID: " . $e->getMessage());
+
+            return [
+                "success" => false,
+                "message" => __("room.messages.not_found"),
+            ];
+        }
+    }
+}

@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'validation' => [
+        'id_required' => 'Service ID is required.',
+        'id_integer'  => 'Service ID must be an integer.',
+        'id_exists'   => 'Service ID does not exist.',
+        'name_required' => 'Service name is required.',
+        'name_string'   => 'Service name must be a valid string.',
+        'name_max'      => 'Service name must not exceed 100 characters.',
+        'name_unique'   => 'Service name already exists.',
+        'type_required' => 'Service type is required.',
+        'type_in'       => 'Service type must be basic, optional, or other.',
+        'price_required'=> 'Service price is required.',
+        'price_numeric' => 'Service price must be a number.',
+        'price_min'     => 'Service price cannot be less than 0.',
+        'description_string' => 'Description must be a valid string.',
+    ],
+    'messages' => [
+        'found_success' => 'Service found successfully.',
+        'not_found' => 'Service not found.',
+        'create_success' => 'Service created successfully.',
+        'create_failed' => 'Failed to create service.',
+        'update_success' => 'Service updated successfully.',
+        'update_failed' => 'Failed to update service.',
+        'delete_success' => 'Service deleted successfully.',
+        'delete_failed' => 'Failed to delete service.',
+        'fetch_failed' => 'Failed to fetch service.',
+        'fetch_success' => 'Service fetched successfully.',
+        'search_error' => 'Failed to search service.',
+    ],
+    'attributes' => [
+        'id'          => 'Service ID',
+        'name'        => 'Service Name',
+        'type'        => 'Service Type',
+        'price'       => 'Service Price',
+        'description' => 'Service Description',
+    ],
+    'controller' => [
+        'validation_failed' => 'Validation failed.',
+        'not_found' => 'Service not found.',
+        'found_success' => 'Service found successfully.',
+        'created_success' => 'Service created successfully.',
+        'updated_success' => 'Service updated successfully.',
+        'deleted_success' => 'Service deleted successfully.',
+        'internal_error' => 'Internal server error.',
+    ],
+];

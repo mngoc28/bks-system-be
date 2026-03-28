@@ -1,0 +1,31 @@
+<?php
+
+return [
+    'messages' => [
+        'id_required' => 'ID amenity is required.',
+        'id_integer' => 'ID amenity must be an integer.',
+        'id_exists' => 'ID amenity does not exist.',
+        'not_found' => 'Amenity does not exist.',
+        'fetch_success' => 'Successfully retrieved amenity information.',
+        'fetch_error' => 'Failed to retrieve amenity information.',
+        'create_success' => 'Successfully created amenity.',
+        'create_error' => 'Failed to create amenity.',
+        'update_success' => 'Successfully updated amenity.',
+        'update_error' => 'Failed to update amenity.',
+        'delete_success' => 'Successfully deleted amenity.',
+        'delete_error' => 'Failed to delete amenity.',
+    ],
+    'validation_error' => 'Invalid data.',
+    'sort_field_invalid' => 'Invalid sort field.',
+    'sort_direction_invalid' => 'Invalid sort direction.',
+    'per_page_integer' => 'Number per page must be an integer.',
+    'per_page_min' => 'Number per page must be at least 1.',
+    'per_page_max' => 'Number per page must not exceed 100.',
+    'page_integer' => 'Page must be an integer.',
+    'page_min' => 'Page must be at least 1.',
+    'pagination_integer' => 'Pagination must be an integer.',
+    'pagination_min' => 'Pagination must be at least 1.',
+    'sort_by_string' => 'Sort by must be a string.',
+    'direction_string' => 'Direction must be a string.',
+    'direction_invalid' => 'Direction must be either asc or desc.',
+];

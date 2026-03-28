@@ -1,0 +1,31 @@
+<?php
+
+return [
+    'messages' => [
+        'id_required' => 'ID は必須です。',
+        'id_integer' => 'ID は整数でなければなりません。',
+        'id_exists' => 'ID が存在しません。',
+        'not_found' => '設備が存在しません。',
+        'fetch_success' => '設備情報の取得に成功しました。',
+        'fetch_error' => '設備情報の取得に失敗しました。',
+        'create_success' => '設備の作成に成功しました。',
+        'create_error' => '設備の作成に失敗しました。',
+        'update_success' => '設備の更新に成功しました。',
+        'update_error' => '設備の更新に失敗しました。',
+        'delete_success' => '設備の削除に成功しました。',
+        'delete_error' => '設備の削除に失敗しました。',
+    ],
+    'validation_error' => '無効なデータです。',
+    'sort_field_invalid' => '無効な並べ替えフィールドです。',
+    'sort_direction_invalid' => '無効な並べ替え方向です。',
+    'per_page_integer' => 'ページごとの数は整数でなければなりません。',
+    'per_page_min' => 'ページごとの数は少なくとも1でなければなりません。',
+    'per_page_max' => 'ページごとの数は100を超えてはなりません。',
+    'page_integer' => 'ページは整数でなければなりません。',
+    'page_min' => 'ページは少なくとも1でなければなりません。',
+    'pagination_integer' => 'ページネーションは整数でなければなりません。',
+    'pagination_min' => 'ページネーションは少なくとも1でなければなりません。',
+    'sort_by_string' => 'ソート対象は文字列でなければなりません。',
+    'direction_string' => '方向は文字列でなければなりません。',
+    'direction_invalid' => '方向は asc または desc でなければなりません。',
+];
