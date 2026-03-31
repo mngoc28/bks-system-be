@@ -18,7 +18,7 @@ class LocaleMiddleware
     public function handle(Request $request, Closure $next)
     {
         $locale = $request->header('Accept-Language', 'vi');
-        if (in_array($locale, ['en', 'vi', 'ja'])) {
+        if (in_array($locale, ['en', 'vi'])) {
             App::setLocale($locale);
         }
 

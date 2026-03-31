@@ -1,20 +1,19 @@
-version: '3.8'
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: go-edu-app
+    container_name: bks-system-app
     restart: unless-stopped
     # volumes:
     #   - .:/var/www
     environment:
       - APP_ENV=develop
       - APP_DEBUG=true
+      - DB_HOST=host.docker.internal
+      - DB_PORT=3306
     networks:
-      - go-edu-network
-    depends_on:
-      - db
+      - bks-system-network
     command: php-fpm
 
   nginx:
@@ -30,23 +29,7 @@ services:
     ports:
       - "8081:80"
     networks:
-      - go-edu-network
-
-  db:
-    image: mariadb:10.6
-    container_name: mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: go-edu_app
-      MYSQL_USER: go-edu-user
-      MYSQL_PASSWORD: secret
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql  # Volume cho MariaDB
-    networks:
-      - go-edu-network
+      - bks-system-network
 
   # redis:
   #   image: redis:alpine
@@ -58,8 +41,5 @@ services:
   #     - go-edu-network
 
 networks:
-  go-edu-network:
+  bks-system-network:
     driver: bridge
-
-volumes:
-  db_data:
