@@ -127,13 +127,34 @@ final class UsersTableSeeder extends Seeder
     }
 
     /**
+     * Generate natural Vietnamese name
+     */
+    private function generateVietnameseName(): string
+    {
+        $surnames          = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Phan', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
+        $maleMiddleNames   = ['Văn', 'Trọng', 'Hữu', 'Đình', 'Minh', 'Thanh', 'Duy', 'Công', 'Quốc', 'Anh'];
+        $femaleMiddleNames = ['Thị', 'Ngọc', 'Hồng', 'Phương', 'Diệu', 'Tường', 'Minh', 'Thanh', 'Kim', 'Ánh'];
+        $maleFirstNames    = ['Mạnh', 'Hùng', 'Dũng', 'Tuấn', 'Nam', 'Quân', 'Sơn', 'Vinh', 'Minh', 'Phúc', 'Bình', 'Tùng', 'Hải', 'Trung', 'Thành'];
+        $femaleFirstNames  = ['Phương', 'Hoa', 'Lan', 'Hương', 'Nga', 'Oanh', 'Thảo', 'Thủy', 'Hà', 'Trang', 'Linh', 'Yến', 'Mai', 'Đào', 'Trúc'];
+
+        $surname = $this->faker->randomElement($surnames);
+        if ($this->faker->boolean()) {
+            // Male
+            return $surname . ' ' . $this->faker->randomElement($maleMiddleNames) . ' ' . $this->faker->randomElement($maleFirstNames);
+        } else {
+            // Female
+            return $surname . ' ' . $this->faker->randomElement($femaleMiddleNames) . ' ' . $this->faker->randomElement($femaleFirstNames);
+        }
+    }
+
+    /**
      * Create multiple users
      */
     private function createUsers(int $count, string $role, array $statusOptions, int $isEmailVerified = 1): void
     {
         $users = [];
         for ($i = 0; $i < $count; $i++) {
-            $name    = $this->faker->name();
+            $name    = $this->generateVietnameseName();
             $email   = $this->generateUniqueEmail($name);
             $status  = $this->faker->randomElement($statusOptions);
             $users[] = $this->createUserData($name, $email, $role, $status, $isEmailVerified);
@@ -163,7 +184,7 @@ final class UsersTableSeeder extends Seeder
         // Create default partner user
         DB::table('users')->insert([
             $this->createUserData(
-                'Nhân viên',
+                'Trần Thị Phương',
                 'partner@gmail.com',
                 'partner',
                 '1',

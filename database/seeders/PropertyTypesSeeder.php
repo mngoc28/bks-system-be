@@ -10,43 +10,40 @@ use Illuminate\Support\Str;
 
 final class PropertyTypesSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $propertyTypes = [
             [
-                'name' => 'Apartment',
-                'description' => 'Modern high-rise apartment with full facilities and elevator access, suitable for long-term stays.',
+                'name' => 'Căn hộ',
+                'description' => 'Căn hộ chung cư cao tầng hiện đại với đầy đủ tiện ích và thang máy, phù hợp cho lưu trú dài hạn.',
             ],
             [
-                'name' => 'Studio',
-                'description' => 'Open-plan studio with kitchenette and compact living space, ideal for young professionals.',
+                'name' => 'Phòng Studio',
+                'description' => 'Phòng Studio thiết kế mở với bếp nhỏ và không gian sống gọn gàng, lý tưởng cho người đi làm trẻ.',
             ],
             [
-                'name' => 'Villa',
-                'description' => 'Private villa featuring garden or pool areas designed for family vacations and premium experiences.',
+                'name' => 'Biệt thự',
+                'description' => 'Biệt thự riêng biệt với sân vườn hoặc hồ bơi, được thiết kế cho kỳ nghỉ gia đình và trải nghiệm cao cấp.',
             ],
             [
                 'name' => 'Homestay',
-                'description' => 'Authentic homestay with host support offering local lifestyle immersion and shared amenities.',
+                'description' => 'Không gian sống bản địa với sự hỗ trợ của chủ nhà, mang lại trải nghiệm văn hóa địa phương.',
             ],
             [
-                'name' => 'Shared Room',
-                'description' => 'Budget-friendly shared bedroom within a larger unit, commonly used by students or backpackers.',
+                'name' => 'Phòng ở ghép',
+                'description' => 'Phòng ngủ chia sẻ tiết kiệm trong một căn hộ lớn, thường được sinh viên hoặc khách du lịch bụi lựa chọn.',
             ],
             [
-                'name' => 'Townhouse',
-                'description' => 'Multi-storey townhouse with private entrance, typically located in urban residential neighborhoods.',
+                'name' => 'Nhà phố',
+                'description' => 'Nhà mặt đất nhiều tầng với lối đi riêng, thường nằm trong các khu dân cư đô thị.',
             ],
             [
                 'name' => 'Penthouse',
-                'description' => 'Luxury penthouse on the top floor boasting panoramic views and exclusive concierge services.',
+                'description' => 'Căn hộ cao cấp trên tầng thượng với tầm nhìn toàn cảnh và các dịch vụ đặc quyền.',
             ],
             [
-                'name' => 'Resort',
-                'description' => 'Full-service resort property featuring on-site dining, spa, and recreational facilities.',
+                'name' => 'Khu nghỉ dưỡng',
+                'description' => 'Bất động sản nghỉ dưỡng đầy đủ dịch vụ với nhà hàng, spa và các khu vui chơi giải trí tại chỗ.',
             ],
         ];
 
