@@ -104,7 +104,7 @@ class RoomsTableSeeder extends Seeder
                 'building_id' => $faker->randomElement($buildingIds),
                 'title' => $title,
                 'room_number' => 'R' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                'deposit' => $faker->randomElement([null, $faker->numberBetween(1000000, 5000000)]),
+                'deposit' => $faker->numberBetween(1000000, 5000000),
                 'area' => $faker->randomFloat(2, 15, 50),
                 'floor_number' => $faker->numberBetween(1, 30),
                 'people' => $people,

@@ -222,9 +222,9 @@ class BuildingsTableSeeder extends Seeder
                 'address_detail' => $location['address'],
                 'number_of_floors' => $faker->numberBetween(1, 35),
                 'number_of_units' => $faker->numberBetween(10, 500),
-                'year_built' => $faker->optional(0.8)->numberBetween(1990, 2024),
+                'year_built' => $faker->numberBetween(1990, 2024),
                 'building_type' => $faker->randomElement($buildingTypes),
-                'area' => $faker->optional(0.7)->randomFloat(2, 1000, 50000), // Total building area in m²
+                'area' => $faker->randomFloat(2, 1000, 50000), // Total building area in m²
                 'description' => $description,
                 'created_by' => $faker->randomElement($adminPartnerIds),
                 'updated_by' => $faker->randomElement($adminPartnerIds),
