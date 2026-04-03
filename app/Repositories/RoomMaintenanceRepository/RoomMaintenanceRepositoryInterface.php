@@ -12,5 +12,12 @@ interface RoomMaintenanceRepositoryInterface extends RepositoryInterface
      * @param array $filters
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Support\Collection
      */
-    public function getList(array $filters);
+    /**
+     * Get urgent maintenance requests for a specific partner
+     *
+     * @param int $partnerId
+     * @param int $limit
+     * @return \Illuminate\Support\Collection
+     */
+    public function getUrgentMaintenancesForPartner(int $partnerId, int $limit = 5);
 }

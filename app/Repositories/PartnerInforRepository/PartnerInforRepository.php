@@ -204,4 +204,30 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
 
         return $partner;
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get partner information by associated User ID
+     *
+     * @param int $userId
+     * @return object|null
+     */
+    public function getPartnerByUserId(int $userId): ?object
+    {
+        return $this->model
+            ->select([
+                'partner_info.*',
+                'users.name as user_name',
+                'provinces.name as province_name',
+                'wards.name as ward_name',
+            ])
+            ->leftJoin('users', 'partner_info.user_id', '=', 'users.id')
+            ->leftJoin('provinces', 'partner_info.province_id', '=', 'provinces.id')
+            ->leftJoin('wards', 'partner_info.ward_id', '=', 'wards.id')
+            ->where('partner_info.user_id', $userId)
+            ->first();
+    }
 }

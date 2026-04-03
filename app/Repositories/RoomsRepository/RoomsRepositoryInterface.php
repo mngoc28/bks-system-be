@@ -72,4 +72,43 @@ interface RoomsRepositoryInterface extends RepositoryInterface
      * @return object|null
      */
     public function getPublicRoomDetail(int $id): object | null;
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get all rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @param mixed $request
+     * @return LengthAwarePaginator
+     */
+    public function getRoomsForPartner(int $partnerId, $request): LengthAwarePaginator;
+
+    /**
+     * Get room detail for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return mixed
+     */
+    public function getRoomDetailForPartner(int $id, int $partnerId): mixed;
+
+    /**
+     * Count rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @param array $filters
+     * @return int
+     */
+    public function countRoomsForPartner(int $partnerId, array $filters = []): int;
+
+    /**
+     * Get empty rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @return int
+     */
+    public function getEmptyRoomsForPartner(int $partnerId): int;
 }

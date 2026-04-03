@@ -345,4 +345,107 @@ final class BuildingsServices
             ];
         }
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get buildings for partner
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function handleGetAllBuildingsForPartner(Request $request): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $buildings = $this->buildingRepository->getBuildingsForPartner(
+                $partnerId,
+                $request,
+                (array)$request->sort
+            );
+
+            return [
+                "success" => true,
+                "data" => $buildings,
+                "message" => __("building.messages.retrieved_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get buildings failed", [
+                "partner_id" => Auth::id(),
+                "error" => $e->getMessage()
+            ]);
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("building.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get building detail for partner
+     *
+     * @param int $id
+     * @return array
+     */
+    public function handleGetBuildingDetailForPartner(int $id): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $building = $this->buildingRepository->getBuildingByIdForPartner($id, $partnerId);
+            if (!$building) {
+                return [
+                    "success" => false,
+                    "data" => null,
+                    "message" => __("building.messages.not_found"),
+                ];
+            }
+            return [
+                "success" => true,
+                "data" => $building,
+                "message" => __("building.messages.found_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get building detail failed", [
+                "building_id" => $id,
+                "partner_id" => Auth::id(),
+                "error" => $e->getMessage()
+            ]);
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("building.messages.find_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get building names for partner
+     *
+     * @return array
+     */
+    public function handleGetBuildingNamesForPartner(): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $buildings = $this->buildingRepository->getBuildingNamesForPartner($partnerId);
+            return [
+                "success" => true,
+                "data" => $buildings,
+                "message" => __("building.messages.retrieved_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get building names failed", [
+                "partner_id" => Auth::id(),
+                "error" => $e->getMessage()
+            ]);
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("building.messages.retrieved_failed"),
+            ];
+        }
+    }
 }

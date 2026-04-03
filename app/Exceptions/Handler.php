@@ -6,6 +6,7 @@ use App\Enums\HttpStatus;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -80,8 +81,8 @@ class Handler extends ExceptionHandler
                 return $this->jsonError(__('auth.unauthenticated'), HttpStatus::UNAUTHORIZED);
             }
 
-            if ($exception instanceof RouteNotFoundException) {
-                return $this->jsonError(__('auth.route_not_found'), HttpStatus::NOT_FOUND);
+            if ($exception instanceof RouteNotFoundException || $exception instanceof NotFoundHttpException) {
+                return $this->jsonError($exception->getMessage() ?: __('auth.route_not_found'), HttpStatus::NOT_FOUND);
             }
 
             if ($exception instanceof ValidationException) {

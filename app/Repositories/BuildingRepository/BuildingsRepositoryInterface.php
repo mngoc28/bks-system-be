@@ -41,4 +41,35 @@ interface BuildingsRepositoryInterface extends RepositoryInterface
      * @return Collection
      */
     public function getAllBuildingNames(): Collection;
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get buildings for a specific partner
+     *
+     * @param int $partnerId
+     * @param Request $request
+     * @param array $sort
+     * @return LengthAwarePaginator
+     */
+    public function getBuildingsForPartner(int $partnerId, Request $request, array $sort = []): LengthAwarePaginator;
+
+    /**
+     * Get building by ID for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return object|null
+     */
+    public function getBuildingByIdForPartner(int $id, int $partnerId): object|null;
+
+    /**
+     * Get all building names for a specific partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getBuildingNamesForPartner(int $partnerId): Collection;
 }

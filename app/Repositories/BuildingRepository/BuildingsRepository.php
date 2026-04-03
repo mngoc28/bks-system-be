@@ -163,4 +163,96 @@ final class BuildingsRepository extends BaseRepository implements
         }
         return $query->get();
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get buildings for a specific partner
+     *
+     * @param int $partnerId
+     * @param Request $request
+     * @param array $sort
+     * @return LengthAwarePaginator
+     */
+    public function getBuildingsForPartner(int $partnerId, Request $request, array $sort = []): LengthAwarePaginator
+    {
+        $query = $this->model
+            ->select([
+                'buildings.*',
+                'users.name as user_name',
+                'provinces.name as province_name',
+                'wards.name as ward_name',
+            ])
+            ->leftJoin('users', 'buildings.user_id', '=', 'users.id')
+            ->leftJoin('provinces', 'buildings.province_id', '=', 'provinces.id')
+            ->leftJoin('wards', 'buildings.ward_id', '=', 'wards.id')
+            ->where('buildings.user_id', $partnerId);
+
+        if ($request->filled("name")) {
+            $query->whereRaw("LOWER(buildings.name) LIKE ?", ["%" . strtolower($request->name) . "%"]);
+        }
+
+        if ($request->filled("ward_name")) {
+            $query->whereRaw("LOWER(wards.name) LIKE ?", ["%" . strtolower($request->ward_name) . "%"]);
+        }
+
+        if ($request->filled("province_name")) {
+            $query->whereRaw("LOWER(provinces.name) LIKE ?", ["%" . strtolower($request->province_name) . "%"]);
+        }
+
+        if (!empty($sort)) {
+            foreach ($sort as $item) {
+                $filed = $item['field'];
+                $order = $item['order'] ?? 'asc';
+                switch ($filed) {
+                    case 'user_name':
+                        $query->orderBy('users.name', $order);
+                        break;
+                    case 'province_name':
+                        $query->orderBy('provinces.name', $order);
+                        break;
+                    case 'ward_name':
+                        $query->orderBy('wards.name', $order);
+                        break;
+                    default:
+                        $query->orderBy("buildings.$filed", $order);
+                }
+            }
+        }
+
+        $perPage = (int) ($request->filled("per_page") ? $request->per_page : config("const.DEFAULT_PER_PAGE"));
+        $page = (int) ($request->filled("page") ? $request->page : config("const.DEFAULT_PAGE"));
+
+        return $query->paginate($perPage, ["*"], "page", $page);
+    }
+
+    /**
+     * Get building by ID for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return object|null
+     */
+    public function getBuildingByIdForPartner(int $id, int $partnerId): object|null
+    {
+        return $this->model->with(['province', 'ward', 'user'])
+            ->where('id', $id)
+            ->where('user_id', $partnerId)
+            ->first();
+    }
+
+    /**
+     * Get all building names for a specific partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getBuildingNamesForPartner(int $partnerId): Collection
+    {
+        return $this->model->select('id', 'name')
+            ->where("user_id", $partnerId)
+            ->get();
+    }
 }

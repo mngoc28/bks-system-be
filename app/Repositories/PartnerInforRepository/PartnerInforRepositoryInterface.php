@@ -49,4 +49,16 @@ interface PartnerInforRepositoryInterface extends RepositoryInterface
      * @return object|null
      */
     public function getPartnerDetail(int $id): ?object;
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get partner information by associated User ID
+     *
+     * @param int $userId
+     * @return object|null
+     */
+    public function getPartnerByUserId(int $userId): ?object;
 }

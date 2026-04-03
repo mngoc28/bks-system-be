@@ -380,4 +380,65 @@ final class RoomsService
             ];
         }
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get all rooms for partner
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function handleGetAllRoomsForPartner(Request $request): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $rooms = $this->roomsRepository->getRoomsForPartner($partnerId, $request);
+
+            return [
+                "success" => true,
+                "data" => $rooms,
+                "message" => __("room.messages.retrieved_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Partner get rooms failed: " . $e->getMessage());
+            return [
+                "success" => false,
+                "message" => __("room.messages.retrieved_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get room detail for partner
+     *
+     * @param int $id
+     * @return array
+     */
+    public function handleGetRoomDetailForPartner(int $id): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $room = $this->roomsRepository->getRoomDetailForPartner((int)$id, $partnerId);
+            if (!$room) {
+                return [
+                    "success" => false,
+                    "message" => __("room.messages.not_found"),
+                ];
+            }
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => __("room.messages.found_successfully"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Partner get room detail failed: " . $e->getMessage());
+            return [
+                "success" => false,
+                "message" => __("room.messages.not_found"),
+            ];
+        }
+    }
 }

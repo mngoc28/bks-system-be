@@ -63,29 +63,29 @@ class AuthController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    // public function sendMailResetPassword(Request $request): JsonResponse
-    // {
-    //     $validated = $this->authValidation->sendMailResetPasswordValidation($request);
-    //     if ($validated->fails()) {
-    //         return $this->validateError(
-    //             $validated->errors(),
-    //             null,
-    //             HttpStatus::VALIDATION_ERROR
-    //         );
-    //     }
+    public function sendMailResetPassword(Request $request): JsonResponse
+    {
+        $validated = $this->authValidation->sendMailResetPasswordValidation($request);
+        if ($validated->fails()) {
+            return $this->validateError(
+                $validated->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
 
-    //     $sendMailResult = $this->authService->sendMailResetPassword($request);
+        $sendMailResult = $this->authService->sendMailResetPassword($request);
 
-    //     if ($sendMailResult['success']) {
-    //         return $this->successResponse(null, $sendMailResult['message']);
-    //     }
+        if ($sendMailResult['success']) {
+            return $this->successResponse(null, $sendMailResult['message']);
+        }
 
-    //     return $this->errorResponse(
-    //         $sendMailResult['message'],
-    //         null,
-    //         HttpStatus::BAD_REQUEST
-    //     );
-    // }
+        return $this->errorResponse(
+            $sendMailResult['message'],
+            null,
+            HttpStatus::BAD_REQUEST
+        );
+    }
 
     /**
      * Summary of register

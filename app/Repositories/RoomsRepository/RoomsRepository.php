@@ -421,4 +421,131 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         )->where('rooms.id', $id)
             ->first();
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get all rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @param mixed $request
+     * @return LengthAwarePaginator
+     */
+    public function getRoomsForPartner(int $partnerId, $request): LengthAwarePaginator
+    {
+        $query = $this->model->with([
+            'amenities:id,name',
+            'services:id,name',
+            'prices:id,room_id,price_package_id,unit,price',
+            'images' => function ($q) {
+                $q->where('sort', 1)->select('id', 'room_id', 'image_url');
+            }
+        ])
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->select(
+                'rooms.id',
+                'rooms.room_number',
+                'rooms.title',
+                'buildings.name as building_name',
+                'rooms.room_type',
+                'rooms.status',
+                'rooms.area',
+                'rooms.people'
+            )
+            ->where('buildings.user_id', $partnerId);
+
+        if ($request->filled('room_number')) {
+            $query->where('room_number', 'like', '%' . $request->room_number . '%');
+        }
+
+        if ($request->filled('building_id')) {
+            $query->where('building_id', $request->building_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $perPage = $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
+        $page = $request->input('page', config('const.DEFAULT_PAGE'));
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * Get room detail for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return mixed
+     */
+    public function getRoomDetailForPartner(int $id, int $partnerId): mixed
+    {
+        return $this->model->with([
+            'amenities:id,name',
+            'services:id,name',
+            'prices:id,room_id,price_package_id,unit,price',
+            'images' => function ($q) {
+                $q->select('id', 'room_id', 'image_url', 'image_type');
+            }
+        ])->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->select(
+                'rooms.id',
+                'rooms.room_number',
+                'rooms.title',
+                'rooms.building_id',
+                'rooms.room_type',
+                'rooms.floor_number',
+                'rooms.deposit',
+                'rooms.status',
+                'rooms.area',
+                'rooms.people',
+                'rooms.description',
+                'rooms.created_at',
+                'rooms.updated_at',
+                'buildings.name as building_name'
+            )
+            ->where('rooms.id', $id)
+            ->where('buildings.user_id', $partnerId)
+            ->first();
+    }
+
+    /**
+     * Count rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @param array $filters
+     * @return int
+     */
+    public function countRoomsForPartner(int $partnerId, array $filters = []): int
+    {
+        $query = $this->model->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.user_id', $partnerId);
+
+        if (!empty($filters)) {
+            $query->where($filters);
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * Get empty rooms for a specific partner
+     *
+     * @param int $partnerId
+     * @return int
+     */
+    public function getEmptyRoomsForPartner(int $partnerId): int
+    {
+        $today = now()->toDateString();
+        return $this->model->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.user_id', $partnerId)
+            ->where('rooms.status', RoomStatus::PUBLIC)
+            ->whereDoesntHave('bookings', function ($query) use ($today) {
+                $query->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+                    ->where('end_date', '>=', $today);
+            })->count();
+    }
 }

@@ -509,4 +509,35 @@ final class BookingService
             ];
         }
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get bookings for partner
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function handleGetAllBookingsForPartner(Request $request): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $bookings = $this->bookingRepository->getBookingsForPartner($partnerId, $request);
+
+            return [
+                'success' => true,
+                'data'    => $bookings,
+                'message' => __('booking.messages.retrieved_successfully'),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get bookings failed: " . $e->getMessage());
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => __('booking.messages.retrieved_failed'),
+            ];
+        }
+    }
 }
