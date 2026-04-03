@@ -83,7 +83,7 @@ Route::group([
         /**
          * Users API - Protected (Admin Only)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('users')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('users')->group(function () {
             Route::post('create', [UserController::class, 'store']);
             Route::get('{id}', [UserController::class, 'show']);
             Route::put('{id}', [UserController::class, 'update']);
@@ -96,7 +96,7 @@ Route::group([
         /**
          * Services API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('services')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('services')->group(function () {
             Route::get('/all', [ServiceController::class, 'getAllServices']);
             Route::post('', [ServiceController::class, 'store']);
             Route::put('{id}', [ServiceController::class, 'update'])->whereNumber('id');
@@ -109,7 +109,7 @@ Route::group([
          * Buildings API - Protected (Admin & Partner)
          */
         Route::prefix("buildings")->group(function () {
-            Route::middleware(["jwt.auth", "role:admin,partner"])->group(function () {
+            Route::middleware(["jwt.auth", "role:admin"])->group(function () {
                 Route::get("searchAll", [BuildingsController::class, "index"]);
                 Route::get("types", [BuildingsController::class, "getAllBuildingsTypes"]);
                 Route::get("bookings/{id}", [BuildingsController::class, "getBookingsByBuilding"])->whereNumber("id");
@@ -124,7 +124,7 @@ Route::group([
         /**
          * Cloudinary API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('cloudinary')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('cloudinary')->group(function () {
             Route::post('/upload-image', [CloudinaryController::class, 'uploadImage']);
             Route::post('/upload-multiple-images', [CloudinaryController::class, 'uploadMultipleImages']);
             Route::delete('/delete-image', [CloudinaryController::class, 'deleteImage']);
@@ -133,7 +133,7 @@ Route::group([
         /**
          * Building Images API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('building-images')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('building-images')->group(function () {
             // get building images by building id
             Route::get('building/{buildingId}', [BuildingImageController::class, 'getByBuildingId']);
             // get building image by id
@@ -151,7 +151,7 @@ Route::group([
         /**
          * Room Images API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('room-images')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('room-images')->group(function () {
             Route::get('room/{roomId}', [RoomImageController::class, 'getByRoomId']);
             Route::get('{id}', [RoomImageController::class, 'show'])->whereNumber('id');
             Route::post('/', [RoomImageController::class, 'store']);
@@ -173,7 +173,7 @@ Route::group([
         /**
          * Rooms API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('rooms')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('rooms')->group(function () {
             Route::post('store', [RoomsController::class, 'store']);
             Route::put('{id}', [RoomsController::class, 'update']);
             Route::delete('{id}', [RoomsController::class, 'destroy']);
@@ -229,7 +229,7 @@ Route::group([
         /**
          * Price package API
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('price-packages')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('price-packages')->group(function () {
             Route::get('/', [PricePackageController::class, 'index']);
             Route::get('room/{roomId}', [PricePackageController::class, 'getByRoomId']);
         });
@@ -237,7 +237,7 @@ Route::group([
         /**
          * Bookings API - Protected (Admin & Partner)
          */
-        Route::middleware(['jwt.auth', 'role:admin,partner'])->prefix('bookings')->group(function () {
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('bookings')->group(function () {
             Route::get('/', [BookingController::class, 'index']);
             Route::post('/', [BookingController::class, 'store']);
             Route::get('{id}', [BookingController::class, 'show'])->whereNumber('id');
@@ -301,7 +301,7 @@ Route::group([
         /**
          * Partner API - public
          */
-        Route::prefix('partner')->middleware(['jwt.auth', 'role:admin,partner'])->group(function () {
+        Route::prefix('partner')->middleware(['jwt.auth', 'role:admin'])->group(function () {
             //list partner information and search
             Route::get('/search', [PartnerInforController::class, 'index']);
             //detail partner information
@@ -314,7 +314,7 @@ Route::group([
          * News API
          * Base Url /api/v1/admin/news/
          */
-        Route::prefix('news')->middleware(['jwt.auth', 'role:admin,partner'])->group(function () {
+        Route::prefix('news')->middleware(['jwt.auth', 'role:admin'])->group(function () {
             // get all news
             Route::get('', [NewsController::class, 'index']);
             // get news by id
@@ -324,6 +324,181 @@ Route::group([
             // update news
             Route::put('{id}', [NewsController::class, 'update'])->whereNumber('id');
             // delete news
+            Route::delete('{id}', [NewsController::class, 'destroy'])->whereNumber('id');
+        });
+    });
+
+    /**
+     * ============================================
+     * PARTNER API
+     * ============================================
+     * Base URL: /api/v1/partner/
+     */
+    Route::middleware(['jwt.auth', 'role:partner'])->prefix('partner')->group(function () {
+        /**
+         * Auth API - Authenticated
+         */
+        Route::prefix('auth')->group(function () {
+            Route::post('logout', [AuthController::class, 'logout']);
+        });
+
+        /**
+         * User Profile API
+         */
+        Route::prefix('user')->group(function () {
+            Route::get('profile', [UserController::class, 'show']);
+            Route::put('profile', [UserController::class, 'updateProfile']);
+            Route::put('profile/change-password', [UserController::class, 'changePassword']);
+            Route::post('avatar/{id}', [UserController::class, 'uploadAvatar']);
+        });
+
+        /**
+         * Partner Profile Info
+         */
+        Route::get('profile', [PartnerInforController::class, 'showSelf']);
+        // update partner information
+        Route::put('profile', [PartnerInforController::class, 'updateSelf']);
+        // detail partner information
+        Route::get('detail/{id}', [PartnerInforController::class, 'show']);
+
+        /**
+         * Services API
+         */
+        Route::prefix('services')->group(function () {
+            Route::get('/all', [ServiceController::class, 'getAllServices']);
+            Route::get('/search', [ServiceController::class, 'index']);
+            Route::get('{id}', [ServiceController::class, 'show'])->whereNumber('id');
+            Route::post('', [ServiceController::class, 'store']);
+            Route::put('{id}', [ServiceController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [ServiceController::class, 'destroy'])->whereNumber('id');
+        });
+
+        /**
+         * Buildings API
+         */
+        Route::prefix("buildings")->group(function () {
+            Route::get("searchAll", [BuildingsController::class, "index"]);
+            Route::get("types", [BuildingsController::class, "getAllBuildingsTypes"]);
+            Route::get("bookings/{id}", [BuildingsController::class, "getBookingsByBuilding"])->whereNumber("id");
+            Route::get("{id}", [BuildingsController::class, "show"])->whereNumber("id");
+            Route::post("", [BuildingsController::class, "store"]);
+            Route::put("{id}", [BuildingsController::class, "update"])->whereNumber("id");
+            Route::delete("{id}", [BuildingsController::class, "destroy"])->whereNumber("id");
+            Route::get("all", [BuildingsController::class, "getAllBuildingNames"]);
+        });
+
+        /**
+         * Rooms API
+         */
+        Route::prefix('rooms')->group(function () {
+            Route::get('/search', [RoomsController::class, 'index']);
+            Route::get('{id}', [RoomsController::class, 'show']);
+            Route::get('building/{buildingId}', [RoomsController::class, 'getRoomNamesByBuildingId']);
+            Route::post('store', [RoomsController::class, 'store']);
+            Route::put('{id}', [RoomsController::class, 'update']);
+            Route::delete('{id}', [RoomsController::class, 'destroy']);
+        });
+
+        /**
+         * Cloudinary API
+         */
+        Route::prefix('cloudinary')->group(function () {
+            Route::post('/upload-image', [CloudinaryController::class, 'uploadImage']);
+            Route::post('/upload-multiple-images', [CloudinaryController::class, 'uploadMultipleImages']);
+            Route::delete('/delete-image', [CloudinaryController::class, 'deleteImage']);
+        });
+
+        /**
+         * Building Images API
+         */
+        Route::prefix('building-images')->group(function () {
+            Route::get('building/{buildingId}', [BuildingImageController::class, 'getByBuildingId']);
+            Route::get('{id}', [BuildingImageController::class, 'show'])->whereNumber('id');
+            Route::post('/', [BuildingImageController::class, 'store']);
+            Route::put('{id}', [BuildingImageController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [BuildingImageController::class, 'destroy'])->whereNumber('id');
+            Route::put('/sort/{buildingId}', [BuildingImageController::class, 'sort'])->whereNumber('buildingId');
+        });
+
+        /**
+         * Room Images API
+         */
+        Route::prefix('room-images')->group(function () {
+            Route::get('room/{roomId}', [RoomImageController::class, 'getByRoomId']);
+            Route::get('{id}', [RoomImageController::class, 'show'])->whereNumber('id');
+            Route::post('/', [RoomImageController::class, 'store']);
+            Route::put('/update-type', [RoomImageController::class, 'updateType']);
+            Route::put('{roomId}/update-sort/{imageIdA}/{imageIdB}', [RoomImageController::class, 'updateSort'])
+                ->whereNumber('roomId');
+            Route::delete('/', [RoomImageController::class, 'destroy']);
+        });
+
+        /**
+         * Amenities API - List only
+         */
+        Route::prefix('amenities')->group(function () {
+            Route::get('/', [AmenityController::class, 'index']);
+            Route::get('/all', [AmenityController::class, 'getAllAmenities']);
+            Route::get('{id}', [AmenityController::class, 'show']);
+        });
+
+        /**
+         * Price package API
+         */
+        Route::prefix('price-packages')->group(function () {
+            Route::get('/', [PricePackageController::class, 'index']);
+            Route::get('room/{roomId}', [PricePackageController::class, 'getByRoomId']);
+        });
+
+        /**
+         * Bookings API
+         */
+        Route::prefix('bookings')->group(function () {
+            Route::get('/', [BookingController::class, 'index']);
+            Route::post('/', [BookingController::class, 'store']);
+            Route::get('{id}', [BookingController::class, 'show'])->whereNumber('id');
+            Route::put('{id}', [BookingController::class, 'update'])->whereNumber('id');
+            Route::put('{id}/cancel', [BookingController::class, 'cancel'])->whereNumber('id');
+            Route::put('{id}/confirm', [BookingController::class, 'confirmBooking'])->whereNumber('id');
+        });
+
+        /**
+         * Room Maintenances API
+         */
+        Route::prefix('room-maintenances')->group(function () {
+            Route::get('/', [RoomMaintenanceController::class, 'index']);
+            Route::post('/', [RoomMaintenanceController::class, 'store']);
+        });
+
+        /**
+         * Coupons API
+         */
+        Route::prefix('coupons')->group(function () {
+            Route::get('/', [CouponController::class, 'index']);
+            Route::post('create', [CouponController::class, 'store']);
+            Route::put('update/{id}', [CouponController::class, 'update']);
+            Route::delete('delete/{id}', [CouponController::class, 'destroy']);
+        });
+
+        /**
+         * Dashboard API
+         */
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/system-building', [DashboardController::class, 'getSystemBuilding']);
+            Route::get('/system-room', [DashboardController::class, 'getSystemRoom']);
+            Route::get('/bookings-per-month', [DashboardController::class, 'bookingsPerMonth']);
+            Route::get('/revenue-per-month', [DashboardController::class, 'revenuePerMonth']);
+            Route::get('/buildings-bookings-count', [DashboardController::class, 'getAllBuildingsBookingsCount']);
+        });
+
+        /**
+         * News API
+         */
+        Route::prefix('news')->group(function () {
+            Route::get('', [NewsController::class, 'index']);
+            Route::get('{id}', [NewsController::class, 'show'])->whereNumber('id');
+            Route::post('', [NewsController::class, 'store']);
+            Route::put('{id}', [NewsController::class, 'update'])->whereNumber('id');
             Route::delete('{id}', [NewsController::class, 'destroy'])->whereNumber('id');
         });
     });

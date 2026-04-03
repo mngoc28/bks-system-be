@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 class UserReportService
 {
     public function __construct(
-        private readonly UserReportRepositoryInterface $userReportRepository
+        private UserReportRepositoryInterface $userReportRepository
     ) {
     }
 

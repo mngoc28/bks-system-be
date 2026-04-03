@@ -17,8 +17,8 @@ final class NewsController extends Controller
      * @param NewsValidation $newsValidation
      */
     public function __construct(
-        private readonly NewsService $newsService,
-        private readonly NewsValidation $newsValidation
+        private NewsService $newsService,
+        private NewsValidation $newsValidation
     ) {
     }
 

@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Auth;
 final class ChatbotController extends Controller
 {
     public function __construct(
-        private readonly ChatbotService $chatbotService,
-        private readonly ChatbotValidation $chatbotValidation
+        private ChatbotService $chatbotService,
+        private ChatbotValidation $chatbotValidation
     ) {
     }
 

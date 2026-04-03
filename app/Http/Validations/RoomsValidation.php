@@ -203,7 +203,7 @@ final class RoomsValidation
                 'prices.*.unit_price.numeric'  => trans('room.validation.prices.unit_price.numeric'),
                 'prices.*.unit_price.min'      => trans('room.validation.prices.unit_price.min'),
             ],
-            customAttributes: [
+            [
                 'building_id' => __('room.attributes.building_id'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),

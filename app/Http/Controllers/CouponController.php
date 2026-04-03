@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 class CouponController extends Controller
 {
     public function __construct(
-        private readonly CouponService $couponService,
-        private readonly CouponValidation $couponValidation
+        private CouponService $couponService,
+        private CouponValidation $couponValidation
     ) {
     }
 

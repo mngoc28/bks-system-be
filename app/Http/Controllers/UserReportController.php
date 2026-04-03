@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 class UserReportController extends Controller
 {
     public function __construct(
-        private readonly UserReportService $userReportService,
-        private readonly UserReportValidation $userReportValidation
+        private UserReportService $userReportService,
+        private UserReportValidation $userReportValidation
     ) {
     }
 
