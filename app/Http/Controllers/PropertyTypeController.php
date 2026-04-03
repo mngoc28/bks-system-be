@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 class PropertyTypeController extends Controller
 {
     public function __construct(
-        private readonly PropertyTypeService $propertyTypeService,
-        private readonly PropertyTypeValidation $propertyTypeValidation
+        private PropertyTypeService $propertyTypeService,
+        private PropertyTypeValidation $propertyTypeValidation
     ) {
     }
 

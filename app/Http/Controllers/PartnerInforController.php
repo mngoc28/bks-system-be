@@ -20,7 +20,7 @@ final class PartnerInforController extends Controller
 
     /**
      * Contruct method
-     * @param PartnerInforSevices $partnerInforSevice
+     * @param PartnerInforServices $partnerInforServices
      * @param PartnerInforValidation $partnerInforValidation
      */
     public function __construct(
@@ -102,5 +102,26 @@ final class PartnerInforController extends Controller
         }
 
         return $this->successResponse($result["data"], $result["message"]);
+    }
+
+    /**
+     * Get current authenticated partner information
+     *
+     * @return JsonResponse
+     */
+    public function showSelf(): JsonResponse
+    {
+        return $this->show((int) auth()->id());
+    }
+
+    /**
+     * Update current authenticated partner information
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateSelf(Request $request): JsonResponse
+    {
+        return $this->update($request, (int) auth()->id());
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class PropertyTypeService
 {
     public function __construct(
-        private readonly PropertyTypeRepositoryInterface $propertyTypeRepository
+        private PropertyTypeRepositoryInterface $propertyTypeRepository
     ) {
     }
 

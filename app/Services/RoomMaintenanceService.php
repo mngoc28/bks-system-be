@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class RoomMaintenanceService
 {
-    public function __construct(private readonly RoomMaintenanceRepositoryInterface $roomMaintenanceRepository)
+    public function __construct(private RoomMaintenanceRepositoryInterface $roomMaintenanceRepository)
     {
     }
 

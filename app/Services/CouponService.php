@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class CouponService
 {
-    public function __construct(private readonly CouponRepositoryInterface $couponRepository)
+    public function __construct(private CouponRepositoryInterface $couponRepository)
     {
     }
 

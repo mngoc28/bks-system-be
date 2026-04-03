@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\DB;
 class ChatbotService
 {
     public function __construct(
-        private readonly ChatbotQuestionRepositoryInterface $questionRepository,
-        private readonly ChatbotAnswerRepositoryInterface $answerRepository
+        private ChatbotQuestionRepositoryInterface $questionRepository,
+        private ChatbotAnswerRepositoryInterface $answerRepository
     ) {
     }
 
