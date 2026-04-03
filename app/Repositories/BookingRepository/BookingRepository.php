@@ -340,4 +340,182 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 'revenue' => (float) ($b->revenue ?? 0),
             ]);
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get bookings for a specific partner
+     *
+     * @param int $partnerId
+     * @param mixed $request
+     * @return LengthAwarePaginator
+     */
+    public function getBookingsForPartner(int $partnerId, $request): LengthAwarePaginator
+    {
+        $query = $this->model->select(
+            'bookings.id',
+            'users.name as user_name',
+            'rooms.room_number as room_name',
+            'buildings.name as building_name',
+            'bookings.start_date',
+            'bookings.end_date',
+            'room_prices.price',
+            'bookings.status as booking_status',
+            'partner.name as partner_name',
+            'bookings.created_at',
+        );
+
+        $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->leftJoin('users as partner', 'buildings.user_id', '=', 'partner.id')
+            ->where('buildings.user_id', $partnerId);
+
+        if ($request->filled('status')) {
+            $query->where('bookings.status', $request->status);
+        }
+
+        $query->orderBy('bookings.id', 'desc');
+
+        $page    = $request->input('page', config('const.DEFAULT_PAGE'));
+        $perPage = $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * Get bookings per month for a specific partner
+     *
+     * @param int $partnerId
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection
+     */
+    public function getBookingsPerMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection
+    {
+        $query = $this->model
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.user_id', $partnerId)
+            ->where('bookings.status', '!=', BookingStatus::CANCELLED->value);
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('bookings.start_date', [$startDate, $endDate]);
+        }
+
+        return $query
+            ->select(
+                DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m") as month'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->orderBy('month')
+            ->get()
+            ->map(fn($b) => [
+                'month' => $b->month,
+                'total' => (int) $b->total,
+            ]);
+    }
+
+    /**
+     * Get bookings grouped by building for a specific partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getBookingsByBuildingForPartner(int $partnerId): Collection
+    {
+        return $this->model
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->select(
+                'buildings.id as building_id',
+                'buildings.name as building_name',
+                DB::raw('COUNT(*) as total')
+            )
+            ->where('buildings.user_id', $partnerId)
+            ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
+            ->groupBy('buildings.id', 'buildings.name')
+            ->get()
+            ->map(fn($b) => [
+                'building_id'   => $b->building_id,
+                'building_name' => $b->building_name,
+                'total'         => (int) $b->total,
+            ]);
+    }
+
+    /**
+     * Get revenue by month for a specific partner
+     *
+     * @param int $partnerId
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection
+     */
+    public function getRevenueByMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection
+    {
+        $query = $this->model
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
+            ->where('buildings.user_id', $partnerId)
+            ->whereIn('bookings.status', [BookingStatus::CONFIRMED->value, BookingStatus::COMPLETED->value]);
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('bookings.start_date', [$startDate, $endDate]);
+        }
+
+        return $query
+            ->select(
+                DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m") as month'),
+                DB::raw("
+                   SUM(
+                    CASE
+                        WHEN room_prices.unit = 'day' THEN
+                            room_prices.price * (DATEDIFF(COALESCE(bookings.end_date, bookings.start_date),
+                            bookings.start_date) + 1)
+                        when room_prices.unit = 'month' THEN
+                            room_prices.price * (DATEDIFF(COALESCE(bookings.end_date, bookings.start_date),
+                            bookings.start_date) + 1)/30
+                        ELSE 0
+                    END
+                   ) as revenue
+                ")
+            )
+            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->orderBy('month')
+            ->get()
+            ->map(fn($b) => [
+                'month'   => $b->month,
+                'revenue' => (float) ($b->revenue ?? 0),
+            ]);
+    }
+    /**
+     * Get pending bookings for a specific partner
+     *
+     * @param int $partnerId
+     * @param int $limit
+     * @return Collection
+     */
+    public function getPendingBookingsForPartner(int $partnerId, int $limit = 5): Collection
+    {
+        return $this->model->select(
+            'bookings.id',
+            'users.name as customerName',
+            'rooms.room_number as roomName',
+            'bookings.start_date as checkInDate',
+            'bookings.status'
+        )
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->where('buildings.user_id', $partnerId)
+            ->where('bookings.status', BookingStatus::PENDING->value)
+            ->orderBy('bookings.created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
 }

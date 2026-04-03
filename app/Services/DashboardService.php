@@ -9,6 +9,7 @@ use App\Enums\Status;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Repositories\BuildingRepository\BuildingsRepositoryInterface;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
+use App\Repositories\RoomMaintenanceRepository\RoomMaintenanceRepositoryInterface;
 use App\Repositories\ServiceRepository\ServiceRepositoryInterface;
 use App\Repositories\UsersRepository\UsersRepositoryInterface;
 use Exception;
@@ -21,19 +22,22 @@ final class DashboardService
     protected BuildingsRepositoryInterface $buildingsRepository;
     protected ServiceRepositoryInterface $serviceRepository;
     protected UsersRepositoryInterface $usersRepository;
+    protected RoomMaintenanceRepositoryInterface $roomMaintenanceRepository;
 
     public function __construct(
         RoomsRepositoryInterface $roomsRepository,
         BookingRepositoryInterface $bookingRepository,
         BuildingsRepositoryInterface $buildingsRepository,
         ServiceRepositoryInterface $serviceRepository,
-        UsersRepositoryInterface $usersRepository
+        UsersRepositoryInterface $usersRepository,
+        RoomMaintenanceRepositoryInterface $roomMaintenanceRepository
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->bookingRepository = $bookingRepository;
         $this->buildingsRepository = $buildingsRepository;
         $this->serviceRepository = $serviceRepository;
         $this->usersRepository = $usersRepository;
+        $this->roomMaintenanceRepository = $roomMaintenanceRepository;
     }
 
     /**
@@ -334,6 +338,328 @@ final class DashboardService
                 "message" => __(
                     "dashboard.messages.all_buildings_bookings_count_fetch_failed"
                 ),
+            ];
+        }
+    }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get buildings count for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getSystemBuildingForPartner(int $partnerId): array
+    {
+        try {
+            $totalBuildings = $this->buildingsRepository->countRecord([
+                'user_id' => $partnerId
+            ]);
+            return [
+                "success" => true,
+                "data" => [
+                    "totalBuildings" => $totalBuildings,
+                ],
+                "message" => __("dashboard.messages.stats_fetched_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get system building fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.stats_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get rooms count for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getSystemRoomForPartner(int $partnerId): array
+    {
+        try {
+            $totalRooms = $this->roomsRepository->countRoomsForPartner($partnerId);
+            $totalPrivateRooms = $this->roomsRepository->countRoomsForPartner($partnerId, [
+                "rooms.status" => RoomStatus::PRIVATE,
+            ]);
+            $totalPublicRooms = $this->roomsRepository->countRoomsForPartner($partnerId, [
+                "rooms.status" => RoomStatus::PUBLIC,
+            ]);
+            $totalAvailableRooms = $this->roomsRepository->getEmptyRoomsForPartner($partnerId);
+            return [
+                "success" => true,
+                "data" => [
+                    "totalRooms" => $totalRooms,
+                    "totalPrivateRooms" => $totalPrivateRooms,
+                    "totalPublicRooms" => $totalPublicRooms,
+                    "totalAvailableRooms" => $totalAvailableRooms,
+                ],
+                "message" => __("dashboard.messages.stats_fetched_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get system room fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.stats_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get bookings per month for partner
+     *
+     * @param int $partnerId
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getBookingsPerMonthForPartner(int $partnerId, $request): array
+    {
+        try {
+            $startDate = $request->input("start_date", now()->startOfYear()->format("Y-m-d"));
+            $endDate = $request->input("end_date", now()->endOfMonth()->format("Y-m-d"));
+
+            $bookingsPerMonth = $this->bookingRepository->getBookingsPerMonthForPartner(
+                $partnerId,
+                $startDate,
+                $endDate
+            );
+
+            return [
+                "success" => true,
+                "data" => [
+                    "bookingsPerMonth" => $bookingsPerMonth,
+                    "dateRange" => [
+                        "startDate" => $startDate,
+                        "endDate" => $endDate,
+                    ],
+                ],
+                "message" => __("dashboard.messages.bookings_per_month_fetched"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Partner get bookings per month fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.bookings_per_month_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get revenue per month for partner
+     *
+     * @param int $partnerId
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getRevenuePerMonthForPartner(int $partnerId, $request): array
+    {
+        try {
+            $startDate = $request->input("start_date", now()->startOfYear()->format("Y-m-d"));
+            $endDate = $request->input("end_date", now()->endOfMonth()->format("Y-m-d"));
+
+            $revenueByMonth = $this->bookingRepository->getRevenueByMonthForPartner(
+                $partnerId,
+                $startDate,
+                $endDate
+            );
+
+            $totalRevenue = $revenueByMonth->sum("revenue");
+
+            return [
+                "success" => true,
+                "data" => [
+                    "revenueByMonth" => $revenueByMonth,
+                    "totalRevenue" => (float) $totalRevenue,
+                    "dateRange" => [
+                        "startDate" => $startDate,
+                        "endDate" => $endDate,
+                    ],
+                ],
+                "message" => __("dashboard.messages.revenue_per_month_fetched"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Partner get revenue per month fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.revenue_per_month_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get bookings count by building for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getAllBuildingsBookingsCountForPartner(int $partnerId): array
+    {
+        try {
+            $bookingsByBuilding = $this->bookingRepository->getBookingsByBuildingForPartner($partnerId);
+
+            return [
+                "success" => true,
+                "data" => $bookingsByBuilding,
+                "message" => __("dashboard.messages.all_buildings_bookings_count_fetched"),
+            ];
+        } catch (\Exception $e) {
+            Log::error("Partner get buildings bookings count fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.all_buildings_bookings_count_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get dashboard stats for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getStatsForPartner(int $partnerId): array
+    {
+        try {
+            $totalBuildings = $this->buildingsRepository->countRecord(['user_id' => $partnerId]);
+            $totalRooms = $this->roomsRepository->countRoomsForPartner($partnerId);
+            $vacantRooms = $this->roomsRepository->getEmptyRoomsForPartner($partnerId);
+
+            $occupancyRate = $totalRooms > 0 ? round((($totalRooms - $vacantRooms) / $totalRooms) * 100, 1) : 0;
+
+            $currentMonthStart = now()->startOfMonth()->format('Y-m-d');
+            $currentMonthEnd = now()->endOfMonth()->format('Y-m-d');
+
+            $revenueData = $this->bookingRepository->getRevenueByMonthForPartner(
+                $partnerId,
+                $currentMonthStart,
+                $currentMonthEnd
+            );
+
+            $estimatedRevenue = $revenueData->sum('revenue');
+
+            return [
+                "success" => true,
+                "data" => [
+                    "totalBuildings" => (int) $totalBuildings,
+                    "totalRooms" => (int) $totalRooms,
+                    "vacantRooms" => (int) $vacantRooms,
+                    "occupancyRate" => (float) $occupancyRate,
+                    "estimatedRevenue" => (float) $estimatedRevenue,
+                ],
+                "message" => __("dashboard.messages.stats_fetched_successfully"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get dashboard stats fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.stats_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get pending bookings for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getPendingBookingsForPartner(int $partnerId): array
+    {
+        try {
+            $bookings = $this->bookingRepository->getPendingBookingsForPartner($partnerId);
+
+            return [
+                "success" => true,
+                "data" => $bookings,
+                "message" => __("dashboard.messages.pending_bookings_fetched"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get pending bookings fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.pending_bookings_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get urgent maintenances for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getUrgentMaintenancesForPartner(int $partnerId): array
+    {
+        try {
+            $maintenances = $this->roomMaintenanceRepository->getUrgentMaintenancesForPartner($partnerId);
+
+            return [
+                "success" => true,
+                "data" => $maintenances,
+                "message" => __("dashboard.messages.urgent_maintenances_fetched"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get urgent maintenances fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.urgent_maintenances_fetch_failed"),
+            ];
+        }
+    }
+
+    /**
+     * Get revenue analytics for partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getRevenueAnalyticsForPartner(int $partnerId): array
+    {
+        try {
+            $startDate = now()->subMonths(5)->startOfMonth()->format('Y-m-d');
+            $endDate = now()->endOfMonth()->format('Y-m-d');
+
+            $revenueByMonth = $this->bookingRepository->getRevenueByMonthForPartner(
+                $partnerId,
+                $startDate,
+                $endDate
+            );
+
+            $analytics = $revenueByMonth->map(function ($item) {
+                $revenue = (float) $item['revenue'];
+                $commission = $revenue * 0.05; // 5% commission as per example
+                return [
+                    "month" => $item['month'],
+                    "revenue" => $revenue,
+                    "commission" => (float) $commission,
+                    "netIncome" => $revenue - $commission,
+                ];
+            });
+
+            return [
+                "success" => true,
+                "data" => $analytics,
+                "message" => __("dashboard.messages.revenue_analytics_fetched"),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get revenue analytics fail: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("dashboard.messages.revenue_analytics_fetch_failed"),
             ];
         }
     }

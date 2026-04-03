@@ -25,6 +25,10 @@ use App\Http\Controllers\EU\PartnerController;
 use App\Http\Controllers\EU\RoomController as EURoomsController;
 use App\Http\Controllers\NewRoomController;
 use App\Http\Controllers\PropertyTypeController;
+use App\Http\Controllers\Partner\PartnerBuildingController;
+use App\Http\Controllers\Partner\PartnerRoomController;
+use App\Http\Controllers\Partner\PartnerBookingController;
+use App\Http\Controllers\Partner\PartnerDashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -334,6 +338,17 @@ Route::group([
      * ============================================
      * Base URL: /api/v1/partner/
      */
+
+    /**
+     * Auth API - Public
+     */
+    Route::prefix('partner/auth')->group(function () {
+        Route::post('login', [AuthController::class, 'login']);
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('send-mail-reset-password', [AuthController::class, 'sendMailResetPassword']);
+        Route::post('reset-password/{token}', [AuthController::class, 'setPassword']);
+    });
+
     Route::middleware(['jwt.auth', 'role:partner'])->prefix('partner')->group(function () {
         /**
          * Auth API - Authenticated
@@ -377,22 +392,22 @@ Route::group([
          * Buildings API
          */
         Route::prefix("buildings")->group(function () {
-            Route::get("searchAll", [BuildingsController::class, "index"]);
+            Route::get("searchAll", [PartnerBuildingController::class, "index"]);
             Route::get("types", [BuildingsController::class, "getAllBuildingsTypes"]);
             Route::get("bookings/{id}", [BuildingsController::class, "getBookingsByBuilding"])->whereNumber("id");
-            Route::get("{id}", [BuildingsController::class, "show"])->whereNumber("id");
+            Route::get("{id}", [PartnerBuildingController::class, "show"])->whereNumber("id");
             Route::post("", [BuildingsController::class, "store"]);
             Route::put("{id}", [BuildingsController::class, "update"])->whereNumber("id");
             Route::delete("{id}", [BuildingsController::class, "destroy"])->whereNumber("id");
-            Route::get("all", [BuildingsController::class, "getAllBuildingNames"]);
+            Route::get("all", [PartnerBuildingController::class, "getBuildingNames"]);
         });
 
         /**
          * Rooms API
          */
         Route::prefix('rooms')->group(function () {
-            Route::get('/search', [RoomsController::class, 'index']);
-            Route::get('{id}', [RoomsController::class, 'show']);
+            Route::get('/search', [PartnerRoomController::class, 'index']);
+            Route::get('{id}', [PartnerRoomController::class, 'show']);
             Route::get('building/{buildingId}', [RoomsController::class, 'getRoomNamesByBuildingId']);
             Route::post('store', [RoomsController::class, 'store']);
             Route::put('{id}', [RoomsController::class, 'update']);
@@ -454,7 +469,7 @@ Route::group([
          * Bookings API
          */
         Route::prefix('bookings')->group(function () {
-            Route::get('/', [BookingController::class, 'index']);
+            Route::get('/', [PartnerBookingController::class, 'index']);
             Route::post('/', [BookingController::class, 'store']);
             Route::get('{id}', [BookingController::class, 'show'])->whereNumber('id');
             Route::put('{id}', [BookingController::class, 'update'])->whereNumber('id');
@@ -484,11 +499,15 @@ Route::group([
          * Dashboard API
          */
         Route::prefix('dashboard')->group(function () {
-            Route::get('/system-building', [DashboardController::class, 'getSystemBuilding']);
-            Route::get('/system-room', [DashboardController::class, 'getSystemRoom']);
-            Route::get('/bookings-per-month', [DashboardController::class, 'bookingsPerMonth']);
-            Route::get('/revenue-per-month', [DashboardController::class, 'revenuePerMonth']);
-            Route::get('/buildings-bookings-count', [DashboardController::class, 'getAllBuildingsBookingsCount']);
+            Route::get('/system-building', [PartnerDashboardController::class, 'getSystemBuilding']);
+            Route::get('/system-room', [PartnerDashboardController::class, 'getSystemRoom']);
+            Route::get('/bookings-per-month', [PartnerDashboardController::class, 'bookingsPerMonth']);
+            Route::get('/revenue-per-month', [PartnerDashboardController::class, 'revenuePerMonth']);
+            Route::get('/buildings-bookings-count', [PartnerDashboardController::class, 'getAllBuildingsBookingsCount']);
+            Route::get('/stats', [PartnerDashboardController::class, 'getStats']);
+            Route::get('/pending-bookings', [PartnerDashboardController::class, 'getPendingBookings']);
+            Route::get('/urgent-maintenances', [PartnerDashboardController::class, 'getUrgentMaintenances']);
+            Route::get('/revenue-analytics', [PartnerDashboardController::class, 'getRevenueAnalytics']);
         });
 
         /**

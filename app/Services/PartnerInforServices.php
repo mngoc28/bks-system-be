@@ -285,4 +285,69 @@ class PartnerInforServices
             ];
         }
     }
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get profile for partner
+     *
+     * @return array
+     */
+    public function handleGetProfileForPartner(): array
+    {
+        try {
+            $userId = Auth::id();
+            $partner = $this->partnerInforRepository->getPartnerByUserId($userId);
+            if (!$partner) {
+                return [
+                    "success" => false,
+                    "data" => null,
+                    "message" => __("partner.messages.not_found"),
+                ];
+            }
+            return [
+                "success" => true,
+                "data" => $partner,
+                "message" => __("partner.messages.get_detail_success")
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get profile failed: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("partner.messages.find_error"),
+            ];
+        }
+    }
+
+    /**
+     * Update profile for partner
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function handleUpdateProfileForPartner(Request $request): array
+    {
+        try {
+            $userId = Auth::id();
+            $partner = $this->partnerInforRepository->getPartnerByUserId($userId);
+            if (!$partner) {
+                return [
+                    "success" => false,
+                    "data" => null,
+                    "message" => __("partner.messages.not_found"),
+                ];
+            }
+            return $this->updatePartnerInfor($request, $partner->id);
+        } catch (Exception $e) {
+            Log::error("Partner update profile failed: " . $e->getMessage());
+            return [
+                "success" => false,
+                "data" => null,
+                "message" => __("partner.messages.update_error"),
+            ];
+        }
+    }
 }

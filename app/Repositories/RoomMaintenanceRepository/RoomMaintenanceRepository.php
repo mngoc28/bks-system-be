@@ -8,6 +8,9 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
+use App\Enums\BookingStatus;
+use Illuminate\Support\Facades\DB;
+
 class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanceRepositoryInterface
 {
     /**
@@ -64,5 +67,41 @@ class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanc
         }
 
         return $query->get();
+    }
+
+    /**
+     * Get urgent maintenance requests for a specific partner
+     *
+     * @param int $partnerId
+     * @param int $limit
+     * @return \Illuminate\Support\Collection
+     */
+    public function getUrgentMaintenancesForPartner(int $partnerId, int $limit = 5)
+    {
+        $today = Carbon::now()->toDateString();
+
+        return $this->model->select(
+            'room_maintenances.id',
+            'users.name as customerName',
+            'rooms.room_number as roomName',
+            'room_maintenances.title as issueDescription',
+            'room_maintenances.status',
+            'room_maintenances.created_at as createdAt'
+        )
+            ->join('rooms', 'room_maintenances.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            // Join with current active booking to get customer name
+            ->leftJoin('bookings', function ($join) use ($today) {
+                $join->on('rooms.id', '=', 'bookings.room_id')
+                    ->whereIn('bookings.status', [BookingStatus::CONFIRMED->value, BookingStatus::COMPLETED->value])
+                    ->where('bookings.start_date', '<=', $today)
+                    ->where('bookings.end_date', '>=', $today);
+            })
+            ->leftJoin('users', 'bookings.user_id', '=', 'users.id')
+            ->where('buildings.user_id', $partnerId)
+            ->whereIn('room_maintenances.status', ['planned', 'in_progress'])
+            ->orderBy('room_maintenances.created_at', 'desc')
+            ->limit($limit)
+            ->get();
     }
 }

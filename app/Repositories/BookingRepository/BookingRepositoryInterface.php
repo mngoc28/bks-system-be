@@ -83,4 +83,54 @@ interface BookingRepositoryInterface extends RepositoryInterface
      * @return Collection
      */
     public function getRevenueByMonth(string $startDate, string $endDate): Collection;
+
+    // =========================================================================
+    // PARTNER METHODS
+    // =========================================================================
+
+    /**
+     * Get bookings for a specific partner
+     *
+     * @param int $partnerId
+     * @param mixed $request
+     * @return LengthAwarePaginator
+     */
+    public function getBookingsForPartner(int $partnerId, $request): LengthAwarePaginator;
+
+    /**
+     * Get bookings per month for a specific partner
+     *
+     * @param int $partnerId
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection
+     */
+    public function getBookingsPerMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection;
+
+    /**
+     * Get bookings grouped by building for a specific partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getBookingsByBuildingForPartner(int $partnerId): Collection;
+
+    /**
+     * Get revenue by month for a specific partner
+     *
+     * @param int $partnerId
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection
+     */
+    public function getRevenueByMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection;
+
+    /**
+     * Get pending bookings for a specific partner
+     *
+     * @param int $partnerId
+     * @param int $limit
+     * @return Collection
+     */
+    public function getPendingBookingsForPartner(int $partnerId, int $limit = 5): Collection;
 }
