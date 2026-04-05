@@ -13,8 +13,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
-final class BuildingsRepository extends BaseRepository implements
-    BuildingsRepositoryInterface
+/**
+ * Class BuildingsRepository
+ *
+ * @package App\Repositories\BuildingRepository
+ */
+final class BuildingsRepository extends BaseRepository implements BuildingsRepositoryInterface
 {
     /**
      * Get the model class name
@@ -128,9 +132,10 @@ final class BuildingsRepository extends BaseRepository implements
     }
 
     /**
-     * Get building by id
+     * Get building details by ID
+     *
      * @param int $id
-     * @return object | null
+     * @return object|null
      */
     public function getBuildingById(int $id): object | null
     {

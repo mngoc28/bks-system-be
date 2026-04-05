@@ -1,14 +1,19 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\PropertyTypeRepository;
 
 use App\Models\PropertyType;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class PropertyTypeRepository
+ *
+ * @package App\Repositories\PropertyTypeRepository
+ */
 class PropertyTypeRepository extends BaseRepository implements PropertyTypeRepositoryInterface
 {
     /**
-     * Get model class name.
+     * Get the model class name
      *
      * @return string
      */
@@ -18,9 +23,9 @@ class PropertyTypeRepository extends BaseRepository implements PropertyTypeRepos
     }
 
     /**
-     * Retrieve property types list.
+     * Get property types list with optional pagination
      *
-     * @param array{pagination?: int|null} $filters
+     * @param array $filters
      * @return mixed
      */
     public function getList(array $filters = [])

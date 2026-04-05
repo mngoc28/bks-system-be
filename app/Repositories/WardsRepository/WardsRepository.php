@@ -1,23 +1,30 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\WardsRepository;
 
 use App\Models\Ward;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class WardsRepository
+ *
+ * @package App\Repositories\WardsRepository
+ */
 class WardsRepository extends BaseRepository implements WardsRepositoryInterface
 {
     /**
-     * get the model for the repository
-     * @return mixed
+     * Get the model class name
+     *
+     * @return string
      */
-    public function getModel(): mixed
+    public function getModel(): string
     {
         return Ward::class;
     }
 
     /**
-     * get ward by provinde id
+     * Get wards by province ID
+     *
      * @param int $provinceId
      * @return object
      */

@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\ServiceRepository;
 
@@ -7,20 +7,26 @@ use App\Repositories\BaseRepository;
 use App\Repositories\ServiceRepository\ServiceRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * Class ServiceRepository
+ *
+ * @package App\Repositories\ServiceRepository
+ */
 class ServiceRepository extends BaseRepository implements ServiceRepositoryInterface
 {
     /**
-     * Get the model for the repository
+     * Get the model class name
      *
-     * @return Service|mixed
+     * @return string
      */
-    public function getModel()
+    public function getModel(): string
     {
         return Service::class;
     }
     /**
      * Get all services or search by criteria with pagination
-     * @param \Illuminate\Http\Request $request
+     *
+     * @param \Illuminate\Http\Request|mixed $request
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getAllOrSearch($request): LengthAwarePaginator

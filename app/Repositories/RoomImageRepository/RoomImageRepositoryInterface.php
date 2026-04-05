@@ -7,6 +7,11 @@ namespace App\Repositories\RoomImageRepository;
 use App\Repositories\RepositoryInterface;
 use Illuminate\Support\Collection;
 
+/**
+ * Interface RoomImageRepositoryInterface
+ *
+ * @package App\Repositories\RoomImageRepository
+ */
 interface RoomImageRepositoryInterface extends RepositoryInterface
 {
     /**

@@ -1,14 +1,19 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\ChatbotAnswerRepository;
 
 use App\Models\ChatbotAnswer;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class ChatbotAnswerRepository
+ *
+ * @package App\Repositories\ChatbotAnswerRepository
+ */
 class ChatbotAnswerRepository extends BaseRepository implements ChatbotAnswerRepositoryInterface
 {
     /**
-     * Get the corresponding model class.
+     * Get the model class name
      *
      * @return string
      */

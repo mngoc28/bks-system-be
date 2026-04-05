@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\RoomMaintenanceRepository;
 
@@ -11,10 +11,15 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Enums\BookingStatus;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class RoomMaintenanceRepository
+ *
+ * @package App\Repositories\RoomMaintenanceRepository
+ */
 class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanceRepositoryInterface
 {
     /**
-     * Get the model class name.
+     * Get the model class name
      *
      * @return string
      */
@@ -24,10 +29,10 @@ class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanc
     }
 
     /**
-     * Retrieve room maintenance list with optional filters.
+     * Get room maintenance list with optional filters
      *
      * @param array $filters
-     * @return LengthAwarePaginator|\Illuminate\Support\Collection
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Support\Collection
      */
     public function getList(array $filters)
     {

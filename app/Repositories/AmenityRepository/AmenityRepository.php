@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\AmenityRepository;
 
@@ -8,6 +8,11 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Class AmenityRepository
+ *
+ * @package App\Repositories\AmenityRepository
+ */
 class AmenityRepository extends BaseRepository implements AmenityRepositoryInterface
 {
     /**
@@ -21,9 +26,10 @@ class AmenityRepository extends BaseRepository implements AmenityRepositoryInter
     }
 
     /**
-     * Summary of getAllOrSearch
-     * @param Request $request
-     * @return LengthAwarePaginator
+     * Get all amenities or search by criteria with pagination
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getAllOrSearch(Request $request): LengthAwarePaginator
     {

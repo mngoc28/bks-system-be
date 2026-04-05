@@ -1,13 +1,19 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\WardsRepository;
 
 use App\Repositories\RepositoryInterface;
 
+/**
+ * Interface WardsRepositoryInterface
+ *
+ * @package App\Repositories\WardsRepository
+ */
 interface WardsRepositoryInterface extends RepositoryInterface
 {
     /**
-     * get ward by provinde id
+     * Get wards by province ID
+     *
      * @param int $provinceId
      * @return object
      */

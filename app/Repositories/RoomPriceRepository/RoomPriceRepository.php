@@ -1,10 +1,15 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\RoomPriceRepository;
 
 use App\Models\RoomPrice;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class RoomPriceRepository
+ *
+ * @package App\Repositories\RoomPriceRepository
+ */
 class RoomPriceRepository extends BaseRepository implements RoomPriceRepositoryInterface
 {
     /**

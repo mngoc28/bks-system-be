@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class RoomsRepository
+ *
+ * @package App\Repositories\RoomsRepository
+ */
 class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
 {
     /**
@@ -28,7 +33,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     }
 
     /**
-     * get empty list in room
+     * Get count of empty rooms
+     *
      * @return int
      */
     public function getEmptyRooms(): int
@@ -137,7 +143,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     /**
      * Get room details by ID
      *
-     * @param int $id
+     * @param int|string $id
      * @return mixed
      */
     public function roomDetail($id): mixed

@@ -9,10 +9,16 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 
+/**
+ * Interface RoomsRepositoryInterface
+ *
+ * @package App\Repositories\RoomsRepository
+ */
 interface RoomsRepositoryInterface extends RepositoryInterface
 {
     /**
-     * get empty list in room
+     * Get count of empty rooms
+     *
      * @return int
      */
     public function getEmptyRooms(): int;
@@ -20,15 +26,15 @@ interface RoomsRepositoryInterface extends RepositoryInterface
     /**
      * Get all rooms or search by criteria with pagination
      *
-     * @param \Illuminate\Http\Request $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getAllOrSearchRooms($request): LengthAwarePaginator;
 
     /**
      * Get room details by ID
      *
-     * @param int $id
+     * @param int|string $id
      * @return mixed
      */
     public function roomDetail($id): mixed;
@@ -78,11 +84,11 @@ interface RoomsRepositoryInterface extends RepositoryInterface
     // =========================================================================
 
     /**
-     * Get all rooms for a specific partner
+     * Get all rooms for a specific partner with pagination
      *
      * @param int $partnerId
-     * @param mixed $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getRoomsForPartner(int $partnerId, $request): LengthAwarePaginator;
 

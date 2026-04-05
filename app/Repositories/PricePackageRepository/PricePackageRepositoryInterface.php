@@ -1,9 +1,14 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\PricePackageRepository;
 
 use App\Repositories\RepositoryInterface;
 
+/**
+ * Interface PricePackageRepositoryInterface
+ *
+ * @package App\Repositories\PricePackageRepository
+ */
 interface PricePackageRepositoryInterface extends RepositoryInterface
 {
     /**

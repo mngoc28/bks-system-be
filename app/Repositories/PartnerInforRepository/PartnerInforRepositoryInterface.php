@@ -8,13 +8,18 @@ use App\Repositories\RepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
+/**
+ * Interface PartnerInforRepositoryInterface
+ *
+ * @package App\Repositories\PartnerInforRepository
+ */
 interface PartnerInforRepositoryInterface extends RepositoryInterface
 {
     /**
-     * Get list partner information
+     * Get paginated partner information
      *
-     * @param Request $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getListPartner(Request $request): LengthAwarePaginator;
 

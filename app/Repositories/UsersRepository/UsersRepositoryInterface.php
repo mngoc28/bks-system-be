@@ -1,21 +1,28 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\UsersRepository;
 
 use App\Repositories\RepositoryInterface;
 
+/**
+ * Interface UsersRepositoryInterface
+ *
+ * @package App\Repositories\UsersRepository
+ */
 interface UsersRepositoryInterface extends RepositoryInterface
 {
     /**
-     * Summary of getAll
-     * @param \Illuminate\Http\Request $request
-     * @return ?object|null
+     * Get all users with filters and pagination
+     *
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return ?object
      */
     public function getAll($request): ?object;
 
     /**
-     * Number of users by month
-     * @param \Illuminate\Http\Request $request
+     * Count new users in current month by role
+     *
+     * @param \Illuminate\Http\Request|mixed $request
      * @param string $role
      * @return int
      */

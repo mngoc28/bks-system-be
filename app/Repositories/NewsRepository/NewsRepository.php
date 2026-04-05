@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\NewsRepository;
 
@@ -11,20 +11,28 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\Enums\Status;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * Class NewsRepository
+ *
+ * @package App\Repositories\NewsRepository
+ */
 class NewsRepository extends BaseRepository implements NewsRepositoryInterface
 {
     /**
-     * Get the model class news
+     * Get the model class name
+     *
+     * @return string
      */
-    public function getModel()
+    public function getModel(): string
     {
         return News::class;
     }
 
     /**
-     * Get all news
-     * @param Request $request
-     * @return LengthAwarePaginator
+     * Get all news with filters and pagination
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllNews(Request $request): LengthAwarePaginator
     {
@@ -86,6 +94,7 @@ class NewsRepository extends BaseRepository implements NewsRepositoryInterface
     // ====== The functions below are APIs for the end user ======
     /**
      * Get latest news for homepage
+     *
      * @param int $limit
      * @return array
      */
@@ -102,9 +111,10 @@ class NewsRepository extends BaseRepository implements NewsRepositoryInterface
     }
 
     /**
-     * Get all news for user
-     * @param Request $request
-     * @return LengthAwarePaginator
+     * Get all news for user with filters and pagination
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllNewsForUser(Request $request): LengthAwarePaginator
     {

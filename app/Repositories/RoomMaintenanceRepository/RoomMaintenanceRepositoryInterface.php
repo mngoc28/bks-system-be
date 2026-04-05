@@ -1,17 +1,16 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\RoomMaintenanceRepository;
 
 use App\Repositories\RepositoryInterface;
 
+/**
+ * Interface RoomMaintenanceRepositoryInterface
+ *
+ * @package App\Repositories\RoomMaintenanceRepository
+ */
 interface RoomMaintenanceRepositoryInterface extends RepositoryInterface
 {
-    /**
-     * Get room maintenance list with filters.
-     *
-     * @param array $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Support\Collection
-     */
     /**
      * Get urgent maintenance requests for a specific partner
      *
