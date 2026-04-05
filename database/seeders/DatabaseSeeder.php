@@ -17,6 +17,7 @@ final class DatabaseSeeder extends Seeder
             UsersTableSeeder::class,
             ProvincesTableSeeder::class,
             WardsTableSeeder::class,
+            PropertyTypesSeeder::class,
             PartnerInfoTableSeeder::class,
             AmenitiesTableSeeder::class,
             PricePackagesTableSeeder::class,
@@ -31,7 +32,6 @@ final class DatabaseSeeder extends Seeder
             RoomPricesTableSeeder::class,
             BookingsTableSeeder::class,
             ChatbotSeeder::class,
-            PropertyTypesSeeder::class,
             RoomMaintenancesSeeder::class,
         ]);
     }

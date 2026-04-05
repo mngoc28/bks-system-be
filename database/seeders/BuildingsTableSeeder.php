@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\BuildingType;
 use Carbon\Carbon;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
@@ -196,40 +195,78 @@ class BuildingsTableSeeder extends Seeder
             $wardIds = range(1, 100);
         }
 
-        $buildingTypes = [
-            BuildingType::APARTMENT_BUILDING,
-            BuildingType::BUILDING,
-            BuildingType::VILLA,
-            BuildingType::TOWNHOUSE,
-            BuildingType::SERVICED_APARTMENT,
-            BuildingType::BOARDING_HOUSE,
-            BuildingType::HOTEL,
-            BuildingType::OFFICE,
-            BuildingType::OTHER,
-            null,
+        $propertyTypes = DB::table('property_types')->get();
+        if ($propertyTypes->isEmpty()) {
+            return;
+        }
+        $propertyTypeIds = $propertyTypes->pluck('id')->toArray();
+        $rentCategories = [1, 2, 3]; // 1: whole_unit, 2: room, 3: bed
+
+        $typeNames = [
+            'khach-san-hotel' => [
+                'Khách sạn Mường Thanh Luxu', 'Sài Gòn Hotel', 'Hanoi Continental', 'Pullman Panorama', 'Rex Hotel Saigon', 
+                'Novotel Suite', 'Sofitel Legend', 'Sheraton View', 'InterContinental Lake', 'Fusion Suites'
+            ],
+            'nha-nghi-motel-guesthouse' => [
+                'Nhà nghỉ Sen Hồng', 'Nhà nghỉ Mai Vàng', 'Guesthouse Bình Yên', 'Nhà nghỉ 24h', 'Motel Hải Yến',
+                'Nhà nghỉ Cát Tường', 'Guesthouse Phố Cổ', 'Nhà nghỉ Minh Tâm', 'Nhà nghỉ Hoàn Kiếm'
+            ],
+            'can-ho-chung-cu' => [
+                'Vinhomes Central Park', 'Masteri Thảo Điền', 'Sunrise City', 'Vinhomes Ocean Park', 'Goldmark City',
+                'Landmark 81 Residence', 'The Manor', 'Ciputra Hanoi', 'The Nassim', 'Royal City'
+            ],
+            'biet-thu-villa' => [
+                'Villa Sunset Beach', 'The Hillside Villa', 'Biệt thự Gardenia', 'Villa Sunshine', 'Rose Garden Villa',
+                'Vintage Villa', 'Luxury Ocean Villa', 'The Retreat Villa', 'Green Valley Villa'
+            ],
+            'homestay' => [
+                'Mây Homestay', 'Nhà của Bu', 'Lá Đỏ Homestay', 'Homestay Cỏ May', 'The Barn Homestay',
+                'Little House', 'Rustic Homestay', 'Hidden Gem Homestay', 'Peaceful Corner'
+            ],
+            'resort-khu-nghi-duong' => [
+                'Vinpearl Resort', 'Amanoi Resort', 'InterContinental Danang', 'Six Senses Ninh Van', 'Four Seasons The Nam Hai',
+                'Pullman Beach Resort', 'Furama Resort', 'Banyan Tree Lang Co', 'Anantara Resort'
+            ],
+            'phong-tro-nha-tro' => [
+                'Nhà trọ Sinh Viên', 'Phòng trọ Hạnh Phúc', 'Nhà trọ Công Nhân', 'Phòng trọ Giá Rẻ', 'Nhà trọ 365',
+                'Phòng trọ An Bình', 'Nhà trọ Xanh', 'Phòng trọ Văn Phòng'
+            ],
+            'camping-glamping' => [
+                'Đà Lạt Glamping', 'Tanyoli Park', 'Cảnh Dương Beach Camp', 'Moosell Glamping', 'Twin Beans Farm',
+                'The Camp Chi-Lăng', 'Camping Hồ Tuyền Lâm'
+            ],
         ];
 
         foreach (range(1, 50) as $i) {
-            $name = $faker->randomElement($buildingNames);
+            $type = $faker->randomElement($propertyTypes->toArray());
+            $slug = $type->slug;
+            
+            // Pick a name based on type, fallback to generic if not defined
+            $possibleNames = $typeNames[$slug] ?? [
+                'Tòa nhà ' . $faker->company, 'Cơ sở ' . $faker->lastName, 'Vùng ' . $faker->city, 'Khu vực ' . $faker->streetName
+            ];
+            $name = $faker->randomElement($possibleNames);
+            
             $location = $faker->randomElement($addressData);
             $description = $faker->randomElement($descriptions);
 
             DB::table('buildings')->insert([
-                'user_id' => $faker->randomElement($adminPartnerIds),
-                'province_id' => $faker->randomElement($provinceIds),
-                'ward_id' => $faker->randomElement($wardIds),
-                'name' => $name,
-                'address_detail' => $location['address'],
-                'number_of_floors' => $faker->numberBetween(1, 35),
-                'number_of_units' => $faker->numberBetween(10, 500),
-                'year_built' => $faker->numberBetween(1990, 2024),
-                'building_type' => $faker->randomElement($buildingTypes),
-                'area' => $faker->randomFloat(2, 1000, 50000), // Total building area in m²
-                'description' => $description,
-                'created_by' => $faker->randomElement($adminPartnerIds),
-                'updated_by' => $faker->randomElement($adminPartnerIds),
-                'created_at' => Carbon::now()->subDays(rand(1, 30)),
-                'updated_at' => Carbon::now()->subDays(rand(1, 30)),
+                'user_id'           => $faker->randomElement($adminPartnerIds),
+                'province_id'       => $faker->randomElement($provinceIds),
+                'ward_id'           => $faker->randomElement($wardIds),
+                'name'              => $name,
+                'address_detail'    => $location['address'],
+                'number_of_floors'  => $faker->numberBetween(1, 35),
+                'number_of_units'   => $faker->numberBetween(10, 500),
+                'year_built'        => $faker->numberBetween(1990, 2024),
+                'property_type_id'  => $type->id,
+                'rent_category'     => $faker->randomElement($rentCategories),
+                'area'              => $faker->randomFloat(2, 1000, 50000),
+                'description'       => $description,
+                'created_by'        => $faker->randomElement($adminPartnerIds),
+                'updated_by'        => $faker->randomElement($adminPartnerIds),
+                'created_at'        => Carbon::now()->subDays(rand(1, 30)),
+                'updated_at'        => Carbon::now()->subDays(rand(1, 30)),
             ]);
         }
     }

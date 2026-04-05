@@ -61,7 +61,7 @@ class NewsRepository extends BaseRepository implements NewsRepositoryInterface
         $allowedSort = ['id', 'title', 'created_at', 'user_name'];
 
         $sortField = $request->input('sort_field', 'id');
-        $sortDirection = $request->input('sort_direction', 'asc');
+        $sortDirection = $request->input('sort_direction', 'desc');
 
         if (in_array($sortField, $allowedSort)) {
             if ($sortField === 'user_name') {
@@ -125,8 +125,8 @@ class NewsRepository extends BaseRepository implements NewsRepositoryInterface
             $sortField = 'id';
         }
 
-        $sortDirection = $request->input('sort_direction', 'asc');
-        $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'asc';
+        $sortDirection = $request->input('sort_direction', 'desc');
+        $sortDirection = in_array($sortDirection, ['asc', 'desc']) ? $sortDirection : 'desc';
 
         $this->query->orderBy("news.$sortField", $sortDirection);
         // Pagination

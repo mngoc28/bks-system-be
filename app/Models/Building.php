@@ -33,12 +33,14 @@ final class Building extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        "number_of_floors" => "integer",
-        "number_of_units" => "integer",
-        "year_built" => "integer",
-        "area" => "decimal:2",
-        "created_at" => "datetime",
-        "updated_at" => "datetime",
+        "number_of_floors"  => "integer",
+        "number_of_units"   => "integer",
+        "year_built"        => "integer",
+        "property_type_id"  => "integer",
+        "rent_category"     => "integer",
+        "area"              => "decimal:2",
+        "created_at"        => "datetime",
+        "updated_at"        => "datetime",
     ];
 
     /**
@@ -49,6 +51,16 @@ final class Building extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, "user_id");
+    }
+
+    /**
+     * Get the property type for this building.
+     *
+     * @return BelongsTo
+     */
+    public function propertyType(): BelongsTo
+    {
+        return $this->belongsTo(PropertyType::class, "property_type_id");
     }
 
     /**

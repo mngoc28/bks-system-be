@@ -75,7 +75,7 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
             $query->orderBy($sortField, $sortDirection);
         } else {
             // Default sorting
-            $query->orderBy('id', 'asc');
+            $query->orderBy('id', 'desc');
         }
 
         $perPage = (int) ($request->filled("per_page") ?

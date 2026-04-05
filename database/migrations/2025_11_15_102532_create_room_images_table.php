@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('room_id');
             $table->string('image_url', 255);
+            $table->string('id_image_cloudinary', 255)->nullable();
             $table->integer('image_type')->default(0)->comment('0: other, 1: exterior, 2: interior, 3: bathroom, 4: kitchen');
             $table->tinyInteger('sort')->unsigned()->default(0);
             $table->unsignedBigInteger('created_by')->nullable();

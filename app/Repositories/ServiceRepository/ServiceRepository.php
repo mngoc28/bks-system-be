@@ -48,7 +48,7 @@ class ServiceRepository extends BaseRepository implements ServiceRepositoryInter
         ) {
             $query->orderBy($sortField, $sortDirection);
         } else {
-            $query->orderBy('id', 'asc');
+            $query->orderBy('id', 'desc');
         }
 
         // Pagination parameters
