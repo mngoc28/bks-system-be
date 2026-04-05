@@ -9,6 +9,11 @@ use App\Repositories\BaseRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class BuildingImageRepository
+ *
+ * @package App\Repositories\BuildingImageRepository
+ */
 final class BuildingImageRepository extends BaseRepository implements BuildingImageRepositoryInterface
 {
     /**

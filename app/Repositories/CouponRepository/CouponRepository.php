@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\CouponRepository;
 
@@ -6,13 +6,29 @@ use App\Models\Coupon;
 use App\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
+/**
+ * Class CouponRepository
+ *
+ * @package App\Repositories\CouponRepository
+ */
 class CouponRepository extends BaseRepository implements CouponRepositoryInterface
 {
+    /**
+     * Get the model class name
+     *
+     * @return string
+     */
     public function getModel(): string
     {
         return Coupon::class;
     }
 
+    /**
+     * Get paginated coupons with filters
+     *
+     * @param array $filters
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
     public function paginateWithFilters(array $filters): LengthAwarePaginator
     {
         $query = $this->model->newQuery();

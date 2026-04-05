@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\ChatbotQuestionRepository;
 
@@ -7,10 +7,15 @@ use App\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
+/**
+ * Class ChatbotQuestionRepository
+ *
+ * @package App\Repositories\ChatbotQuestionRepository
+ */
 class ChatbotQuestionRepository extends BaseRepository implements ChatbotQuestionRepositoryInterface
 {
     /**
-     * Get the corresponding model class.
+     * Get the model class name
      *
      * @return string
      */
@@ -20,10 +25,10 @@ class ChatbotQuestionRepository extends BaseRepository implements ChatbotQuestio
     }
 
     /**
-     * Retrieve chatbot questions with aggregated answer information.
+     * Retrieve chatbot questions with aggregated answer information
      *
-     * @param Request $request
-     * @return LengthAwarePaginator|\Illuminate\Support\Collection
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Support\Collection
      */
     public function getList(Request $request)
     {

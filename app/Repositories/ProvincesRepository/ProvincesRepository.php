@@ -1,4 +1,4 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\ProvincesRepository;
 
@@ -7,19 +7,26 @@ use App\Repositories\BaseRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class ProvincesRepository
+ *
+ * @package App\Repositories\ProvincesRepository
+ */
 class ProvincesRepository extends BaseRepository implements ProvincesRepositoryInterface
 {
     /**
-     * get the model for the repository
-     * @return mixed
+     * Get the model class name
+     *
+     * @return string
      */
-    public function getModel(): mixed
+    public function getModel(): string
     {
         return Province::class;
     }
     /**
-     * Get all provinces
-     * @param  \Illuminate\Http\Request $request
+     * Get paginated list of provinces
+     *
+     * @param \Illuminate\Http\Request|mixed $request
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function listProvinces($request): LengthAwarePaginator
@@ -74,6 +81,7 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
 
     /**
      * Get province details by ID
+     *
      * @param int $id
      * @return object
      */
@@ -112,8 +120,9 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
     }
 
     /**
-     *  get all provinces types
-     *  @return object
+     * Get all province types
+     *
+     * @return object
      */
     public function getAllProvincesTypes(): object
     {
@@ -122,7 +131,8 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
 
     // ====== The functions below are APIs for the end user ======
     /**
-     * Summary of getAllProvinces
+     * Get all provinces without pagination
+     *
      * @return array
      */
     public function getAllProvinces(): array

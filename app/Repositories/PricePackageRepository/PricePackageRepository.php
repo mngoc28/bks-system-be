@@ -1,10 +1,15 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\PricePackageRepository;
 
 use App\Models\PricePackage;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class PricePackageRepository
+ *
+ * @package App\Repositories\PricePackageRepository
+ */
 class PricePackageRepository extends BaseRepository implements PricePackageRepositoryInterface
 {
     /**
@@ -48,7 +53,7 @@ class PricePackageRepository extends BaseRepository implements PricePackageRepos
     }
 
     /**
-     * Get default price package info of a room by room ID
+     * Get default price of a room by room ID
      *
      * @param int $roomId
      * @return object|null

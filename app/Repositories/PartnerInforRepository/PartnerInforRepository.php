@@ -13,23 +13,28 @@ use Illuminate\Support\Facades\Auth;
 use App\Enums\RoomStatus;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class PartnerInforRepository
+ *
+ * @package App\Repositories\PartnerInforRepository
+ */
 class PartnerInforRepository extends BaseRepository implements PartnerInforRepositoryInterface
 {
     /**
-     * Get model class Name
+     * Get the model class name
      *
-     * @return mixed
+     * @return string
      */
-    public function getModel(): mixed
+    public function getModel(): string
     {
         return PartnerInfo::class;
     }
 
     /**
-     * Get list Parter information
+     * Get paginated partner information
      *
-     * @param Request $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getListPartner(Request $request): LengthAwarePaginator
     {

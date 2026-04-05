@@ -8,12 +8,18 @@ use App\Repositories\RepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
+/**
+ * Interface BookingRepositoryInterface
+ *
+ * @package App\Repositories\BookingRepository
+ */
 interface BookingRepositoryInterface extends RepositoryInterface
 {
     /**
-     * Get all bookings or search by criteria
+     * Get all bookings or search by criteria with pagination
      *
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllOrSearchBookings($request): LengthAwarePaginator;
 
@@ -53,15 +59,16 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function getBookingsPerMonth(string $startDate, string $endDate): Collection;
 
     /**
-     * Check user for booking
+     * Check if the user is authorized for the booking
      *
-     * @param $request
+     * @param \Illuminate\Http\Request|mixed $request
      * @return bool
      */
     public function checkUser($request): bool;
 
     /**
-     * Check if the price exists for the room
+     * Check if the price exists for the specified room
+     *
      * @param int $room_id
      * @param int $price_id
      * @return bool
@@ -89,11 +96,11 @@ interface BookingRepositoryInterface extends RepositoryInterface
     // =========================================================================
 
     /**
-     * Get bookings for a specific partner
+     * Get bookings for a specific partner with pagination
      *
      * @param int $partnerId
-     * @param mixed $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getBookingsForPartner(int $partnerId, $request): LengthAwarePaginator;
 

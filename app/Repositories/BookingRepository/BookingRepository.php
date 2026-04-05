@@ -12,6 +12,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class BookingRepository
+ *
+ * @package App\Repositories\BookingRepository
+ */
 final class BookingRepository extends BaseRepository implements BookingRepositoryInterface
 {
     /**
@@ -26,8 +31,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     /**
      * Get all bookings or search by criteria with pagination
      *
-     * @param \Illuminate\Http\Request $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllOrSearchBookings($request): LengthAwarePaginator
     {
@@ -196,10 +201,10 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     }
 
     /**
-     * Check if the current user is authorized for the booking operation
+     * Check if the user is authorized for the booking operation
      * Supports both create (with room_id) and update/view (with booking id)
      *
-     * @param \Illuminate\Http\Request $request
+     * @param \Illuminate\Http\Request|mixed $request
      * @return bool
      */
     public function checkUser($request): bool
@@ -255,7 +260,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     }
 
     /**
-     * Summary of check price exists for room
+     * Check if the price exists for the specified room
+     *
      * @param int $room_id
      * @param int $price_id
      * @return bool
@@ -346,11 +352,11 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     // =========================================================================
 
     /**
-     * Get bookings for a specific partner
+     * Get bookings for a specific partner with pagination
      *
      * @param int $partnerId
-     * @param mixed $request
-     * @return LengthAwarePaginator
+     * @param \Illuminate\Http\Request|mixed $request
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getBookingsForPartner(int $partnerId, $request): LengthAwarePaginator
     {

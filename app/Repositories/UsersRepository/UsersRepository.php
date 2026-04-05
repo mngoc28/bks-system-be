@@ -1,24 +1,31 @@
-<?php
+declare(strict_types=1);
 
 namespace App\Repositories\UsersRepository;
 
 use App\Models\User;
 use App\Repositories\BaseRepository;
 
+/**
+ * Class UsersRepository
+ *
+ * @package App\Repositories\UsersRepository
+ */
 class UsersRepository extends BaseRepository implements UsersRepositoryInterface
 {
     /**
      * Get the model class name
+     *
      * @return string
      */
-    public function getModel()
+    public function getModel(): string
     {
         return User::class;
     }
 
     /**
-     * Number of users by month
-     * @param \Illuminate\Http\Request $request
+     * Count new users in current month by role
+     *
+     * @param \Illuminate\Http\Request|mixed $request
      * @param string $role
      * @return int
      */
@@ -34,8 +41,9 @@ class UsersRepository extends BaseRepository implements UsersRepositoryInterface
     }
 
     /**
-     * Summary of getAll
-     * @param mixed $request
+     * Get all users with filters and pagination
+     *
+     * @param \Illuminate\Http\Request|mixed $request
      * @return ?object
      */
     public function getAll($request): ?object

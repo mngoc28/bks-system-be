@@ -7,6 +7,11 @@ namespace App\Repositories\BuildingImageRepository;
 use App\Repositories\RepositoryInterface;
 use Illuminate\Support\Collection;
 
+/**
+ * Interface BuildingImageRepositoryInterface
+ *
+ * @package App\Repositories\BuildingImageRepository
+ */
 interface BuildingImageRepositoryInterface extends RepositoryInterface
 {
     /**

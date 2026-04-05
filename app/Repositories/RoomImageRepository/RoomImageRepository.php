@@ -9,6 +9,11 @@ use App\Repositories\BaseRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Class RoomImageRepository
+ *
+ * @package App\Repositories\RoomImageRepository
+ */
 final class RoomImageRepository extends BaseRepository implements RoomImageRepositoryInterface
 {
     /**
@@ -67,7 +72,8 @@ final class RoomImageRepository extends BaseRepository implements RoomImageRepos
     }
 
     /**
-     * Summary of update sort range with updatedBy
+     * Update sort range with updatedBy for room images
+     *
      * @param int $roomId
      * @param int $minSort
      * @param int $maxSort
