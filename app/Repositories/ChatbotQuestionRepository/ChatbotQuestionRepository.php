@@ -75,7 +75,7 @@ class ChatbotQuestionRepository extends BaseRepository implements ChatbotQuestio
         ) {
             $query->orderBy('chatbot_questions.' . $sortBy, $direction);
         } else {
-            $query->orderBy('chatbot_questions.created_at', 'desc');
+            $query->orderBy('chatbot_questions.id', 'desc');
         }
 
         if ($request->filled('pagination')) {
@@ -112,7 +112,7 @@ class ChatbotQuestionRepository extends BaseRepository implements ChatbotQuestio
                 'chatbot_questions.position_y',
                 'chatbot_questions.is_start_node',
             ])
-            ->orderBy('chatbot_questions.id')
+            ->orderBy('chatbot_questions.id', 'desc')
             ->get()
             ->toArray();
     }

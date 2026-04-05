@@ -63,7 +63,7 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
         ) {
             $query->orderBy($sortField, $sortDirection);
         } else {
-            $query->orderBy('id', 'asc');
+            $query->orderBy('id', 'desc');
         }
         // Pagination parameters
         $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE'));

@@ -25,7 +25,8 @@ return new class extends Migration
             $table->enum('role',['admin', 'partner','user'])->default('user');
             $table->string('phone', 20)->nullable();
             $table->string('avatar', 255)->nullable();
-            $table->enum('status',[0,1,2])->default(0)->comment('0: pending, 1: active, 2: block');
+            $table->string('id_avatar', 255)->nullable();
+            $table->tinyInteger('status')->unsigned()->default(0)->comment('0: pending, 1: active, 2: block');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamp('created_at')->useCurrent();

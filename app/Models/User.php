@@ -45,6 +45,7 @@ final class User extends Authenticatable implements JWTSubject
      * @var array<string, string>
      */
     protected $casts = [
+        'status'            => 'integer',
         'is_email_verified' => 'boolean',
         'email_verified_at' => 'datetime',
         'token_expires_at'  => 'datetime',

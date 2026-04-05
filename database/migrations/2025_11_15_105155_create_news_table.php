@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('slug', 255)->unique();
             $table->text('summary')->nullable();
             $table->text('content');
-            $table->unsignedBigInteger('author_id');
             $table->tinyInteger('status')->default(0);
             $table->timestamp('published_at')->nullable();
             $table->string('image_url', 255)->nullable();
+            $table->string('id_image_cloudinary', 255)->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamp('created_at')->useCurrent();
@@ -31,11 +31,9 @@ return new class extends Migration
 
             // Indexes
             $table->index('user_id');
-            $table->index('author_id');
 
             // Foreign keys
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('author_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

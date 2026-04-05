@@ -45,7 +45,7 @@ class AmenityRepository extends BaseRepository implements AmenityRepositoryInter
             $query->orderBy($sortField, $sortDirection);
         } else {
             // Default sorting
-            $query->orderBy('created_at', 'desc');
+            $query->orderBy('id', 'desc');
         }
 
         // Pagination parameters

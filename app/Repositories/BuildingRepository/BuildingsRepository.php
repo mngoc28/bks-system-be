@@ -68,8 +68,12 @@ final class BuildingsRepository extends BaseRepository implements
             $query->where("buildings.year_built", $request->year_built);
         }
 
-        if ($request->filled("building_type")) {
-            $query->where("buildings.building_type", $request->building_type);
+        if ($request->filled("property_type_id")) {
+            $query->where("buildings.property_type_id", $request->property_type_id);
+        }
+
+        if ($request->filled("rent_category")) {
+            $query->where("buildings.rent_category", $request->rent_category);
         }
 
         if ($request->filled("area_min")) {
@@ -101,7 +105,7 @@ final class BuildingsRepository extends BaseRepository implements
                 }
             }
         } else {
-            $query->orderBy('buildings.id', 'asc');
+            $query->orderBy('buildings.id', 'desc');
         }
 
         $perPage = (int) ($request->filled("per_page") ?
@@ -118,16 +122,9 @@ final class BuildingsRepository extends BaseRepository implements
      */
     public function getAllBuildingsTypes(): Collection
     {
-        return $this->model
-            ->select("building_type")
-            ->distinct()
-            ->pluck("building_type")
-            ->map(
-                fn($id) => [
-                    "value" => $id,
-                    "label" => BuildingType::labels()[$id] ?? "Other",
-                ]
-            );
+        return \App\Models\PropertyType::where('is_active', true)
+            ->select('id as value', 'name as label')
+            ->get();
     }
 
     /**
@@ -206,6 +203,7 @@ final class BuildingsRepository extends BaseRepository implements
             foreach ($sort as $item) {
                 $filed = $item['field'];
                 $order = $item['order'] ?? 'asc';
+
                 switch ($filed) {
                     case 'user_name':
                         $query->orderBy('users.name', $order);
@@ -220,6 +218,8 @@ final class BuildingsRepository extends BaseRepository implements
                         $query->orderBy("buildings.$filed", $order);
                 }
             }
+        } else {
+            $query->orderBy('buildings.id', 'desc');
         }
 
         $perPage = (int) ($request->filled("per_page") ? $request->per_page : config("const.DEFAULT_PER_PAGE"));

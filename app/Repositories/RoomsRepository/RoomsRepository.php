@@ -124,7 +124,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 $query->orderBy('rooms.' . $sortField, $sortDirection);
             }
         } else {
-            $query->orderBy('rooms.room_number', 'desc');
+            $query->orderBy('rooms.id', 'desc');
         }
         // Default sorting
         $perPage = $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
@@ -455,6 +455,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.people'
             )
             ->where('buildings.user_id', $partnerId);
+        
+        $query->orderBy('rooms.id', 'desc');
 
         if ($request->filled('room_number')) {
             $query->where('room_number', 'like', '%' . $request->room_number . '%');
