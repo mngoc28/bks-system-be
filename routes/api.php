@@ -29,6 +29,10 @@ use App\Http\Controllers\Partner\PartnerBuildingController;
 use App\Http\Controllers\Partner\PartnerRoomController;
 use App\Http\Controllers\Partner\PartnerBookingController;
 use App\Http\Controllers\Partner\PartnerDashboardController;
+use App\Http\Controllers\Stay\StayController;
+use App\Http\Controllers\Stay\StayContractController;
+use App\Http\Controllers\Stay\StayServiceController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,6 +72,7 @@ Route::group([
 
         /**
          * Auth API - Public
+         * Base Url /api/v1/admin/auth/
          */
         Route::prefix('auth')->group(function () {
             Route::post('register', [AuthController::class, 'register']);
@@ -79,13 +84,15 @@ Route::group([
 
         /**
          * Auth API - Authenticated
+         * Base Url /api/v1/admin/auth/
          */
         Route::middleware('jwt.auth')->prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
         });
 
         /**
-         * Users API - Protected (Admin Only)
+         * Users API
+         * Base Url /api/v1/admin/users/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('users')->group(function () {
             Route::post('create', [UserController::class, 'store']);
@@ -98,7 +105,8 @@ Route::group([
         });
 
         /**
-         * Services API - Protected (Admin & Partner)
+         * Services API
+         * Base Url /api/v1/admin/services/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('services')->group(function () {
             Route::get('/all', [ServiceController::class, 'getAllServices']);
@@ -110,7 +118,8 @@ Route::group([
         });
 
         /**
-         * Buildings API - Protected (Admin & Partner)
+         * Buildings API
+         * Base Url /api/v1/admin/buildings/
          */
         Route::prefix("buildings")->group(function () {
             Route::middleware(["jwt.auth", "role:admin"])->group(function () {
@@ -126,7 +135,8 @@ Route::group([
         });
 
         /**
-         * Cloudinary API - Protected (Admin & Partner)
+         * Cloudinary API 
+         * Base Url /api/v1/admin/cloudinary/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('cloudinary')->group(function () {
             Route::post('/upload-image', [CloudinaryController::class, 'uploadImage']);
@@ -135,7 +145,8 @@ Route::group([
         });
 
         /**
-         * Building Images API - Protected (Admin & Partner)
+         * Building Images API
+         * Base Url /api/v1/admin/building-images/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('building-images')->group(function () {
             // get building images by building id
@@ -153,7 +164,8 @@ Route::group([
         });
 
         /**
-         * Room Images API - Protected (Admin & Partner)
+         * Room Images API
+         * Base Url /api/v1/admin/room-images/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('room-images')->group(function () {
             Route::get('room/{roomId}', [RoomImageController::class, 'getByRoomId']);
@@ -167,6 +179,7 @@ Route::group([
 
         /**
          * Rooms API - Public
+         * Base Url /api/v1/admin/rooms/
          */
         Route::prefix('rooms')->group(function () {
             Route::get('/search', [RoomsController::class, 'index']);
@@ -175,7 +188,8 @@ Route::group([
         });
 
         /**
-         * Rooms API - Protected (Admin & Partner)
+         * Rooms API - Protected
+         * Base Url /api/v1/admin/rooms/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('rooms')->group(function () {
             Route::post('store', [RoomsController::class, 'store']);
@@ -185,6 +199,7 @@ Route::group([
 
         /**
          * Amenity API
+         * Base Url /api/v1/admin/amenities/
          */
         Route::middleware(['jwt.auth'])->prefix('amenities')->group(function () {
             Route::get('/', [AmenityController::class, 'index']);
@@ -195,6 +210,10 @@ Route::group([
             Route::delete('{id}', [AmenityController::class, 'destroy']);
         });
 
+        /**
+         * Coupon API
+         * Base Url /api/v1/admin/coupons/
+         */
         Route::middleware(['jwt.auth'])->prefix('coupons')->group(function () {
             Route::get('/', [CouponController::class, 'index']);
             Route::post('create', [CouponController::class, 'store']);
@@ -202,11 +221,19 @@ Route::group([
             Route::delete('delete/{id}', [CouponController::class, 'destroy']);
         });
 
+        /**
+         * Room Maintenance API
+         * Base Url /api/v1/admin/room-maintenances/
+         */
         Route::middleware(['jwt.auth'])->prefix('room-maintenances')->group(function () {
             Route::get('/', [RoomMaintenanceController::class, 'index']);
             Route::post('/', [RoomMaintenanceController::class, 'store']);
         });
 
+        /**
+         * Chatbot API
+         * Base Url /api/v1/admin/chatbot/
+         */
         Route::middleware(['jwt.auth'])->prefix('chatbot')->group(function () {
             Route::get('/', [ChatbotController::class, 'index']);
             Route::get('list-question-flow', [ChatbotController::class, 'listQuestionFlow']);
@@ -218,10 +245,18 @@ Route::group([
             Route::delete('delete/{id}', [ChatbotController::class, 'destroy']);
         });
 
+        /**
+         * Reports API
+         * Base Url /api/v1/admin/reports/
+         */
         Route::middleware(['jwt.auth'])->prefix('reports')->group(function () {
             Route::post('/', [UserReportController::class, 'store']);
         });
 
+        /**
+         * Property Type API
+         * Base Url /api/v1/admin/property-types/
+         */
         Route::middleware(['jwt.auth'])->prefix('property-types')->group(function () {
             Route::post('/', [PropertyTypeController::class, 'store']);
             Route::get('/', [PropertyTypeController::class, 'index']);
@@ -232,6 +267,7 @@ Route::group([
 
         /**
          * Price package API
+         * Base Url /api/v1/admin/price-packages/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('price-packages')->group(function () {
             Route::get('/', [PricePackageController::class, 'index']);
@@ -239,7 +275,8 @@ Route::group([
         });
 
         /**
-         * Bookings API - Protected (Admin & Partner)
+         * Bookings API - Protected
+         * Base Url /api/v1/admin/bookings/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('bookings')->group(function () {
             Route::get('/', [BookingController::class, 'index']);
@@ -253,6 +290,7 @@ Route::group([
 
         /**
          * User Profile API - Authenticated (All roles)
+         * Base Url /api/v1/admin/user/
          */
         Route::middleware('jwt.auth')->prefix('user')->group(function () {
             Route::get('profile', [UserController::class, 'show']);
@@ -264,6 +302,7 @@ Route::group([
 
         /**
          * Users Management API - Admin Only
+         * Base Url /api/v1/admin/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->group(function () {
             Route::apiResource('users', UserController::class);
@@ -271,7 +310,8 @@ Route::group([
         });
 
         /**
-         * Dashboard API - Admin & Partner
+         * Dashboard API
+         * Base Url /api/v1/admin/dashboard/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('dashboard')->group(function () {
             Route::get('/total-user', [DashboardController::class, 'getTotalUsers']);
@@ -284,6 +324,7 @@ Route::group([
         });
         /**
          * Provinces API - Public
+         * Base Url /api/v1/admin/provinces/
          */
         Route::prefix('provinces')->group(function () {
             // get all provinces types
@@ -296,6 +337,7 @@ Route::group([
 
         /**
          * Wards API
+         * Base Url /api/v1/admin/wards/
          */
         Route::prefix('wards')->group(function () {
             // get wards by province id
@@ -303,7 +345,8 @@ Route::group([
         });
 
         /**
-         * Partner API - public
+         * Partner API
+         * Base Url /api/v1/admin/partner/
          */
         Route::prefix('partner')->middleware(['jwt.auth', 'role:admin'])->group(function () {
             //list partner information and search
@@ -341,6 +384,7 @@ Route::group([
 
     /**
      * Auth API - Public
+     * Base Url /api/v1/partner/auth/
      */
     Route::prefix('partner/auth')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
@@ -352,6 +396,7 @@ Route::group([
     Route::middleware(['jwt.auth', 'role:partner'])->prefix('partner')->group(function () {
         /**
          * Auth API - Authenticated
+         * Base Url /api/v1/partner/auth/
          */
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -359,6 +404,7 @@ Route::group([
 
         /**
          * User Profile API
+         * Base Url /api/v1/partner/user/
          */
         Route::prefix('user')->group(function () {
             Route::get('profile', [UserController::class, 'show']);
@@ -369,6 +415,7 @@ Route::group([
 
         /**
          * Partner Profile Info
+         * Base Url /api/v1/partner/
          */
         Route::get('profile', [PartnerInforController::class, 'showSelf']);
         // update partner information
@@ -378,6 +425,7 @@ Route::group([
 
         /**
          * Services API
+         * Base Url /api/v1/partner/services/
          */
         Route::prefix('services')->group(function () {
             Route::get('/all', [ServiceController::class, 'getAllServices']);
@@ -390,6 +438,7 @@ Route::group([
 
         /**
          * Buildings API
+         * Base Url /api/v1/partner/buildings/
          */
         Route::prefix("buildings")->group(function () {
             Route::get("searchAll", [PartnerBuildingController::class, "index"]);
@@ -404,6 +453,7 @@ Route::group([
 
         /**
          * Rooms API
+         * Base Url /api/v1/partner/rooms/
          */
         Route::prefix('rooms')->group(function () {
             Route::get('/search', [PartnerRoomController::class, 'index']);
@@ -416,6 +466,7 @@ Route::group([
 
         /**
          * Cloudinary API
+         * Base Url /api/v1/partner/cloudinary/
          */
         Route::prefix('cloudinary')->group(function () {
             Route::post('/upload-image', [CloudinaryController::class, 'uploadImage']);
@@ -425,6 +476,7 @@ Route::group([
 
         /**
          * Building Images API
+         * Base Url /api/v1/partner/building-images/
          */
         Route::prefix('building-images')->group(function () {
             Route::get('building/{buildingId}', [BuildingImageController::class, 'getByBuildingId']);
@@ -437,6 +489,7 @@ Route::group([
 
         /**
          * Room Images API
+         * Base Url /api/v1/partner/room-images/
          */
         Route::prefix('room-images')->group(function () {
             Route::get('room/{roomId}', [RoomImageController::class, 'getByRoomId']);
@@ -450,6 +503,7 @@ Route::group([
 
         /**
          * Amenities API - List only
+         * Base Url /api/v1/partner/amenities/
          */
         Route::prefix('amenities')->group(function () {
             Route::get('/', [AmenityController::class, 'index']);
@@ -459,6 +513,7 @@ Route::group([
 
         /**
          * Price package API
+         * Base Url /api/v1/partner/price-packages/
          */
         Route::prefix('price-packages')->group(function () {
             Route::get('/', [PricePackageController::class, 'index']);
@@ -467,6 +522,7 @@ Route::group([
 
         /**
          * Bookings API
+         * Base Url /api/v1/partner/bookings/
          */
         Route::prefix('bookings')->group(function () {
             Route::get('/', [PartnerBookingController::class, 'index']);
@@ -479,6 +535,7 @@ Route::group([
 
         /**
          * Room Maintenances API
+         * Base Url /api/v1/partner/room-maintenances/
          */
         Route::prefix('room-maintenances')->group(function () {
             Route::get('/', [RoomMaintenanceController::class, 'index']);
@@ -487,6 +544,7 @@ Route::group([
 
         /**
          * Coupons API
+         * Base Url /api/v1/partner/coupons/
          */
         Route::prefix('coupons')->group(function () {
             Route::get('/', [CouponController::class, 'index']);
@@ -497,6 +555,7 @@ Route::group([
 
         /**
          * Dashboard API
+         * Base Url /api/v1/partner/dashboard/
          */
         Route::prefix('dashboard')->group(function () {
             Route::get('/system-building', [PartnerDashboardController::class, 'getSystemBuilding']);
@@ -512,6 +571,7 @@ Route::group([
 
         /**
          * News API
+         * Base Url /api/v1/partner/news/
          */
         Route::prefix('news')->group(function () {
             Route::get('', [NewsController::class, 'index']);
@@ -568,5 +628,33 @@ Route::group([
     Route::prefix('news')->group(function () {
         Route::get('list-news', [NewsController::class, 'listNews']);
         Route::get('detail-news/{id}', [NewsController::class, 'detailNews']);
+    });
+
+    /**
+     * ============================================
+     * STAY PORTAL API
+     * ============================================
+     * Base URL: /api/v1/stay/
+     */
+    Route::middleware(['jwt.auth'])->prefix('stay')->group(function () {
+        Route::get('dashboard', [StayController::class, 'getDashboard']);
+        Route::get('bookings', [StayController::class, 'getBookings']);
+        
+        Route::prefix('contracts')->group(function () {
+            Route::get('/', [StayContractController::class, 'index']);
+            Route::get('{id}', [StayContractController::class, 'show'])->whereNumber('id');
+        });
+
+        Route::prefix('services')->group(function () {
+            Route::get('{bookingId}', [StayServiceController::class, 'index'])->whereNumber('bookingId');
+            Route::post('{bookingId}', [StayServiceController::class, 'order'])->whereNumber('bookingId');
+        });
+
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::put('{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
+            Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
+            Route::delete('{id}', [NotificationController::class, 'destroy'])->whereNumber('id');
+        });
     });
 });

@@ -91,6 +91,47 @@ interface BookingRepositoryInterface extends RepositoryInterface
      */
     public function getRevenueByMonth(string $startDate, string $endDate): Collection;
 
+    /**
+     * Get total number of stays by a user
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countStaysByUserId(int $userId): int;
+
+    /**
+     * Get total spending by a user (completed bookings)
+     *
+     * @param int $userId
+     * @return float
+     */
+    public function getTotalSpendingByUserId(int $userId): float;
+
+    /**
+     * Get active or upcoming booking for a user
+     *
+     * @param int $userId
+     * @return \App\Models\Booking|null
+     */
+    public function getActiveBookingByUserId(int $userId);
+
+    /**
+     * Get recent completed booking history for a user
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return Collection
+     */
+    public function getRecentHistoryByUserId(int $userId, int $limit = 2): Collection;
+
+    /**
+     * Get full booking history for a user
+     *
+     * @param int $userId
+     * @return Collection
+     */
+    public function getBookingHistoryByUserId(int $userId): Collection;
+
     // =========================================================================
     // PARTNER METHODS
     // =========================================================================

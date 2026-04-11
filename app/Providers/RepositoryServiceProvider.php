@@ -50,6 +50,8 @@ use App\Repositories\PricePackageRepository\PricePackageRepository;
 use App\Repositories\PricePackageRepository\PricePackageRepositoryInterface;
 use App\Repositories\PropertyTypeRepository\PropertyTypeRepository;
 use App\Repositories\PropertyTypeRepository\PropertyTypeRepositoryInterface;
+use App\Repositories\ContractRepository\EloquentContractRepository;
+use App\Repositories\ContractRepository\ContractRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -152,6 +154,10 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             RoomMaintenanceRepositoryInterface::class,
             RoomMaintenanceRepository::class
+        );
+        $this->app->singleton(
+            ContractRepositoryInterface::class,
+            EloquentContractRepository::class
         );
     }
 

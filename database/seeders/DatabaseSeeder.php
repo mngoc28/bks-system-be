@@ -33,6 +33,7 @@ final class DatabaseSeeder extends Seeder
             BookingsTableSeeder::class,
             ChatbotSeeder::class,
             RoomMaintenancesSeeder::class,
+            StayPortalSeeder::class,
         ]);
     }
 }

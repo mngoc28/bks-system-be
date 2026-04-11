@@ -245,7 +245,8 @@ class AuthService
 
             $user = Auth::guard('api')->user();
 
-            if ($user->role === 'user') {
+            // Combined role check for portals
+            if (!in_array($user->role, [UserType::ADMIN, UserType::PARTNER, UserType::USER])) {
                 Auth::guard('api')->logout();
                 return [
                     'status'  => false,
@@ -286,6 +287,9 @@ class AuthService
                 'message' => __('auth.login_success'),
                 'data'    => [
                     'token' => $token,
+                    'name' => $user->name,
+                    'role' => $user->role,
+                    'email' => $user->email,
                 ],
             ];
         } catch (\Exception $e) {
