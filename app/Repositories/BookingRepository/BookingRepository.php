@@ -347,6 +347,77 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             ]);
     }
 
+    /**
+     * Get total number of stays by a user
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countStaysByUserId(int $userId): int
+    {
+        return $this->model->where('user_id', $userId)->count();
+    }
+
+    /**
+     * Get total spending by a user (completed bookings)
+     *
+     * @param int $userId
+     * @return float
+     */
+    public function getTotalSpendingByUserId(int $userId): float
+    {
+        return (float) $this->model->where('user_id', $userId)
+            ->where('status', BookingStatus::COMPLETED->value)
+            ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
+            ->sum('room_prices.price');
+    }
+
+    /**
+     * Get active or upcoming booking for a user
+     *
+     * @param int $userId
+     * @return \App\Models\Booking|null
+     */
+    public function getActiveBookingByUserId(int $userId)
+    {
+        return $this->model->with(['room', 'room.building'])
+            ->where('user_id', $userId)
+            ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+            ->orderBy('start_date', 'asc')
+            ->first();
+    }
+
+    /**
+     * Get recent completed booking history for a user
+     *
+     * @param int $userId
+     * @param int $limit
+     * @return Collection
+     */
+    public function getRecentHistoryByUserId(int $userId, int $limit = 2): Collection
+    {
+        return $this->model->with(['room', 'room.building', 'price'])
+            ->where('user_id', $userId)
+            ->where('status', BookingStatus::COMPLETED->value)
+            ->orderBy('end_date', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get full booking history for a user
+     *
+     * @param int $userId
+     * @return Collection
+     */
+    public function getBookingHistoryByUserId(int $userId): Collection
+    {
+        return $this->model->with(['room', 'room.building'])
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
     // =========================================================================
     // PARTNER METHODS
     // =========================================================================

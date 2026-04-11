@@ -194,6 +194,19 @@ final class UsersTableSeeder extends Seeder
             ),
         ]);
 
+        // Create default client user
+        DB::table('users')->insert([
+            $this->createUserData(
+                'Nguyễn Văn User',
+                'user@gmail.com',
+                'user',
+                '1',
+                1,
+                1,
+                1
+            ),
+        ]);
+
         // Create 20 partner users
         $this->createUsers(20, 'partner', [0, 1], 1);
 

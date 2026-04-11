@@ -101,6 +101,11 @@ final class Booking extends Model
         return $this->belongsToMany(Service::class, 'booking_services', 'booking_id', 'service_id')
             ->withTimestamps();
     }
+    public function contracts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Contract::class, 'booking_id');
+    }
+
     /**
      * Summary of getStartDateAttribute
      * @param mixed $value
