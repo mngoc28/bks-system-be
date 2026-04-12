@@ -130,23 +130,25 @@ class PartnerInforServices
             $upload = new UploadFile();
             $imageFields = ['image_1', 'image_2', 'image_3'];
             foreach ($imageFields as $field) {
-                $avatarUrl = null;
                 if ($request->hasFile($field)) {
-                    //upload picture
+                    // upload picture
                     $avatarUrl = $upload->uploadImage(
                         $request->file($field),
                         'partner',
                         $id,
                     );
                     $imageJustUploaded[] = $avatarUrl;
-                    $oldAvatarUrl[] = $partner->$field;
-                } elseif (!$request->$field) {
-                    //delete picture
-                    $avatarUrl = null;
-                    $oldAvatarUrl = $partner->$field;
+                    if ($partner->$field) {
+                        $oldAvatarUrl[] = $partner->$field;
+                    }
+                    $dataUpdate[$field] = $avatarUrl;
+                } elseif ($request->get($field) === 'delete') {
+                    // delete picture
+                    if ($partner->$field) {
+                        $oldAvatarUrl[] = $partner->$field;
+                    }
+                    $dataUpdate[$field] = null;
                 }
-
-                $dataUpdate[$field] = $avatarUrl;
             }
 
             $this->partnerInforRepository->update($id, $dataUpdate);

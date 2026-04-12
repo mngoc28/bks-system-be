@@ -20,19 +20,25 @@ final class PartnerInforValidation
             $request->all(),
             [
                 'user_name' => ['nullable', 'string', 'max:255'],
+                'company_name' => ['nullable', 'string', 'max:255'],
                 'ward_name' => ['nullable', 'string', 'max:100'],
                 'province_name' => ['nullable', 'string', 'max:100'],
+                'status' => ['nullable', 'in:0,1,2'],
                 'page'          => ['nullable', 'integer', 'min:1'],
                 'per_page'      => ['nullable', 'integer', 'min:1'],
                 'phone' => ['nullable', 'string', 'max:20'],
                 'address' => ['nullable', 'string', 'max:255'],
+                'website' => ['nullable', 'string', 'max:255'],
             ],
             [
                 'user_name.max' => __('partner.validation.name.max'),
+                'company_name.max' => __('partner.validation.company_name.max'),
                 'ward_name.max' => __('partner.validation.ward_name.max'),
                 'province_name.max' => __('partner.validation.province_name.max'),
+                'status.in' => __('partner.validation.status.in'),
                 'phone.max' => __('partner.validation.phone.max'),
                 'address.max' => __('partner.validation.address.max'),
+                'website.max' => __('partner.validation.website.max'),
                 'page.integer'      => __('pagination.page.integer'),
                 'page.min'          => __('pagination.page.min'),
                 'per_page.integer'  => __('pagination.per_page.integer'),
@@ -40,10 +46,13 @@ final class PartnerInforValidation
             ],
             [
                 'user_name' => __('partner.attributes.name'),
+                'company_name' => __('partner.attributes.company_name'),
                 'ward_name' => __('partner.attributes.ward_name'),
                 'province_name' => __('partner.attributes.province_name'),
+                'status' => __('partner.attributes.status'),
                 'phone' => __('partner.attributes.phone'),
                 'address' => __('partner.attributes.address'),
+                'website' => __('partner.attributes.website'),
             ]
         );
     }

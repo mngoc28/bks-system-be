@@ -257,7 +257,7 @@ final class RoomsValidation
                 'images'      => ['nullable', 'array'],
                 'images.*.image_url'  => ['nullable', 'string', 'max:255'],
                 'images.*.image_type' => ['nullable', 'string', 'max:50'],
-                'images.*.sort'       => ['nullable', 'integer', 'min:0'],
+                'images.*.sort'       => ['nullable', 'integer', 'min:1'],
                 'amenities'   => ['nullable', 'array', 'min:1'],
                 'amenities.*' => ['nullable', 'integer', 'exists:amenities,id'],
                 'services'    => ['nullable', 'array', 'min:1'],

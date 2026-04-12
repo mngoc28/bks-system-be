@@ -25,7 +25,7 @@ final class DatabaseSeeder extends Seeder
             BuildingsTableSeeder::class,
             RoomsTableSeeder::class,
             ServicesTableSeeder::class,
-            BuildingImagesTableSeeder::class,
+            // BuildingImagesTableSeeder::class,
             // RoomImagesTableSeeder::class,
             RoomAmenitiesTableSeeder::class,
             RoomServiceTableSeeder::class,
