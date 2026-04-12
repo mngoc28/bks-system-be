@@ -9,7 +9,6 @@ use App\Repositories\BaseRepository;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-
 use App\Enums\BookingStatus;
 use Illuminate\Support\Facades\DB;
 

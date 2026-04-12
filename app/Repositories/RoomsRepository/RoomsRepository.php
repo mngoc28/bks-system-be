@@ -68,6 +68,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
             ->select(
                 'rooms.id',
+                'rooms.building_id',
                 'rooms.room_number',
                 'rooms.title',
                 'buildings.name as building_name',
@@ -461,7 +462,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.people'
             )
             ->where('buildings.user_id', $partnerId);
-        
+
         $query->orderBy('rooms.id', 'desc');
 
         if ($request->filled('room_number')) {

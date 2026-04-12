@@ -135,7 +135,7 @@ Route::group([
         });
 
         /**
-         * Cloudinary API 
+         * Cloudinary API
          * Base Url /api/v1/admin/cloudinary/
          */
         Route::middleware(['jwt.auth', 'role:admin'])->prefix('cloudinary')->group(function () {
@@ -562,7 +562,10 @@ Route::group([
             Route::get('/system-room', [PartnerDashboardController::class, 'getSystemRoom']);
             Route::get('/bookings-per-month', [PartnerDashboardController::class, 'bookingsPerMonth']);
             Route::get('/revenue-per-month', [PartnerDashboardController::class, 'revenuePerMonth']);
-            Route::get('/buildings-bookings-count', [PartnerDashboardController::class, 'getAllBuildingsBookingsCount']);
+            Route::get('/buildings-bookings-count', [
+                PartnerDashboardController::class,
+                'getAllBuildingsBookingsCount'
+            ]);
             Route::get('/stats', [PartnerDashboardController::class, 'getStats']);
             Route::get('/pending-bookings', [PartnerDashboardController::class, 'getPendingBookings']);
             Route::get('/urgent-maintenances', [PartnerDashboardController::class, 'getUrgentMaintenances']);
@@ -639,7 +642,7 @@ Route::group([
     Route::middleware(['jwt.auth'])->prefix('stay')->group(function () {
         Route::get('dashboard', [StayController::class, 'getDashboard']);
         Route::get('bookings', [StayController::class, 'getBookings']);
-        
+
         Route::prefix('contracts')->group(function () {
             Route::get('/', [StayContractController::class, 'index']);
             Route::get('{id}', [StayContractController::class, 'show'])->whereNumber('id');

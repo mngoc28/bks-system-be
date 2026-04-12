@@ -1,0 +1,586 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method App\\\\Exceptions\\\\Handler\\:\\:render\\(\\) should return Illuminate\\\\Http\\\\JsonResponse but returns Symfony\\\\Component\\\\HttpFoundation\\\\Response\\.$#"
+			count: 1
+			path: app/Exceptions/Handler.php
+
+		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 2
+			path: app/Http/Controllers/BookingController.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Validations\\\\BookingValidation\\:\\:userCreateBookingValidation\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: app/Http/Controllers/BookingController.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$bookingServices$#"
+			count: 1
+			path: app/Http/Controllers/BookingController.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$request$#"
+			count: 1
+			path: app/Http/Controllers/BuildingImageController.php
+
+		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 1
+			path: app/Http/Controllers/BuildingsController.php
+
+		-
+			message: "#^Offset 'errors' on array\\{success\\: false, images\\: array, message\\: string\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: app/Http/Controllers/CloudinaryController.php
+
+		-
+			message: "#^Parameter \\#3 \\$code of method App\\\\Http\\\\Controllers\\\\Controller\\:\\:errorResponse\\(\\) expects App\\\\Enums\\\\HttpStatus, null given\\.$#"
+			count: 1
+			path: app/Http/Controllers/DashboardController.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProvincesController.php
+
+		-
+			message: "#^Parameter \\#1 \\$request of method App\\\\Services\\\\ProvincesService\\:\\:listProvinces\\(\\) expects App\\\\Services\\\\Request, Illuminate\\\\Http\\\\Request given\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProvincesController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between object and null will always evaluate to false\\.$#"
+			count: 1
+			path: app/Http/Controllers/ProvincesController.php
+
+		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 1
+			path: app/Http/Controllers/RoomsController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between bool and null will always evaluate to false\\.$#"
+			count: 1
+			path: app/Http/Controllers/ServiceController.php
+
+		-
+			message: "#^Access to undefined constant App\\\\Enums\\\\HttpStatus\\:\\:UNPROCESSABLE_ENTITY\\.$#"
+			count: 3
+			path: app/Http/Controllers/Stay/StayServiceController.php
+
+		-
+			message: "#^PHPDoc tag @param has invalid value \\(int id\\)\\: Unexpected token \"id\", expected variable at offset 47$#"
+			count: 1
+			path: app/Http/Controllers/UserController.php
+
+		-
+			message: "#^Array has 2 duplicate keys with value 'bindings' \\(\"bindings\", \"bindings\"\\)\\.$#"
+			count: 1
+			path: app/Http/Kernel.php
+
+		-
+			message: "#^Array has 2 duplicate keys with value 'verified' \\(\"verified\", \"verified\"\\)\\.$#"
+			count: 1
+			path: app/Http/Kernel.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Middleware/ParentAuthenticate.php
+
+		-
+			message: "#^Access to constant BLOCKED on an unknown class App\\\\Enums\\\\StatusUser\\.$#"
+			count: 1
+			path: app/Http/Middleware/ParentAuthenticate.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Middleware\\\\ParentAuthenticate\\:\\:handle\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\Http\\\\Response but returns Illuminate\\\\Http\\\\JsonResponse\\.$#"
+			count: 3
+			path: app/Http/Middleware/ParentAuthenticate.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Middleware/StudentAuthenticate.php
+
+		-
+			message: "#^Access to constant BLOCKED on an unknown class App\\\\Enums\\\\StatusUser\\.$#"
+			count: 1
+			path: app/Http/Middleware/StudentAuthenticate.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Middleware\\\\StudentAuthenticate\\:\\:handle\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\Http\\\\Response but returns Illuminate\\\\Http\\\\JsonResponse\\.$#"
+			count: 3
+			path: app/Http/Middleware/StudentAuthenticate.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$role_id\\.$#"
+			count: 1
+			path: app/Http/Middleware/SuperAdminMiddleware.php
+
+		-
+			message: "#^Access to constant SUPER_ADMIN on an unknown class App\\\\Enums\\\\AdminRole\\.$#"
+			count: 1
+			path: app/Http/Middleware/SuperAdminMiddleware.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Middleware\\\\SuperAdminMiddleware\\:\\:handle\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\Http\\\\Response but returns Illuminate\\\\Http\\\\JsonResponse\\.$#"
+			count: 2
+			path: app/Http/Middleware/SuperAdminMiddleware.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Middleware/TeacherAuthenticate.php
+
+		-
+			message: "#^Access to constant BLOCKED on an unknown class App\\\\Enums\\\\StatusUser\\.$#"
+			count: 1
+			path: app/Http/Middleware/TeacherAuthenticate.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Middleware\\\\TeacherAuthenticate\\:\\:handle\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\Http\\\\Response but returns Illuminate\\\\Http\\\\JsonResponse\\.$#"
+			count: 3
+			path: app/Http/Middleware/TeacherAuthenticate.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Middleware\\\\VisitorAuthenticate\\:\\:handle\\(\\) should return Illuminate\\\\Http\\\\RedirectResponse\\|Illuminate\\\\Http\\\\Response but returns Illuminate\\\\Http\\\\JsonResponse\\.$#"
+			count: 2
+			path: app/Http/Middleware/VisitorAuthenticate.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$code\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$created_at\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$end_date\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$max_discount_value\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$min_order_value\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$start_date\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$type\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$updated_at\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$usage_limit\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$used_count\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\CouponResource\\:\\:\\$value\\.$#"
+			count: 1
+			path: app/Http/Resources/CouponResource.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$request$#"
+			count: 1
+			path: app/Http/Validations/AmenityValidation.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$request$#"
+			count: 3
+			path: app/Http/Validations/BuildingImageValidation.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Validation\\\\Validator is not subtype of native type Illuminate\\\\Validation\\\\Validator\\.$#"
+			count: 1
+			path: app/Http/Validations/BuildingImageValidation.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$buildingId$#"
+			count: 1
+			path: app/Http/Validations/BuildingsValidation.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$partner$#"
+			count: 1
+			path: app/Http/Validations/PartnerInforValidation.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$imageId$#"
+			count: 1
+			path: app/Http/Validations/RoomImageValidation.php
+
+		-
+			message: "#^Method App\\\\Http\\\\Validations\\\\ServiceValidation\\:\\:delete\\(\\) should return int but return statement is missing\\.$#"
+			count: 1
+			path: app/Http/Validations/ServiceValidation.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$data$#"
+			count: 1
+			path: app/Http/Validations/ServiceValidation.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
+			count: 1
+			path: app/Http/Validations/UserValidation.php
+
+		-
+			message: "#^Method App\\\\Jobs\\\\SendBooking\\:\\:handle\\(\\) with return type void returns Illuminate\\\\Mail\\\\SentMessage\\|null but should not return anything\\.$#"
+			count: 1
+			path: app/Jobs/SendBooking.php
+
+		-
+			message: "#^Method App\\\\Jobs\\\\VerifyMail\\:\\:handle\\(\\) with return type void returns Illuminate\\\\Mail\\\\SentMessage\\|null but should not return anything\\.$#"
+			count: 1
+			path: app/Jobs/VerifyMail.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Models\\\\User\\:\\:\\$buildings\\.$#"
+			count: 1
+			path: app/Policies/BuildingPolicy.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between 'partner'\\|'user' and 'staff' will always evaluate to false\\.$#"
+			count: 2
+			path: app/Policies/BuildingPolicy.php
+
+		-
+			message: "#^PHPDoc type array of property App\\\\Providers\\\\AuthServiceProvider\\:\\:\\$policies is not covariant with PHPDoc type array\\<class\\-string, class\\-string\\> of overridden property Illuminate\\\\Foundation\\\\Support\\\\Providers\\\\AuthServiceProvider\\:\\:\\$policies\\.$#"
+			count: 1
+			path: app/Providers/AuthServiceProvider.php
+
+		-
+			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 2
+			path: app/Repositories/AmenityRepository/AmenityRepository.php
+
+		-
+			message: "#^Method App\\\\Repositories\\\\BaseRepository\\:\\:all\\(\\) should return Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, static\\(App\\\\Repositories\\\\BaseRepository\\)\\> but returns Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, Illuminate\\\\Database\\\\Eloquent\\\\Model\\>\\.$#"
+			count: 1
+			path: app/Repositories/BaseRepository.php
+
+		-
+			message: "#^Ternary operator condition is always true\\.$#"
+			count: 2
+			path: app/Repositories/BaseRepository.php
+
+		-
+			message: "#^Type static\\(App\\\\Repositories\\\\BaseRepository\\) in generic type Illuminate\\\\Database\\\\Eloquent\\\\Collection\\<int, static\\(App\\\\Repositories\\\\BaseRepository\\)\\> in PHPDoc tag @return is not subtype of template type TModel of Illuminate\\\\Database\\\\Eloquent\\\\Model of class Illuminate\\\\Database\\\\Eloquent\\\\Collection\\.$#"
+			count: 1
+			path: app/Repositories/BaseRepository.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$building_id\\.$#"
+			count: 2
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$building_name\\.$#"
+			count: 2
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$month\\.$#"
+			count: 4
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$total\\.$#"
+			count: 4
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^Method App\\\\Repositories\\\\BookingRepository\\\\BookingRepository\\:\\:getActiveBookingByUserId\\(\\) should return App\\\\Models\\\\Booking\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
+			count: 1
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\.\\.\\.\\$groups of method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>\\:\\:groupBy\\(\\) expects array\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 4
+			path: app/Repositories/BookingRepository/BookingRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is incompatible with native type array\\.$#"
+			count: 1
+			path: app/Repositories/ChatbotQuestionRepository/ChatbotQuestionRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is incompatible with native type array\\.$#"
+			count: 1
+			path: app/Repositories/ChatbotQuestionRepository/ChatbotQuestionRepositoryInterface.php
+
+		-
+			message: "#^Method App\\\\Repositories\\\\ContractRepository\\\\EloquentContractRepository\\:\\:getContractDetail\\(\\) should return App\\\\Models\\\\Contract\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
+			count: 1
+			path: app/Repositories/ContractRepository/EloquentContractRepository.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$int$#"
+			count: 1
+			path: app/Repositories/PartnerInforRepository/PartnerInforRepository.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$int$#"
+			count: 1
+			path: app/Repositories/PartnerInforRepository/PartnerInforRepositoryInterface.php
+
+		-
+			message: "#^Parameter \\#1 \\$table of static method Illuminate\\\\Database\\\\Connection\\:\\:table\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 1
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type array is incompatible with native type object\\|null\\.$#"
+			count: 1
+			path: app/Repositories/RoomsRepository/RoomsRepositoryInterface.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is not subtype of native type Illuminate\\\\Pagination\\\\LengthAwarePaginator\\.$#"
+			count: 1
+			path: app/Repositories/ServiceRepository/ServiceRepository.php
+
+		-
+			message: "#^Access to an undefined property Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:\\$password\\.$#"
+			count: 1
+			path: app/Rules/CheckOldPasswordMatchRule.php
+
+		-
+			message: "#^Access to constant YES on an unknown class App\\\\Enums\\\\StartNodeChatbot\\.$#"
+			count: 2
+			path: app/Rules/CheckStartNodeChatbot.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:classes\\(\\)\\.$#"
+			count: 1
+			path: app/Rules/TeacherClassRule.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$request$#"
+			count: 1
+			path: app/Services/AuthService.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Http\\\\JsonResponse is incompatible with native type array\\.$#"
+			count: 2
+			path: app/Services/AuthService.php
+
+		-
+			message: "#^Parameter \\#1 \\$forceForever of static method Tymon\\\\JWTAuth\\\\JWT\\:\\:refresh\\(\\) expects bool, Tymon\\\\JWTAuth\\\\Token\\|null given\\.$#"
+			count: 1
+			path: app/Services/AuthService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleCreateBooking\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
+			count: 1
+			path: app/Services/BookingService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetAllOrSearchBookings\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
+			count: 1
+			path: app/Services/BookingService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetAllOrSearchBookings\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Booking\\|null, message\\: string\\} but returns array\\{success\\: true, data\\: Illuminate\\\\Pagination\\\\LengthAwarePaginator, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/BookingService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetBookingById\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
+			count: 1
+			path: app/Services/BookingService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleUpdateBooking\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
+			count: 1
+			path: app/Services/BookingService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BuildingImageService\\:\\:getByBuildingId\\(\\) should return array\\{success\\: bool, data\\: array\\|null, message\\: string\\} but returns array\\{success\\: true, data\\: Illuminate\\\\Support\\\\Collection, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/BuildingImageService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: app/Services/BuildingImageService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\BuildingsServices\\:\\:deleteBuilding\\(\\) should return array\\{success\\: bool, data\\: null, message\\: string\\} but returns array\\{success\\: true, data\\: mixed, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/BuildingsServices.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 3
+			path: app/Services/BuildingsServices.php
+
+		-
+			message: "#^PHPDoc tag @return with type array\\<string, mixed\\> is incompatible with native type bool\\.$#"
+			count: 1
+			path: app/Services/ChatbotService.php
+
+		-
+			message: "#^Call to an undefined method Cloudinary\\\\Api\\\\ApiResponse\\:\\:getPublicId\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CloudinaryService.php
+
+		-
+			message: "#^Call to an undefined method Cloudinary\\\\Api\\\\ApiResponse\\:\\:getSecurePath\\(\\)\\.$#"
+			count: 1
+			path: app/Services/CloudinaryService.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$folder with type string\\|null is not subtype of native type string\\.$#"
+			count: 2
+			path: app/Services/CloudinaryService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 2
+			path: app/Services/NewsService.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$skip$#"
+			count: 1
+			path: app/Services/NewsService.php
+
+		-
+			message: "#^Result of \\|\\| is always false\\.$#"
+			count: 1
+			path: app/Services/NewsService.php
+
+		-
+			message: "#^PHPDoc tag @param has invalid value \\(PartnerInforRepositoryInterface\\)\\: Unexpected token \"\\\\n     \", expected variable at offset 82$#"
+			count: 1
+			path: app/Services/PartnerInforServices.php
+
+		-
+			message: "#^Variable \\$upload might not be defined\\.$#"
+			count: 1
+			path: app/Services/PartnerInforServices.php
+
+		-
+			message: "#^Parameter \\$request of method App\\\\Services\\\\ProvincesService\\:\\:listProvinces\\(\\) has invalid type App\\\\Services\\\\Request\\.$#"
+			count: 1
+			path: app/Services/ProvincesService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomImageService\\:\\:destroy\\(\\) should return array\\{success\\: bool, data\\: bool\\|null, message\\: string\\} but returns array\\{success\\: true, data\\: array\\<int\\<0, max\\>, mixed\\>, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/RoomImageService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomImageService\\:\\:getByRoomId\\(\\) should return array\\{success\\: bool, data\\: array\\|null, message\\: string\\} but returns array\\{success\\: true, data\\: Illuminate\\\\Support\\\\Collection, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/RoomImageService.php
+
+		-
+			message: "#^Negated boolean expression is always false\\.$#"
+			count: 1
+			path: app/Services/RoomImageService.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Repositories\\\\RoomMaintenanceRepository\\\\RoomMaintenanceRepositoryInterface\\:\\:getList\\(\\)\\.$#"
+			count: 1
+			path: app/Services/RoomMaintenanceService.php
+
+		-
+			message: "#^Call to an undefined method Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator\\:\\:toArray\\(\\)\\.$#"
+			count: 1
+			path: app/Services/RoomMaintenanceService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:createRoom\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:getRoomById\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:getRoomById\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Room\\|null, message\\: string\\} but returns array\\{success\\: false, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:handlePublicRoomDetail\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:handlePublicRoomDetail\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Room\\|null, message\\: string\\} but returns array\\{success\\: false, message\\: \\(array\\|string\\)\\}\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:updateRoom\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$roomImageService$#"
+			count: 1
+			path: app/Services/RoomsService.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$data$#"
+			count: 2
+			path: app/Services/ServiceService.php
+
+		-
+			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is not subtype of native type Illuminate\\\\Support\\\\Collection\\.$#"
+			count: 1
+			path: app/Services/StayService.php
+
+		-
+			message: "#^Method App\\\\Services\\\\UserReportService\\:\\:createReport\\(\\) should return array\\{success\\: bool, message\\: string, data\\: mixed, code\\?\\: int\\} but returns array\\{success\\: true, message\\: \\(array\\|string\\), data\\: mixed, code\\: App\\\\Enums\\\\HttpStatus\\:\\:CREATED\\}\\.$#"
+			count: 1
+			path: app/Services/UserReportService.php
+
+		-
+			message: "#^PHPDoc tag @return has invalid value \\(array\\<array\\|array\\{email\\: mixed, id\\: mixed, name\\: mixed, phone\\: mixed, role\\: mixed\\|bool\\|string\\|null\\>\\}\\)\\: Unexpected token \"\\>\", expected '\\}' at offset 203$#"
+			count: 1
+			path: app/Services/UserService.php
+
+		-
+			message: "#^Right side of && is always true\\.$#"
+			count: 1
+			path: app/Services/UserService.php

@@ -38,7 +38,7 @@ final class StayContractController extends Controller
         if (!$userId) {
             return $this->errorResponse('Unauthorized', null, HttpStatus::UNAUTHORIZED);
         }
-        
+
         $contracts = $this->stayService->getContracts($userId);
         return $this->successResponse($contracts, 'Contracts retrieved successfully');
     }
@@ -55,7 +55,7 @@ final class StayContractController extends Controller
         if (!$userId) {
             return $this->errorResponse('Unauthorized', null, HttpStatus::UNAUTHORIZED);
         }
-        
+
         $contract = $this->stayService->getContractDetail($id, $userId);
 
         if (!$contract) {

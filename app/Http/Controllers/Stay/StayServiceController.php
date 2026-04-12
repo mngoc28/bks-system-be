@@ -48,11 +48,15 @@ final class StayServiceController extends Controller
         if (!$userId) {
             return $this->errorResponse('Unauthorized', null, HttpStatus::UNAUTHORIZED);
         }
-        
+
         // Use validation for booking ID
         $validator = $this->stayValidation->detailBookingValidation($bookingId);
         if ($validator->fails()) {
-            return $this->errorResponse($validator->errors()->first(), $validator->errors(), HttpStatus::UNPROCESSABLE_ENTITY);
+            return $this->errorResponse(
+                $validator->errors()->first(),
+                $validator->errors(),
+                HttpStatus::UNPROCESSABLE_ENTITY
+            );
         }
 
         // We can reuse getDashboardData or specialized service logic
@@ -80,13 +84,21 @@ final class StayServiceController extends Controller
         // Validate booking ID
         $idValidator = $this->stayValidation->detailBookingValidation($bookingId);
         if ($idValidator->fails()) {
-            return $this->errorResponse($idValidator->errors()->first(), $idValidator->errors(), HttpStatus::UNPROCESSABLE_ENTITY);
+            return $this->errorResponse(
+                $idValidator->errors()->first(),
+                $idValidator->errors(),
+                HttpStatus::UNPROCESSABLE_ENTITY
+            );
         }
 
         // Validate request body
         $bodyValidator = $this->stayValidation->serviceOrderValidation($request);
         if ($bodyValidator->fails()) {
-            return $this->errorResponse($bodyValidator->errors()->first(), $bodyValidator->errors(), HttpStatus::UNPROCESSABLE_ENTITY);
+            return $this->errorResponse(
+                $bodyValidator->errors()->first(),
+                $bodyValidator->errors(),
+                HttpStatus::UNPROCESSABLE_ENTITY
+            );
         }
 
         $serviceId = (int)$request->input('service_id');
