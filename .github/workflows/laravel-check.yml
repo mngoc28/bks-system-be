@@ -1,0 +1,49 @@
+name: Laravel CI Checks
+
+# Kịch bản này sẽ tự động chạy khi bạn push code hoặc tạo Pull Request vào nhánh dev, main hoặc master
+on:
+  push:
+    branches: [ "main", "master", "dev" ]
+  pull_request:
+    branches: [ "main", "master", "dev" ]
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest # Chạy trên máy chủ ảo Linux của GitHub
+
+    steps:
+    - name: Clone source code về máy chủ ảo
+      uses: actions/checkout@v3
+
+    - name: Cài đặt PHP phiên bản 8.3
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3' 
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring
+        coverage: none
+
+    - name: Copy file .env
+      run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+    - name: Cài đặt các thư viện (Composer Install)
+      run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+    - name: Cấp quyền cho thư mục storage
+      run: chmod -R 777 storage bootstrap/cache
+
+    - name: Tạo Application Key
+      run: php artisan key:generate
+
+    - name: BƯỚC CHECK 1 - Chạy kiểm tra Format Code (PHP CS)
+      run: composer run phpcs
+
+    - name: BƯỚC CHECK 2 - Chạy phân tích lỗi tĩnh (Larastan / PHPStan)
+      run: composer run phpstan
+
+    - name: BƯỚC CHECK 3 - Chạy Unit Test (PHPUnit)
+      run: |
+        touch database/database.sqlite
+        php artisan test
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: database/database.sqlite

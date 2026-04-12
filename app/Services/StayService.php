@@ -62,7 +62,7 @@ final class StayService
     {
         try {
             $user = $this->userRepository->find($userId);
-            
+
             // Get total stays
             $totalStays = $this->bookingRepository->countStaysByUserId($userId);
 
@@ -94,7 +94,9 @@ final class StayService
                     'start_date' => $activeBooking->start_date,
                     'end_date' => $activeBooking->end_date,
                     'status' => $activeBooking->status === 0 ? 'Upcoming' : 'In Progress',
-                    'image' => $activeBooking->room->images[0]->image_url ?? 'https://images.unsplash.com/photo-1590490359683-658d3d23f972?auto=format&fit=crop&q=80&w=800',
+                    'image' => $activeBooking->room->images[0]->image_url
+                        ?? 'https://images.unsplash.com/photo-1590490359683-' .
+                        '658d3d23f972?auto=format&fit=crop&q=80&w=800',
                     'location' => $activeBooking->room->building->name ?? 'N/A',
                 ] : null,
                 'recent_history' => $recentHistory->map(function ($item) {
@@ -106,7 +108,9 @@ final class StayService
                         'status' => 'Completed',
                     ];
                 }),
-                'has_pending_contract' => $activeBooking ? ($activeBooking->contracts()->where('status', 0)->exists()) : false,
+                'has_pending_contract' => $activeBooking
+                    ? ($activeBooking->contracts()->where('status', 0)->exists())
+                    : false,
             ];
         } catch (Exception $e) {
             Log::error('Error in StayService@getDashboardData: ' . $e->getMessage());
@@ -162,7 +166,7 @@ final class StayService
     {
         try {
             $booking = $this->bookingRepository->find($bookingId);
-            
+
             if (!$booking || $booking->user_id !== $userId) {
                 return ['success' => false, 'message' => 'Booking not found or unauthorized'];
             }

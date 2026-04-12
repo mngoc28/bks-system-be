@@ -136,7 +136,7 @@ final class PartnerDashboardController extends Controller
     {
         $partnerId = Auth::id();
         $result = $this->dashboardService->getStatsForPartner($partnerId);
-        
+
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }
@@ -151,7 +151,7 @@ final class PartnerDashboardController extends Controller
     {
         $partnerId = Auth::id();
         $result = $this->dashboardService->getPendingBookingsForPartner($partnerId);
-        
+
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }
@@ -166,7 +166,7 @@ final class PartnerDashboardController extends Controller
     {
         $partnerId = Auth::id();
         $result = $this->dashboardService->getUrgentMaintenancesForPartner($partnerId);
-        
+
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }
@@ -181,7 +181,7 @@ final class PartnerDashboardController extends Controller
     {
         $partnerId = Auth::id();
         $result = $this->dashboardService->getRevenueAnalyticsForPartner($partnerId);
-        
+
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }

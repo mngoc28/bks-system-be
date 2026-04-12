@@ -1,5 +1,6 @@
 includes:
     - ./vendor/nunomaduro/larastan/extension.neon
+    - phpstan-baseline.neon
 
 parameters:
 
@@ -11,6 +12,7 @@ parameters:
 
     ignoreErrors:
         - '#PHPDoc tag @var#'
+        - '#Call to an undefined static method CloudinaryLabs\\CloudinaryLaravel\\Facades\\Cloudinary::.*#'
 
     excludePaths:
         - ./.git
@@ -19,5 +21,4 @@ parameters:
         - ./node_modules/*
         - ./app/Services/CognitoTokenApiGuard.php
 
-    checkMissingIterableValueType: false
     reportUnmatchedIgnoredErrors: false
