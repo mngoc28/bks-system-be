@@ -30,6 +30,28 @@ class UserService
     }
 
     /**
+     * Normalize avatar path to an absolute URL for API responses.
+     *
+     * @param string|null $avatar
+     * @return string|null
+     */
+    private function resolveAvatarUrl(?string $avatar): ?string
+    {
+        if (! $avatar) {
+            return null;
+        }
+
+        if (preg_match('/^(https?:)?\/\//i', $avatar)) {
+            return $avatar;
+        }
+
+        $baseUrl = rtrim((string) config('const.CLOUDINARY_HEADER_IMAGE_URL'), '/');
+        $path = '/' . ltrim($avatar, '/');
+
+        return $baseUrl . $path;
+    }
+
+    /**
      * Handle getting all users.
      *
      * @param mixed $request
@@ -39,6 +61,14 @@ class UserService
     {
         try {
             $users = $this->userRepository->getAll($request);
+
+            if ($users) {
+                $users->getCollection()->transform(function ($user) {
+                    $user->avatar = $this->resolveAvatarUrl($user->avatar);
+                    return $user;
+                });
+            }
+
             return [
                 'success' => true,
                 'data'    => $users,
@@ -103,9 +133,8 @@ class UserService
                     'role'       => $user->role ?? null,
                     'phone'      => $user->phone ?? null,
                     'status'     => $user->status,
-                    'avatar'     => $user->avatar
-                        ? config(key: 'const.CLOUDINARY_HEADER_IMAGE_URL') . $user->avatar
-                        : null,
+                    'avatar'     => $this->resolveAvatarUrl($user->avatar),
+                    'id_avatar'  => $user->id_avatar,
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
                 ],
@@ -129,7 +158,7 @@ class UserService
                 return [false, __('user.update_no_data')];
             }
 
-            $allowedFields = ['name', 'email', 'phone', 'role'];
+            $allowedFields = ['name', 'email', 'phone', 'role', 'avatar', 'id_avatar'];
             $data          = array_intersect_key($data, array_flip($allowedFields));
             $data          = array_filter($data, fn($value) => $value !== null && $value !== '');
 
@@ -153,9 +182,8 @@ class UserService
                     'email' => $updatedUser->email ?? null,
                     'role'  => $updatedUser->role ?? null,
                     'phone' => $updatedUser->phone ?? null,
-                    'avatar' => $updatedUser->avatar
-                        ? config('const.CLOUDINARY_HEADER_IMAGE_URL') . $updatedUser->avatar
-                        : null,
+                    'avatar' => $this->resolveAvatarUrl($updatedUser->avatar),
+                    'id_avatar' => $updatedUser->id_avatar ?? null,
                 ],
             ];
         } catch (Exception $e) {
@@ -350,7 +378,7 @@ class UserService
 
             // Attach full URL for response
             $responseData = $uploadResult;
-            $responseData['url'] = config('const.CLOUDINARY_HEADER_IMAGE_URL') . $uploadResult['url'];
+            $responseData['url'] = $this->resolveAvatarUrl($uploadResult['url']);
 
             return [
                 'success' => true,

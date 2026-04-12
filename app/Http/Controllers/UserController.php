@@ -195,7 +195,7 @@ class UserController extends \App\Http\Controllers\Controller
             );
         }
 
-        $data = $request->only(['name', 'email', 'phone', 'role']);
+        $data = $request->only(['name', 'email', 'phone', 'role', 'avatar', 'id_avatar']);
         [$status, $dataResult] = $this->userService->handleUpdate($id, $data);
 
         if ($status === true) {

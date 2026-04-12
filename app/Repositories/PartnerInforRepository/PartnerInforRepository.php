@@ -56,11 +56,17 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
         if ($request->filled('user_name')) {
             $query->where('users.name', 'LIKE', '%' . $request->user_name . '%');
         }
+        if ($request->filled('company_name')) {
+            $query->where('partner_info.company_name', 'LIKE', '%' . $request->company_name . '%');
+        }
         if ($request->filled('province_name')) {
             $query->where('provinces.name', 'LIKE', '%' . $request->province_name . '%');
         }
         if ($request->filled('ward_name')) {
             $query->where('wards.name', 'LIKE', '%' . $request->ward_name . '%');
+        }
+        if ($request->has('status') && $request->input('status') !== '') {
+            $query->where('users.status', (int) $request->input('status'));
         }
         if ($request->filled("phone")) {
             $query->where('partner_info.phone', 'like', '%' . $request->phone . '%');
@@ -68,19 +74,32 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
         if ($request->filled('address')) {
             $query->where('partner_info.address', 'like', '%' . $request->address . '%');
         }
+        if ($request->filled('website')) {
+            $query->where('partner_info.website', 'like', '%' . $request->website . '%');
+        }
         //sort
         $sortField = $request->input('sort_field');
         $sortDirection = $request->input('sort_direction');
 
+        $sortableFields = [
+            'id' => 'partner_info.id',
+            'company_name' => 'partner_info.company_name',
+            'user_name' => 'users.name',
+            'province_name' => 'provinces.name',
+            'ward_name' => 'wards.name',
+            'created_at' => 'partner_info.created_at',
+            'updated_at' => 'partner_info.updated_at',
+        ];
+
         if (
             $sortField
-            && in_array($sortField, ['id', 'user_name', 'province_name', 'ward_name', 'created_at', 'updated_at'])
+            && array_key_exists($sortField, $sortableFields)
             && in_array($sortDirection, ['asc', 'desc'])
         ) {
-            $query->orderBy($sortField, $sortDirection);
+            $query->orderBy($sortableFields[$sortField], $sortDirection);
         } else {
             // Default sorting
-            $query->orderBy('id', 'desc');
+            $query->orderBy('partner_info.id', 'desc');
         }
 
         $perPage = (int) ($request->filled("per_page") ?

@@ -41,10 +41,15 @@ class UserValidation
         return Validator::make($request->all(), [
             'id'    => 'sometimes|integer|exists:users,id',
             'name'  => 'sometimes|string|max:100',
+            'email' => 'sometimes|email|max:255',
             'phone' => 'sometimes|string|max:20',
             'role'  => 'sometimes|string|in:admin,partner,user',
+            'avatar' => 'sometimes|nullable|string|max:255',
+            'id_avatar' => 'sometimes|nullable|string|max:255',
         ], [
             'name.max'     => __('user.name_max'),
+            'email.email'  => __('user.email_invalid'),
+            'email.max'    => __('user.email_max'),
             'phone.max'    => __('user.phone_max'),
             'role.string'  => __('user.role_string'),
             'role.in'      => __('user.role_in'),

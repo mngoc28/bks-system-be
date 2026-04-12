@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class BuildingsRepository
@@ -46,6 +47,7 @@ final class BuildingsRepository extends BaseRepository implements BuildingsRepos
                 'users.name as user_name',
                 'provinces.name as province_name',
                 'wards.name as ward_name',
+                DB::raw('(SELECT bi.image_url FROM building_images bi WHERE bi.building_id = buildings.id ORDER BY bi.sort ASC, bi.id ASC LIMIT 1) as cover_image_url'),
             ])
             ->leftJoin('users', 'buildings.user_id', '=', 'users.id')
             ->leftJoin('provinces', 'buildings.province_id', '=', 'provinces.id')
@@ -186,6 +188,7 @@ final class BuildingsRepository extends BaseRepository implements BuildingsRepos
                 'users.name as user_name',
                 'provinces.name as province_name',
                 'wards.name as ward_name',
+                DB::raw('(SELECT bi.image_url FROM building_images bi WHERE bi.building_id = buildings.id ORDER BY bi.sort ASC, bi.id ASC LIMIT 1) as cover_image_url'),
             ])
             ->leftJoin('users', 'buildings.user_id', '=', 'users.id')
             ->leftJoin('provinces', 'buildings.province_id', '=', 'provinces.id')

@@ -250,7 +250,7 @@ final class BuildingImageService
             foreach ($data['ids'] as $index => $id) {
                 $this->buildingImageRepository->updateWhere(
                     ['id' => $id, 'building_id' => $buildingId],
-                    ['sort' => $index]
+                    ['sort' => $index + 1]
                 );
             }
 
