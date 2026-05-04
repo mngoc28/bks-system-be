@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Room;
 use App\Repositories\RoomMaintenanceRepository\RoomMaintenanceRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class RoomMaintenanceService
@@ -24,7 +26,13 @@ class RoomMaintenanceService
             $result = $this->roomMaintenanceRepository->getList($filters);
 
             if ($result instanceof LengthAwarePaginator) {
-                return $result->toArray();
+                return [
+                    'current_page' => $result->currentPage(),
+                    'data' => $result->items(),
+                    'last_page' => $result->lastPage(),
+                    'per_page' => $result->perPage(),
+                    'total' => $result->total(),
+                ];
             }
 
             return [
@@ -51,6 +59,25 @@ class RoomMaintenanceService
     public function create(array $payload): array
     {
         try {
+            $room = Room::query()->find($payload['room_id']);
+            if (!$room) {
+                return [
+                    'success' => false,
+                    'data' => null,
+                    'message' => __('room_maintenance.create_failed'),
+                ];
+            }
+
+            if (empty($payload['property_id'])) {
+                $payload['property_id'] = $room->building_id;
+            }
+
+            if (empty($payload['status'])) {
+                $payload['status'] = 'planned';
+            }
+
+            $payload['created_by'] = Auth::id();
+
             $maintenance = $this->roomMaintenanceRepository->create($payload);
 
             return [

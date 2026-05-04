@@ -26,7 +26,7 @@ class StayPortalSeeder extends Seeder
             ['email' => 'user@gmail.com'],
             [
                 'name' => 'Nguyễn Văn User',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('123456a!'),
                 'role' => 'user',
                 'is_email_verified' => true,
                 'phone' => '0987654321',

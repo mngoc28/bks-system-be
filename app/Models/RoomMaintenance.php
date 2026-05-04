@@ -19,6 +19,7 @@ class RoomMaintenance extends Model
         'property_id',
         'title',
         'description',
+        'images',
         'maintenance_type',
         'start_time',
         'end_time',
@@ -33,6 +34,7 @@ class RoomMaintenance extends Model
      */
     protected $casts = [
         'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        'end_time'   => 'datetime',
+        'images'     => 'array',
     ];
 }

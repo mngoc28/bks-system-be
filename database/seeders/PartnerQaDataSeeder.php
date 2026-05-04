@@ -39,9 +39,9 @@ final class PartnerQaDataSeeder extends Seeder
             ->where('is_active', true)
             ->whereIn('slug', [
                 'khach-san-hotel',
-                'nha-nghi-motel-guesthouse',
-                'can-ho-dich-vu',
-                'homestay',
+                'nha-nghi-guesthouse',
+                'can-ho-dich-vu-theo-phong',
+                'homestay-co-chia-phong',
             ])
             ->orderBy('id')
             ->get();
@@ -72,9 +72,9 @@ final class PartnerQaDataSeeder extends Seeder
 
         $typeProfiles = [
             'khach-san-hotel' => ['rent_category' => 2, 'floors' => 18, 'units' => 220, 'area' => 8800, 'room_count' => 10, 'label' => 'Hotel', 'property_count' => 2],
-            'nha-nghi-motel-guesthouse' => ['rent_category' => 2, 'floors' => 5, 'units' => 45, 'area' => 1400, 'room_count' => 6, 'label' => 'Guesthouse', 'property_count' => 2],
-            'can-ho-dich-vu' => ['rent_category' => 2, 'floors' => 14, 'units' => 130, 'area' => 5200, 'room_count' => 7, 'label' => 'Serviced Apt', 'property_count' => 2],
-            'homestay' => ['rent_category' => 2, 'floors' => 3, 'units' => 24, 'area' => 900, 'room_count' => 6, 'label' => 'Homestay', 'property_count' => 2],
+            'nha-nghi-guesthouse' => ['rent_category' => 2, 'floors' => 5, 'units' => 45, 'area' => 1400, 'room_count' => 6, 'label' => 'Guesthouse', 'property_count' => 2],
+            'can-ho-dich-vu-theo-phong' => ['rent_category' => 2, 'floors' => 14, 'units' => 130, 'area' => 5200, 'room_count' => 7, 'label' => 'Serviced Apt', 'property_count' => 2],
+            'homestay-co-chia-phong' => ['rent_category' => 2, 'floors' => 3, 'units' => 24, 'area' => 900, 'room_count' => 6, 'label' => 'Homestay', 'property_count' => 2],
         ];
 
         $propertySerial = 1;
@@ -127,16 +127,16 @@ final class PartnerQaDataSeeder extends Seeder
                     $basePeople = min($basePeople, 3);
                     $baseRoomType = 2;
                 }
-                if ($meta['slug'] === 'can-ho-dich-vu') {
+                if ($meta['slug'] === 'can-ho-dich-vu-theo-phong') {
                     $baseArea += 12;
                     $baseDeposit += 1200000;
                     $baseRoomType = 3;
                 }
-                if ($meta['slug'] === 'homestay') {
+                if ($meta['slug'] === 'homestay-co-chia-phong') {
                     $baseFloor = min($i + 1, 3);
                     $basePeople = max($basePeople, 3);
                 }
-                if ($meta['slug'] === 'nha-nghi-motel-guesthouse') {
+                if ($meta['slug'] === 'nha-nghi-guesthouse') {
                     $baseArea = min($baseArea, 28);
                     $baseDeposit = max(500000, $baseDeposit - 500000);
                 }
@@ -312,9 +312,9 @@ final class PartnerQaDataSeeder extends Seeder
     {
         return match ($slug) {
             'khach-san-hotel' => [0, 0, 1, 0, 3],
-            'nha-nghi-motel-guesthouse' => [1, 0, 3, 1],
-            'can-ho-dich-vu' => [1, 1, 3, 0, 1],
-            'homestay' => [0, 1, 3, 2, 0],
+            'nha-nghi-guesthouse' => [1, 0, 3, 1],
+            'can-ho-dich-vu-theo-phong' => [1, 1, 3, 0, 1],
+            'homestay-co-chia-phong' => [0, 1, 3, 2, 0],
             default => [0, 1, 3, 2],
         };
     }
@@ -326,7 +326,7 @@ final class PartnerQaDataSeeder extends Seeder
     {
         return match ($slug) {
             'khach-san-hotel' => 4,
-            'can-ho-dich-vu', 'homestay' => 3,
+            'can-ho-dich-vu-theo-phong', 'homestay-co-chia-phong' => 3,
             default => 2,
         };
     }
@@ -349,7 +349,7 @@ final class PartnerQaDataSeeder extends Seeder
             };
         }
 
-        if ($slug === 'nha-nghi-motel-guesthouse') {
+        if ($slug === 'nha-nghi-guesthouse') {
             return match ($slot % 3) {
                 0 => [$today->copy()->subDays(25)->toDateString(), $today->copy()->subDays(4)->toDateString(), 'short_stay_past'],
                 1 => [$today->copy()->subDays(20)->toDateString(), $today->copy()->subDays(2)->toDateString(), 'recently_completed'],
@@ -357,7 +357,7 @@ final class PartnerQaDataSeeder extends Seeder
             };
         }
 
-        if ($slug === 'can-ho-dich-vu') {
+        if ($slug === 'can-ho-dich-vu-theo-phong') {
             return match ($slot % 2) {
                 0 => [$today->copy()->subDays(8)->toDateString(), $today->copy()->addDays(4)->toDateString(), 'long_running_stay'],
                 default => [$today->copy()->addDays(4)->toDateString(), $today->copy()->addDays(18)->toDateString(), 'future_serviced_stay'],

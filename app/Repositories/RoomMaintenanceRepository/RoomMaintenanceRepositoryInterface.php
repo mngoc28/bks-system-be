@@ -14,6 +14,14 @@ use App\Repositories\RepositoryInterface;
 interface RoomMaintenanceRepositoryInterface extends RepositoryInterface
 {
     /**
+     * Get room maintenance list with optional filters
+     *
+     * @param array $filters
+     * @return mixed
+     */
+    public function getList(array $filters);
+
+    /**
      * Get urgent maintenance requests for a specific partner
      *
      * @param int $partnerId

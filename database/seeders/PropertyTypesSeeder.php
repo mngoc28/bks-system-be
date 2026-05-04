@@ -6,34 +6,37 @@ namespace Database\Seeders;
 
 use App\Models\PropertyType;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 final class PropertyTypesSeeder extends Seeder
 {
     public function run(): void
     {
-        // Deactivate existing types by default; only selected types below remain active.
-        PropertyType::query()->update(['is_active' => false]);
+        // Clear the table to ensure only the 4 specified types exist
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0');
+        PropertyType::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
         $propertyTypes = [
             [
                 'slug' => 'khach-san-hotel',
                 'name' => 'Khách sạn (Hotel)',
-                'description' => 'Cơ sơ lưu trú từ 1-5 sao với đầy đủ dịch vụ buồng phòng, lễ tân và tiện ích đi kèm.',
+                'description' => 'Cung cấp dịch vụ lưu trú chuyên nghiệp với đầy đủ tiện ích và phòng ốc tiêu chuẩn.',
             ],
             [
-                'slug' => 'nha-nghi-motel-guesthouse',
-                'name' => 'Nhà nghỉ (Motel/Guesthouse)',
-                'description' => 'Cơ sở lưu trú quy mô nhỏ, cung cấp dịch vụ nghỉ ngơi cơ bản với giá cả phải chăng.',
+                'slug' => 'nha-nghi-guesthouse',
+                'name' => 'Nhà nghỉ / Guesthouse',
+                'description' => 'Cơ sở lưu trú quy mô nhỏ, tập trung vào sự tiện lợi và chi phí tiết kiệm cho khách hàng.',
             ],
             [
-                'slug' => 'can-ho-dich-vu',
-                'name' => 'Căn hộ dịch vụ',
-                'description' => 'Căn hộ với các tiện ích giống khách sạn như dọn phòng, giặt là, thường dành cho chuyên gia hoặc khách lưu trú lâu.',
+                'slug' => 'can-ho-dich-vu-theo-phong',
+                'name' => 'Căn hộ dịch vụ cho thuê theo phòng',
+                'description' => 'Mô hình căn hộ cao cấp được chia nhỏ thành các phòng riêng biệt, kết hợp tiện nghi nhà ở và dịch vụ khách sạn.',
             ],
             [
-                'slug' => 'homestay',
-                'name' => 'Homestay',
-                'description' => 'Trải nghiệm sống cùng người dân bản địa, tìm hiểu văn hoá và con người tại địa phương.',
+                'slug' => 'homestay-co-chia-phong',
+                'name' => 'Homestay có chia phòng',
+                'description' => 'Không gian sống gia đình được thiết kế chia thành nhiều phòng nghỉ riêng, mang lại cảm giác ấm cúng và gần gũi.',
             ],
         ];
 

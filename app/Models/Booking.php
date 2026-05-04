@@ -34,11 +34,12 @@ final class Booking extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'status'     => 'integer',
-        'start_date' => 'date',
-        'end_date'   => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'status'      => 'integer',
+        'stay_status' => 'string',
+        'start_date'  => 'date',
+        'end_date'    => 'date',
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime',
     ];
 
     /**

@@ -113,7 +113,7 @@ interface BookingRepositoryInterface extends RepositoryInterface
      * @param int $userId
      * @return \App\Models\Booking|null
      */
-    public function getActiveBookingByUserId(int $userId);
+    public function getActiveBookingByUserId(int $userId): ?\App\Models\Booking;
 
     /**
      * Get recent completed booking history for a user
@@ -125,12 +125,22 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function getRecentHistoryByUserId(int $userId, int $limit = 2): Collection;
 
     /**
-     * Get full booking history for a user
+     * Get full booking history for a user with pagination
      *
      * @param int $userId
-     * @return Collection
+     * @param int $perPage
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getBookingHistoryByUserId(int $userId): Collection;
+    public function getBookingHistoryByUserId(int $userId, int $perPage = 10): LengthAwarePaginator;
+
+    /**
+     * Get single booking detail for a user
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @return \App\Models\Booking|null
+     */
+    public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking;
 
     // =========================================================================
     // PARTNER METHODS

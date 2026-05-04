@@ -26,7 +26,7 @@ final class BookingController extends Controller
     /**
      * Constructor
      *
-     * @param BookingServices $bookingServices
+        * @param BookingService $bookingService
      * @param BookingValidation $bookingValidation
      */
     public function __construct(BookingService $bookingService, BookingValidation $bookingValidation)
@@ -225,6 +225,43 @@ final class BookingController extends Controller
             );
         }
         $result = $this->bookingService->handleCancelBooking($request, $id);
+
+        if (! $result['success']) {
+            $statusCode = $result['data'] === null
+                ? HttpStatus::NOT_FOUND
+                : HttpStatus::BAD_REQUEST;
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                $statusCode
+            );
+        }
+
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
+
+    /**
+     * Confirm booking for partner/admin workflow
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function confirmBooking(Request $request, int $id): JsonResponse
+    {
+        $validator = $this->bookingValidation->confirmBookingValidation($id);
+        if ($validator->fails()) {
+            return $this->validateError(
+                $validator->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        $result = $this->bookingService->handleConfirmBooking($request, $id);
 
         if (! $result['success']) {
             $statusCode = $result['data'] === null

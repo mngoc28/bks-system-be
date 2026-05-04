@@ -117,4 +117,13 @@ interface RoomsRepositoryInterface extends RepositoryInterface
      * @return int
      */
     public function getEmptyRoomsForPartner(int $partnerId): int;
+
+    /**
+     * Get rooms occupancy data for a specific building/partner
+     *
+     * @param int $partnerId
+     * @param int $buildingId
+     * @return Collection
+     */
+    public function getOccupancyForPartner(int $partnerId, int $buildingId): Collection;
 }

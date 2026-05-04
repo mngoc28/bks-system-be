@@ -40,8 +40,8 @@ class RoomMaintenanceController extends Controller
         $data = $this->roomMaintenanceService->getList($validator->validated());
 
         return $this->successResponse(
-            __('room_maintenance.list_success'),
             $data,
+            __('room_maintenance.list_success'),
             HttpStatus::OK
         );
     }
@@ -54,6 +54,14 @@ class RoomMaintenanceController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->filled('start_time') && $request->filled('start_date')) {
+            $request->merge(['start_time' => $request->input('start_date')]);
+        }
+
+        if (!$request->filled('end_time') && $request->filled('end_date')) {
+            $request->merge(['end_time' => $request->input('end_date')]);
+        }
+
         $validator = $this->roomMaintenanceValidation->storeValidation($request);
         if ($validator->fails()) {
             return $this->errorResponse(
@@ -74,8 +82,8 @@ class RoomMaintenanceController extends Controller
         }
 
         return $this->successResponse(
-            $response['message'],
             $response['data'],
+            $response['message'],
             HttpStatus::OK
         );
     }

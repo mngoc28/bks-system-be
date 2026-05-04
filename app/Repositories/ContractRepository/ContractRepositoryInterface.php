@@ -26,4 +26,21 @@ interface ContractRepositoryInterface extends RepositoryInterface
      * @return Contract|null
      */
     public function getContractDetail(int $id, int $userId): ?Contract;
+
+    /**
+     * Get contracts for a specific partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getContractsForPartner(int $partnerId): Collection;
+
+    /**
+     * Get contract detail for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return Contract|null
+     */
+    public function getPartnerContractDetail(int $id, int $partnerId): ?Contract;
 }

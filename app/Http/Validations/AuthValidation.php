@@ -57,7 +57,7 @@ class AuthValidation
             $request->all(),
             [
                 'email' => 'required|email|max:255',
-                'password' => 'required|string|min:8'
+                'password' => 'required|string|min:8|regex:/[a-zA-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*]/'
             ],
             [
                 'email.required' => __('auth.email_required'),
@@ -66,6 +66,7 @@ class AuthValidation
                 'password.required' => __('auth.password_required'),
                 'password.string' => __('auth.password_string'),
                 'password.min' => __('auth.password_min'),
+                'password.regex' => __('auth.password_regex'),
                 'user_type.required' => __('auth.user_type_required'),
                 'user_type.in' => __('auth.user_type_in'),
             ]
@@ -85,7 +86,7 @@ class AuthValidation
             [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email|max:255',
-                'password' => 'required|string|min:8',
+                'password' => 'required|string|min:8|regex:/[a-zA-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*]/',
                 'phone' => 'nullable|string|max:20',
                 'role' => 'nullable|in:admin,partner,user',
                 'status' => 'nullable|in:0,1,2',
@@ -101,6 +102,7 @@ class AuthValidation
                 'password.required' => __('auth.password_required'),
                 'password.string' => __('auth.password_string'),
                 'password.min' => __('auth.password_min'),
+                'password.regex' => __('auth.password_regex'),
                 'phone.string' => __('auth.phone_string'),
                 'phone.max' => __('auth.phone_max'),
                 'role.in' => __('auth.role_in'),
@@ -136,7 +138,7 @@ class AuthValidation
             array_merge($request->all(), ['token' => $token]),
             [
                 'token' => ['required', 'string', 'exists:users,verification_token'],
-                'password' => 'required|string|min:8',
+                'password' => 'required|string|min:8|regex:/[a-zA-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*]/',
                 'password_confirmation' => 'required|string|same:password',
             ],
             [
@@ -146,6 +148,7 @@ class AuthValidation
                 'password.required' => __('auth.password_required'),
                 'password.string' => __('auth.password_string'),
                 'password.min' => __('auth.password_min'),
+                'password.regex' => __('auth.password_regex'),
                 'password_confirmation.required' => __('auth.password_confirmation_required'),
                 'password_confirmation.string' => __('auth.password_confirmation_string'),
                 'password_confirmation.same' => __('auth.password_confirmation_not_match'),

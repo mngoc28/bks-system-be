@@ -8,6 +8,7 @@ use App\Enums\BookingStatus;
 use App\Enums\ImageType;
 use App\Enums\RoomStatus;
 use App\Models\Room;
+use App\Models\Building;
 use App\Repositories\BaseRepository;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -556,5 +557,62 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 $query->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
                     ->where('end_date', '>=', $today);
             })->count();
+    }
+
+    /**
+     * Get rooms occupancy data for a specific building/partner
+     *
+     * @param int $partnerId
+     * @param int $buildingId
+     * @return \Illuminate\Support\Collection
+     */
+    public function getOccupancyForPartner(int $partnerId, int $buildingId): \Illuminate\Support\Collection
+    {
+        $today = now()->toDateString();
+        $confirmedStatus = BookingStatus::CONFIRMED->value;
+
+        return $this->model
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.user_id', $partnerId)
+            ->where('rooms.building_id', $buildingId)
+            ->select(
+                'rooms.id',
+                'rooms.room_number',
+                'rooms.title',
+                'rooms.floor_number',
+                'rooms.status as room_visibility', // is public or private
+                DB::raw("CASE 
+                    WHEN rooms.status = 0 THEN 'hidden'
+                    WHEN EXISTS (
+                        SELECT 1 FROM bookings 
+                        WHERE bookings.room_id = rooms.id 
+                        AND bookings.status = " . $confirmedStatus . "
+                        AND bookings.start_date <= '$today'
+                        AND bookings.end_date >= '$today'
+                    ) THEN 'occupied'
+                    WHEN EXISTS (
+                        SELECT 1 FROM room_maintenances 
+                        WHERE room_maintenances.room_id = rooms.id 
+                        AND room_maintenances.status IN ('planned', 'in_progress')
+                        AND DATE(room_maintenances.start_time) <= '$today'
+                        AND (room_maintenances.end_time IS NULL OR DATE(room_maintenances.end_time) >= '$today')
+                    ) THEN 'maintenance'
+                    ELSE 'vacant'
+                END as occupancy_status"),
+                // Subqueries for customer info (only when occupied)
+                DB::raw("(SELECT u.name FROM bookings b JOIN users u ON b.user_id = u.id 
+                    WHERE b.room_id = rooms.id AND b.status = " . $confirmedStatus . "
+                    AND b.start_date <= '$today' AND b.end_date >= '$today' LIMIT 1) as customer_name"),
+                DB::raw("(SELECT u.phone FROM bookings b JOIN users u ON b.user_id = u.id 
+                    WHERE b.room_id = rooms.id AND b.status = " . $confirmedStatus . "
+                    AND b.start_date <= '$today' AND b.end_date >= '$today' LIMIT 1) as customer_phone"),
+                DB::raw("(SELECT b.start_date FROM bookings b 
+                    WHERE b.room_id = rooms.id AND b.status = " . $confirmedStatus . "
+                    AND b.start_date <= '$today' AND b.end_date >= '$today' LIMIT 1) as check_in_date"),
+                DB::raw("(SELECT b.end_date FROM bookings b 
+                    WHERE b.room_id = rooms.id AND b.status = " . $confirmedStatus . "
+                    AND b.start_date <= '$today' AND b.end_date >= '$today' LIMIT 1) as check_out_date")
+            )
+            ->get();
     }
 }

@@ -65,12 +65,21 @@ class UserValidation
     {
         return Validator::make($request->all(), [
             'current_password'          => 'required|string',
-            'new_password'              => 'required|string|min:8|different:current_password',
+            'new_password'              => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[a-zA-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*]/',
+                'different:current_password'
+            ],
             'new_password_confirmation' => 'required|string|same:new_password',
         ], [
             'current_password.required'          => __('user.current_password_required'),
             'new_password.required'              => __('user.new_password_required'),
             'new_password.min'                   => __('user.new_password_min'),
+            'new_password.regex'                 => __('user.new_password_regex'),
             'new_password.different'             => __('user.new_password_different'),
             'new_password_confirmation.required' => __('user.new_password_confirmation_required'),
             'new_password_confirmation.same'     => __('user.new_password_confirmation_same'),
@@ -86,11 +95,12 @@ class UserValidation
     public function validateResetPassword(Request $request): \Illuminate\Validation\Validator
     {
         return Validator::make($request->all(), [
-            'new_password'              => 'required|string|min:8',
+            'new_password'              => 'required|string|min:8|regex:/[a-zA-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*]/',
             'new_password_confirmation' => 'required|string|same:new_password',
         ], [
             'new_password.required'              => __('user.new_password_required'),
             'new_password.min'                   => __('user.new_password_min'),
+            'new_password.regex'                 => __('user.new_password_regex'),
             'new_password_confirmation.required' => __('user.new_password_confirmation_required'),
             'new_password_confirmation.same'     => __('user.new_password_confirmation_same'),
         ]);
@@ -107,7 +117,7 @@ class UserValidation
             'name'                  => 'required|string|max:100',
             'email'                 => 'required|email|max:255|unique:users,email',
             'phone'                 => 'sometimes|nullable|string|max:20',
-            'password'              => 'required|string|min:8',
+            'password'              => 'required|string|min:8|regex:/[a-zA-Z]/|regex:/[0-9]/|regex:/[!@#$%^&*]/',
             'password_confirmation' => 'required|string|same:password',
             'role'                  => 'nullable|in:admin,partner,user',
             'status'                => 'nullable|in:0,1,2',
@@ -122,6 +132,7 @@ class UserValidation
             'phone.max'                      => __('user.phone_max'),
             'password.required'              => __('user.password_required'),
             'password.min'                   => __('user.password_min'),
+            'password.regex'                 => __('user.password_regex'),
             'password_confirmation.required' => __('user.password_confirmation_required'),
             'password_confirmation.same'     => __('user.password_confirmation_same'),
             'role.in'                        => __('user.role_in'),

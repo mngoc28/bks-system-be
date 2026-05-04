@@ -1,6 +1,6 @@
 name: Laravel CI Checks
 
-# Kịch bản này sẽ tự động chạy khi bạn push code hoặc tạo Pull Request vào nhánh dev, main hoặc master
+# This script will run automatically when you push code or create a Pull Request to the dev, main, or master branches
 on:
   push:
     branches: [ "main", "master", "dev" ]
@@ -9,38 +9,38 @@ on:
 
 jobs:
   laravel-tests:
-    runs-on: ubuntu-latest # Chạy trên máy chủ ảo Linux của GitHub
+    runs-on: ubuntu-latest # Runs on GitHub's Linux virtual runner
 
     steps:
-    - name: Clone source code về máy chủ ảo
+    - name: Clone source code
       uses: actions/checkout@v3
 
-    - name: Cài đặt PHP phiên bản 8.3
+    - name: Setup PHP 8.3
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.3' 
         extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring
         coverage: none
 
-    - name: Copy file .env
+    - name: Copy .env file
       run: php -r "file_exists('.env') || copy('.env.example', '.env');"
 
-    - name: Cài đặt các thư viện (Composer Install)
+    - name: Install dependencies (Composer Install)
       run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
-    - name: Cấp quyền cho thư mục storage
+    - name: Set permissions for storage and cache
       run: chmod -R 777 storage bootstrap/cache
 
-    - name: Tạo Application Key
+    - name: Generate Application Key
       run: php artisan key:generate
 
-    - name: BƯỚC CHECK 1 - Chạy kiểm tra Format Code (PHP CS)
+    - name: STEP 1 - Run Code Format Check (PHP CS)
       run: composer run phpcs
 
-    - name: BƯỚC CHECK 2 - Chạy phân tích lỗi tĩnh (Larastan / PHPStan)
+    - name: STEP 2 - Run Static Analysis (Larastan / PHPStan)
       run: composer run phpstan
 
-    - name: BƯỚC CHECK 3 - Chạy Unit Test (PHPUnit)
+    - name: STEP 3 - Run Unit Tests (PHPUnit)
       run: |
         touch database/database.sqlite
         php artisan test
