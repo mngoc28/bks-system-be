@@ -67,4 +67,38 @@ final class PartnerBookingController extends Controller
             $result['message']
         );
     }
+
+    /**
+     * Check-in a booking
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function checkIn(int $id): JsonResponse
+    {
+        $result = $this->bookingService->handleCheckIn($id);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse(null, $result['message']);
+    }
+
+    /**
+     * Check-out a booking
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function checkOut(int $id): JsonResponse
+    {
+        $result = $this->bookingService->handleCheckOut($id);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse(null, $result['message']);
+    }
 }

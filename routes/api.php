@@ -23,12 +23,16 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PartnerInforController;
 use App\Http\Controllers\EU\PartnerController;
 use App\Http\Controllers\EU\RoomController as EURoomsController;
-use App\Http\Controllers\NewRoomController;
 use App\Http\Controllers\PropertyTypeController;
+use App\Http\Controllers\Partner\PartnerBookingController;
 use App\Http\Controllers\Partner\PartnerBuildingController;
 use App\Http\Controllers\Partner\PartnerRoomController;
-use App\Http\Controllers\Partner\PartnerBookingController;
+use App\Http\Controllers\Partner\PartnerContractController;
 use App\Http\Controllers\Partner\PartnerDashboardController;
+use App\Http\Controllers\Partner\PartnerChatController;
+use App\Http\Controllers\Partner\PartnerPriceRuleController;
+use App\Http\Controllers\Partner\PartnerReportController;
+use App\Http\Controllers\Partner\PartnerStayServiceController;
 use App\Http\Controllers\Stay\StayController;
 use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
@@ -437,6 +441,22 @@ Route::group([
         });
 
         /**
+         * Provinces API (for partner building form)
+         * Base Url /api/v1/partner/provinces/
+         */
+        Route::prefix('provinces')->group(function () {
+            Route::get('all', [ProvincesController::class, 'getAllProvincesTypes']);
+        });
+
+        /**
+         * Wards API (for partner building form)
+         * Base Url /api/v1/partner/wards/
+         */
+        Route::prefix('wards')->group(function () {
+            Route::get('{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
+        });
+
+        /**
          * Buildings API
          * Base Url /api/v1/partner/buildings/
          */
@@ -445,9 +465,9 @@ Route::group([
             Route::get("types", [BuildingsController::class, "getAllBuildingsTypes"]);
             Route::get("bookings/{id}", [BuildingsController::class, "getBookingsByBuilding"])->whereNumber("id");
             Route::get("{id}", [PartnerBuildingController::class, "show"])->whereNumber("id");
-            Route::post("", [BuildingsController::class, "store"]);
-            Route::put("{id}", [BuildingsController::class, "update"])->whereNumber("id");
-            Route::delete("{id}", [BuildingsController::class, "destroy"])->whereNumber("id");
+            Route::post("", [PartnerBuildingController::class, "store"]);
+            Route::put("{id}", [PartnerBuildingController::class, "update"])->whereNumber("id");
+            Route::delete("{id}", [PartnerBuildingController::class, "destroy"])->whereNumber("id");
             Route::get("all", [PartnerBuildingController::class, "getBuildingNames"]);
         });
 
@@ -456,11 +476,16 @@ Route::group([
          * Base Url /api/v1/partner/rooms/
          */
         Route::prefix('rooms')->group(function () {
+            Route::get('/price-packages', [PartnerRoomController::class, 'getPricePackages']);
+            Route::get('/occupancy', [PartnerRoomController::class, 'occupancy']);
             Route::get('/search', [PartnerRoomController::class, 'index']);
             Route::get('{id}', [PartnerRoomController::class, 'show']);
             Route::get('building/{buildingId}', [RoomsController::class, 'getRoomNamesByBuildingId']);
-            Route::post('store', [RoomsController::class, 'store']);
-            Route::put('{id}', [RoomsController::class, 'update']);
+            Route::post('/', [PartnerRoomController::class, 'store']);
+            Route::post('bulk-store', [PartnerRoomController::class, 'bulkStore']);
+            Route::post('bulk-update-status', [PartnerRoomController::class, 'bulkUpdateStatus']);
+            Route::post('bulk-delete', [PartnerRoomController::class, 'bulkDelete']);
+            Route::put('{id}', [PartnerRoomController::class, 'update']);
             Route::delete('{id}', [RoomsController::class, 'destroy']);
         });
 
@@ -479,11 +504,9 @@ Route::group([
          * Base Url /api/v1/partner/building-images/
          */
         Route::prefix('building-images')->group(function () {
-            Route::get('building/{buildingId}', [BuildingImageController::class, 'getByBuildingId']);
-            Route::get('{id}', [BuildingImageController::class, 'show'])->whereNumber('id');
-            Route::post('/', [BuildingImageController::class, 'store']);
-            Route::put('{id}', [BuildingImageController::class, 'update'])->whereNumber('id');
-            Route::delete('{id}', [BuildingImageController::class, 'destroy'])->whereNumber('id');
+            Route::get('building/{id}', [PartnerBuildingController::class, 'getImages']);
+            Route::post('/{id}', [PartnerBuildingController::class, 'storeImages']);
+            Route::delete('/{id}/{imageId}', [PartnerBuildingController::class, 'deleteImage']);
             Route::put('/sort/{buildingId}', [BuildingImageController::class, 'sort'])->whereNumber('buildingId');
         });
 
@@ -492,10 +515,9 @@ Route::group([
          * Base Url /api/v1/partner/room-images/
          */
         Route::prefix('room-images')->group(function () {
-            Route::get('room/{roomId}', [RoomImageController::class, 'getByRoomId']);
-            Route::get('{id}', [RoomImageController::class, 'show'])->whereNumber('id');
-            Route::post('/', [RoomImageController::class, 'store']);
-            Route::put('/update-type', [RoomImageController::class, 'updateType']);
+            Route::get('room/{id}', [PartnerRoomController::class, 'getImages']);
+            Route::post('/{id}', [PartnerRoomController::class, 'storeImages']);
+            Route::delete('/{id}/{imageId}', [PartnerRoomController::class, 'deleteImage']);
             Route::put('{roomId}/update-sort/{imageIdA}/{imageIdB}', [RoomImageController::class, 'updateSort'])
                 ->whereNumber('roomId');
             Route::delete('/', [RoomImageController::class, 'destroy']);
@@ -531,6 +553,37 @@ Route::group([
             Route::put('{id}', [BookingController::class, 'update'])->whereNumber('id');
             Route::put('{id}/cancel', [BookingController::class, 'cancel'])->whereNumber('id');
             Route::put('{id}/confirm', [BookingController::class, 'confirmBooking'])->whereNumber('id');
+            Route::put('{id}/check-in', [PartnerBookingController::class, 'checkIn'])->whereNumber('id');
+            Route::put('{id}/check-out', [PartnerBookingController::class, 'checkOut'])->whereNumber('id');
+        });
+
+        /**
+         * Chat API
+         * Base Url /api/v1/partner/chat/
+         */
+        Route::prefix('chat')->group(function () {
+            Route::get('/', [PartnerChatController::class, 'index']);
+            Route::get('{id}', [PartnerChatController::class, 'show'])->whereNumber('id');
+            Route::post('/', [PartnerChatController::class, 'store']);
+        });
+
+        /**
+         * Price Rules API
+         * Base Url /api/v1/partner/price-rules/
+         */
+        Route::prefix('price-rules')->group(function () {
+            Route::get('/', [PartnerPriceRuleController::class, 'index']);
+            Route::post('/', [PartnerPriceRuleController::class, 'store']);
+            Route::put('{id}', [PartnerPriceRuleController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [PartnerPriceRuleController::class, 'destroy'])->whereNumber('id');
+        });
+
+        /**
+         * Reports API
+         * Base Url /api/v1/partner/reports/
+         */
+        Route::prefix('reports')->group(function () {
+            Route::get('kpis', [PartnerReportController::class, 'getKPIs']);
         });
 
         /**
@@ -540,6 +593,18 @@ Route::group([
         Route::prefix('room-maintenances')->group(function () {
             Route::get('/', [RoomMaintenanceController::class, 'index']);
             Route::post('/', [RoomMaintenanceController::class, 'store']);
+        });
+
+        Route::prefix('stay-services')->group(function () {
+            Route::get('/', [PartnerStayServiceController::class, 'index']);
+            Route::patch('/{id}', [PartnerStayServiceController::class, 'update']);
+        });
+
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::put('{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
+            Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
+            Route::delete('{id}', [NotificationController::class, 'destroy'])->whereNumber('id');
         });
 
         /**
@@ -583,6 +648,16 @@ Route::group([
             Route::put('{id}', [NewsController::class, 'update'])->whereNumber('id');
             Route::delete('{id}', [NewsController::class, 'destroy'])->whereNumber('id');
         });
+
+        /**
+         * Contracts API
+         * Base Url /api/v1/partner/contracts/
+         */
+        Route::prefix('contracts')->group(function () {
+            Route::get('/', [PartnerContractController::class, 'index']);
+            Route::post('/', [PartnerContractController::class, 'store']);
+            Route::get('{id}', [PartnerContractController::class, 'show'])->whereNumber('id');
+        });
     });
 
     /**
@@ -605,6 +680,7 @@ Route::group([
             Route::get('/filter', [HomeController::class, 'filterRooms']);
         });
         Route::get('/provinces', [HomeController::class, 'getProvinces']);
+        Route::get('/wards/{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
         Route::get('/partners/random', [HomeController::class, 'getRandomPartners']);
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);
     });
@@ -642,6 +718,8 @@ Route::group([
     Route::middleware(['jwt.auth'])->prefix('stay')->group(function () {
         Route::get('dashboard', [StayController::class, 'getDashboard']);
         Route::get('bookings', [StayController::class, 'getBookings']);
+        Route::get('bookings/{id}', [StayController::class, 'show']);
+        Route::post('bookings/{id}/extend', [StayController::class, 'extend']);
 
         Route::prefix('contracts')->group(function () {
             Route::get('/', [StayContractController::class, 'index']);

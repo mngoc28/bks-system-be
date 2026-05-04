@@ -47,4 +47,35 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
                 $query->where('user_id', $userId);
             })->with(['booking.user', 'booking.room.building', 'booking.price'])->first();
     }
+
+    /**
+     * Get contracts for a partner
+     *
+     * @param int $partnerId
+     * @return Collection
+     */
+    public function getContractsForPartner(int $partnerId): Collection
+    {
+        return $this->model->whereHas('booking.room.building', function ($query) use ($partnerId) {
+            $query->where('user_id', $partnerId);
+        })->with(['booking.user', 'booking.room.building'])->get();
+    }
+
+    /**
+     * Get contract detail for a specific partner
+     *
+     * @param int $id
+     * @param int $partnerId
+     * @return Contract|null
+     */
+    public function getPartnerContractDetail(int $id, int $partnerId): ?Contract
+    {
+        /** @var Contract|null $contract */
+        $contract = $this->model->where('id', $id)
+            ->whereHas('booking.room.building', function ($query) use ($partnerId) {
+                $query->where('user_id', $partnerId);
+            })->with(['booking.user', 'booking.room.building', 'booking.price'])->first();
+
+        return $contract;
+    }
 }

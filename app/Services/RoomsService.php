@@ -8,6 +8,9 @@ use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use App\Repositories\RoomServiceRepository\RoomServiceRepository;
 use App\Repositories\RoomAmenityRepository\RoomAmenityRepository;
 use App\Repositories\RoomPriceRepository\RoomPriceRepository;
+use App\Models\Building;
+use App\Models\Room;
+use App\Models\PricePackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -34,7 +37,6 @@ final class RoomsService
      *
      * @param RoomsRepositoryInterface $roomsRepository Handles data operations for rooms
      * @param RoomServiceService $roomServiceService Handles business logic for room services
-     * @param RoomImageService $roomImageService Handles business logic for room images
      * @param RoomAmenityService $roomAmenityService Handles business logic for room amenities
      * @param RoomPriceService $roomPriceService Handles business logic for room prices
      */
@@ -103,6 +105,7 @@ final class RoomsService
 
             return [
                 "success" => false,
+                "data" => null,
                 "message" => __("room.messages.not_found"),
             ];
         }
@@ -376,6 +379,7 @@ final class RoomsService
 
             return [
                 "success" => false,
+                "data" => null,
                 "message" => __("room.messages.not_found"),
             ];
         }
@@ -439,6 +443,213 @@ final class RoomsService
                 "success" => false,
                 "message" => __("room.messages.not_found"),
             ];
+        }
+    }
+
+    /**
+     * Get all price packages for partners
+     */
+    public function handleGetPricePackages(): array
+    {
+        try {
+            $packages = \App\Models\PricePackage::where('status', true)->get();
+            return [
+                "success" => true,
+                "data" => $packages,
+                "message" => "Lấy danh sách gói giá thành công.",
+            ];
+        } catch (\Exception $e) {
+            return ["success" => false, "message" => "Lỗi: " . $e->getMessage(), "data" => []];
+        }
+    }
+
+    /**
+     * Get rooms occupancy statistics for partner
+     */
+    public function handleGetRoomsOccupancy(Request $request): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $buildingId = (int)$request->input('building_id');
+
+            if (!$buildingId) {
+                return ["success" => false, "message" => "Vui lòng chọn bất động sản.", "data" => null];
+            }
+
+            $occupancyData = $this->roomsRepository->getOccupancyForPartner($partnerId, $buildingId);
+
+            // Calculate stats
+            $total = $occupancyData->count();
+            $vacant = $occupancyData->where('occupancy_status', 'vacant')->count();
+            $occupied = $occupancyData->where('occupancy_status', 'occupied')->count();
+            $maintenance = $occupancyData->where('occupancy_status', 'maintenance')->count();
+            $hidden = $occupancyData->where('occupancy_status', 'hidden')->count();
+
+            return [
+                "success" => true,
+                "data" => [
+                    "rooms" => $occupancyData,
+                    "stats" => [
+                        "total" => $total,
+                        "vacant" => $vacant,
+                        "occupied" => $occupied,
+                        "maintenance" => $maintenance,
+                        "hidden" => $hidden,
+                        "percentage" => $total > 0 ? round(($occupied / $total) * 100, 1) : 0
+                    ]
+                ],
+                "message" => "Lấy thông tin lấp đầy thành công.",
+            ];
+        } catch (\Exception $e) {
+            Log::error("Get occupancy failed: " . $e->getMessage());
+            return ["success" => false, "message" => $e->getMessage(), "data" => null];
+        }
+    }
+
+    /**
+     * Bulk create rooms
+     */
+    public function handleBulkCreateRooms(Request $request): array
+    {
+        try {
+            DB::beginTransaction();
+            $roomsData = $request->input('rooms', []);
+            $buildingId = (int) $request->input('building_id');
+            $partnerId = (int) Auth::id();
+
+            if (empty($roomsData) || !is_array($roomsData)) {
+                DB::rollBack();
+                return [
+                    "success" => false,
+                    "message" => "Danh sách phòng không hợp lệ.",
+                ];
+            }
+
+            $buildingOwned = Building::query()
+                ->where('id', $buildingId)
+                ->where('user_id', $partnerId)
+                ->exists();
+
+            if (!$buildingOwned) {
+                DB::rollBack();
+                return [
+                    "success" => false,
+                    "message" => "Bạn không có quyền thao tác với bất động sản này.",
+                ];
+            }
+
+            $amenities = $request->input('amenities', []);
+            $services = $request->input('services', []);
+            $prices = $request->input('prices', []);
+
+            $createdRooms = [];
+
+            foreach ($roomsData as $data) {
+                $roomName = trim((string) ($data['name'] ?? ''));
+                if ($roomName === '') {
+                    continue;
+                }
+
+                $room = $this->roomsRepository->create([
+                    'building_id' => $buildingId,
+                    'title'       => $roomName,
+                    'room_number' => $roomName,
+                    'area'        => $data['area'] ?? $request->input('area', 0),
+                    'floor_number'=> (int) $request->input('floor_number', 1),
+                    'people'      => (int) $request->input('people', 1),
+                    'room_type'   => (int) $request->input('room_type', 1),
+                    'status'      => (bool) $request->input('status', true),
+                    'created_by'  => Auth::id(),
+                    'updated_by'  => Auth::id(),
+                ]);
+
+                if (is_array($amenities) && !empty($amenities)) {
+                    $this->roomAmenityService->saveRoomAmenities($room->id, $amenities);
+                }
+
+                if (is_array($services) && !empty($services)) {
+                    $this->roomServiceService->saveServiceCheckbox($room->id, $services);
+                }
+
+                if (is_array($prices) && !empty($prices)) {
+                    $priceResult = $this->roomPriceService->saveRoomPrices($room->id, $prices);
+                    if (is_array($priceResult) && isset($priceResult['success']) && !$priceResult['success']) {
+                        DB::rollBack();
+                        return [
+                            "success" => false,
+                            "message" => $priceResult['message'],
+                        ];
+                    }
+                }
+
+                $createdRooms[] = $room;
+            }
+
+            if (count($createdRooms) === 0) {
+                DB::rollBack();
+                return [
+                    "success" => false,
+                    "message" => "Không có phòng hợp lệ để tạo.",
+                ];
+            }
+
+            DB::commit();
+            return [
+                "success" => true,
+                "data" => $createdRooms,
+                "message" => "Tạo hàng loạt " . count($createdRooms) . " phòng thành công.",
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ["success" => false, "message" => "Lỗi tạo hàng loạt: " . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Bulk update status
+     */
+    public function handleBulkUpdateStatus(array $ids, $status): array
+    {
+        try {
+            $partnerId = (int) Auth::id();
+            Room::query()
+                ->whereIn('id', $ids)
+                ->whereHas('building', function ($query) use ($partnerId) {
+                    $query->where('user_id', $partnerId);
+                })
+                ->update(['status' => $status, 'updated_by' => $partnerId]);
+
+            return [
+                "success" => true,
+                "data" => null,
+                "message" => "Cập nhật trạng thái thành công.",
+            ];
+        } catch (\Exception $e) {
+            return ["success" => false, "message" => "Lỗi cập nhật: " . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Bulk delete rooms
+     */
+    public function handleBulkDeleteRooms(array $ids): array
+    {
+        try {
+            $partnerId = (int) Auth::id();
+            Room::query()
+                ->whereIn('id', $ids)
+                ->whereHas('building', function ($query) use ($partnerId) {
+                    $query->where('user_id', $partnerId);
+                })
+                ->delete();
+
+            return [
+                "success" => true,
+                "data" => null,
+                "message" => "Xóa thành công " . count($ids) . " phòng.",
+            ];
+        } catch (\Exception $e) {
+            return ["success" => false, "message" => "Lỗi xóa hàng loạt: " . $e->getMessage()];
         }
     }
 }

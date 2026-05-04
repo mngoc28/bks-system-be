@@ -1,6 +1,6 @@
 <?php
 
-use Ellaisys\Cognito\AwsCognitoClient;
+
 
 return [
     /*
@@ -126,8 +126,8 @@ return [
     |
     */
     'forced_challenge_names' => [
-        AwsCognitoClient::NEW_PASSWORD_CHALLENGE,
-        AwsCognitoClient::RESET_REQUIRED_PASSWORD
+        'NEW_PASSWORD_REQUIRED',
+        'RESET_REQUIRED'
     ],
 
     /*

@@ -187,6 +187,7 @@ final class BuildingsRepository extends BaseRepository implements BuildingsRepos
     public function getBuildingsForPartner(int $partnerId, Request $request, array $sort = []): LengthAwarePaginator
     {
         $query = $this->model
+            ->withCount('rooms')
             ->select([
                 'buildings.*',
                 'users.name as user_name',
@@ -213,6 +214,26 @@ final class BuildingsRepository extends BaseRepository implements BuildingsRepos
 
         if ($request->filled("province_name")) {
             $query->whereRaw("LOWER(provinces.name) LIKE ?", ["%" . strtolower($request->province_name) . "%"]);
+        }
+
+        if ($request->filled("year_built")) {
+            $query->where("buildings.year_built", $request->year_built);
+        }
+
+        if ($request->filled("property_type_id")) {
+            $query->where("buildings.property_type_id", $request->property_type_id);
+        }
+
+        if ($request->filled("rent_category")) {
+            $query->where("buildings.rent_category", $request->rent_category);
+        }
+
+        if ($request->filled("area_min")) {
+            $query->where("buildings.area", ">=", $request->area_min);
+        }
+
+        if ($request->filled("area_max")) {
+            $query->where("buildings.area", "<=", $request->area_max);
         }
 
         if (!empty($sort)) {

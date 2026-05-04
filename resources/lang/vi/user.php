@@ -27,6 +27,8 @@ return [
     'email_invalid'                      => 'Email phải là địa chỉ email hợp lệ.',
     'current_password_required'          => 'Mật khẩu hiện tại là bắt buộc.',
     'new_password_min'                   => 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+    'new_password_regex'                 => 'Mật khẩu mới phải có ít nhất 8 ký tự, bao gồm ít nhất một chữ cái, ' .
+                                            'một số và một ký tự đặc biệt (!@#$%^&*).',
     'new_password_confirmation_required' => 'Xác nhận mật khẩu là bắt buộc.',
     'new_password_different'             => 'Mật khẩu mới phải khác với mật khẩu hiện tại.',
     'new_password_confirmation_same'     => 'Xác nhận mật khẩu phải khớp với mật khẩu mới.',
@@ -57,6 +59,8 @@ return [
     'email_required'                      => 'Email là bắt buộc.',
     'password_required'                   => 'Mật khẩu là bắt buộc.',
     'password_min'                        => 'Mật khẩu phải có ít nhất 8 ký tự.',
+    'password_regex'                      => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất một chữ cái, ' .
+                                             'một số và một ký tự đặc biệt (!@#$%^&*).',
     'new_password_required'               => 'Mật khẩu mới là bắt buộc.',
     'password_confirmation_required'      => 'Xác nhận mật khẩu là bắt buộc.',
     'password_confirmation_same'          => 'Xác nhận mật khẩu phải khớp với mật khẩu.',

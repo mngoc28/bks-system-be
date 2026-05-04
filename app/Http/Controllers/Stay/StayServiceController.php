@@ -55,7 +55,7 @@ final class StayServiceController extends Controller
             return $this->errorResponse(
                 $validator->errors()->first(),
                 $validator->errors(),
-                HttpStatus::UNPROCESSABLE_ENTITY
+                HttpStatus::VALIDATION_ERROR
             );
         }
 
@@ -87,7 +87,7 @@ final class StayServiceController extends Controller
             return $this->errorResponse(
                 $idValidator->errors()->first(),
                 $idValidator->errors(),
-                HttpStatus::UNPROCESSABLE_ENTITY
+                HttpStatus::VALIDATION_ERROR
             );
         }
 
@@ -97,12 +97,13 @@ final class StayServiceController extends Controller
             return $this->errorResponse(
                 $bodyValidator->errors()->first(),
                 $bodyValidator->errors(),
-                HttpStatus::UNPROCESSABLE_ENTITY
+                HttpStatus::VALIDATION_ERROR
             );
         }
 
         $serviceId = (int)$request->input('service_id');
-        $result = $this->stayService->orderService($userId, $bookingId, $serviceId);
+        $note = $request->input('note');
+        $result = $this->stayService->orderService($userId, $bookingId, $serviceId, $note);
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);

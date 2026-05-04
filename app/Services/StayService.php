@@ -122,11 +122,24 @@ final class StayService
      * Get booking history
      *
      * @param int $userId
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @param int $perPage
+     * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getBookingHistory(int $userId): Collection
+    public function getBookingHistory(int $userId, int $perPage = 10): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return $this->bookingRepository->getBookingHistoryByUserId($userId);
+        return $this->bookingRepository->getBookingHistoryByUserId($userId, $perPage);
+    }
+
+    /**
+     * Get booking detail
+     *
+     * @param int $id
+     * @param int $userId
+     * @return mixed
+     */
+    public function getBookingDetail(int $id, int $userId)
+    {
+        return $this->bookingRepository->getBookingDetailByUserId($id, $userId);
     }
 
     /**
@@ -162,7 +175,7 @@ final class StayService
      * @param int $serviceId
      * @return array
      */
-    public function orderService(int $userId, int $bookingId, int $serviceId): array
+    public function orderService(int $userId, int $bookingId, int $serviceId, ?string $note = null): array
     {
         try {
             $booking = $this->bookingRepository->find($bookingId);
@@ -178,6 +191,8 @@ final class StayService
 
             DB::beginTransaction();
             $booking->services()->attach($serviceId, [
+                'status'     => 0, // Pending
+                'note'       => $note,
                 'created_by' => $userId,
                 'updated_by' => $userId,
                 'created_at' => now(),
@@ -191,5 +206,101 @@ final class StayService
             Log::error('Error in StayService@orderService: ' . $e->getMessage());
             return ['success' => false, 'message' => 'Internal server error'];
         }
+    }
+
+    /**
+     * Extend a booking
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @param string $newEndDate
+     * @return array
+     */
+    public function extendBooking(int $bookingId, int $userId, string $newEndDate): array
+    {
+        try {
+            $booking = Booking::find($bookingId);
+
+            if (!$booking || $booking->user_id !== $userId) {
+                return ['success' => false, 'message' => 'Booking not found or unauthorized'];
+            }
+
+            if ($booking->status !== 1 && $booking->status !== 2) {
+                return ['success' => false, 'message' => 'Only active or confirmed bookings can be extended'];
+            }
+
+            $currentEndDate = \Carbon\Carbon::parse($booking->end_date);
+            $newDate = \Carbon\Carbon::parse($newEndDate);
+
+            if ($newDate->lte($currentEndDate)) {
+                return ['success' => false, 'message' => 'New end date must be after current end date'];
+            }
+
+            DB::beginTransaction();
+            $booking->update([
+                'end_date' => $newEndDate,
+                'updated_at' => now(),
+            ]);
+            DB::commit();
+
+            return ['success' => true, 'message' => 'Stay extension request processed successfully'];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error in StayService@extendBooking: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Internal server error'];
+        }
+    }
+
+    /**
+     * Get service requests for a partner
+     *
+     * @param int $partnerId
+     * @return array
+     */
+    public function getPartnerServiceRequests(int $partnerId): array
+    {
+        // Get all buildings for this partner
+        $buildingIds = \App\Models\Building::where('user_id', $partnerId)->pluck('id')->toArray();
+        if (empty($buildingIds)) {
+            return [];
+        }
+
+        // Get service requests (pivot records) for those buildings
+        return \App\Models\BookingService::with(['booking.room.building', 'booking.user', 'service'])
+            ->whereHas('booking.room', function ($query) use ($buildingIds) {
+                $query->whereIn('building_id', $buildingIds);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * Update service request status
+     *
+     * @param int $requestId
+     * @param int $partnerId
+     * @param int $status
+     * @return array
+     */
+    public function updateServiceRequestStatus(int $requestId, int $partnerId, int $status): array
+    {
+        $request = \App\Models\BookingService::with('booking.room.building')->find($requestId);
+        if (!$request) {
+            return ['success' => false, 'message' => 'Request not found'];
+        }
+
+        // Check if partner owns the building
+        if ($request->booking->room->building->user_id !== $partnerId) {
+            return ['success' => false, 'message' => 'Unauthorized'];
+        }
+
+        $request->update([
+            'status' => $status,
+            'updated_by' => $partnerId,
+            'updated_at' => now(),
+        ]);
+
+        return ['success' => true, 'message' => 'Service request status updated successfully'];
     }
 }

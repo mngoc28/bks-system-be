@@ -115,7 +115,7 @@ final class UsersTableSeeder extends Seeder
             'name'              => $name,
             'email'             => $email,
             'is_email_verified' => $isEmailVerified,
-            'password'          => Hash::make('password'),
+            'password'          => Hash::make('123456a!'),
             'role'              => $role,
             'phone'             => $this->generatePhone(),
             'status'            => (string) $status,

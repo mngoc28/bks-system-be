@@ -72,6 +72,6 @@ class ServiceRepository extends BaseRepository implements ServiceRepositoryInter
      */
     public function getAllServices(): \Illuminate\Support\Collection
     {
-        return $this->model->select('id', 'name')->get();
+        return $this->model->select('id', 'name', 'price')->get();
     }
 }

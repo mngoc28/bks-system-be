@@ -210,6 +210,14 @@ final class BookingService
         try {
             $booking = $this->bookingRepository->find($id);
 
+            if (!$booking) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.not_found'),
+                ];
+            }
+
             // check user authorization
             $checkUser = $this->bookingRepository->checkUser($request);
             if (!$checkUser) {
@@ -220,39 +228,100 @@ final class BookingService
                 ];
             }
             // If already cancelled, return message
-            if ($booking->status === 'cancelled') {
+            if ((int) $booking->status === BookingStatus::CANCELLED->value) {
                 return [
                     'success' => false,
                     'data'    => null,
                     'message' => __('booking.messages.already_cancelled'),
                 ];
             }
-            // If booking is confirmed, set booking to cancelled and room to available
-            if ($booking->status === 'confirmed') {
-                DB::beginTransaction();
-                $bookingUpdate = $this->bookingRepository->update($id, ['status' => 'cancelled']);
-                $this->roomsRepository->update($booking->room_id, ['status' => 'available']);
-                DB::commit();
-                return [
-                    'success' => true,
-                    'data'    => $bookingUpdate,
-                    'message' => __('booking.messages.cancelled_successfully'),
-                ];
-            } else {
-                // If not confirmed, only set booking to cancelled
-                $bookingUpdate = $this->bookingRepository->update($id, ['status' => 'cancelled']);
-                return [
-                    'success' => true,
-                    'data'    => $bookingUpdate,
-                    'message' => __('booking.messages.cancelled_successfully'),
-                ];
-            }
+
+            DB::beginTransaction();
+            $bookingUpdate = $this->bookingRepository->update($id, ['status' => BookingStatus::CANCELLED->value]);
+            DB::commit();
+
+            return [
+                'success' => true,
+                'data'    => $bookingUpdate,
+                'message' => __('booking.messages.cancelled_successfully'),
+            ];
         } catch (Exception $e) {
             DB::rollBack();
             Log::error(__('booking.messages.update_failed'), [
                 'booking_id' => $id,
                 'error'       => $e->getMessage(),
             ]);
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => __('booking.messages.update_failed'),
+            ];
+        }
+    }
+
+    /**
+     * Confirm booking
+     *
+     * @param Request $request
+     * @param int $id
+     * @return array{success: bool, data: mixed, message: string}
+     */
+    public function handleConfirmBooking(Request $request, int $id): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($id);
+
+            if (!$booking) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.not_found'),
+                ];
+            }
+
+            $checkUser = $this->bookingRepository->checkUser($request);
+            if (!$checkUser) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.unauthorized'),
+                ];
+            }
+
+            if ((int) $booking->status === BookingStatus::CONFIRMED->value) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.already_confirmed'),
+                ];
+            }
+
+            if ((int) $booking->status === BookingStatus::CANCELLED->value) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.already_cancelled'),
+                ];
+            }
+
+            DB::beginTransaction();
+            $updated = $this->bookingRepository->update($id, [
+                'status' => BookingStatus::CONFIRMED->value,
+            ]);
+            DB::commit();
+
+            return [
+                'success' => true,
+                'data'    => $updated,
+                'message' => __('booking.messages.confirmed_successfully'),
+            ];
+        } catch (Throwable $e) {
+            DB::rollBack();
+            Log::error(__('booking.messages.update_failed'), [
+                'booking_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
             return [
                 'success' => false,
                 'data'    => null,
@@ -325,9 +394,9 @@ final class BookingService
 
             DB::beginTransaction();
             // If booking was confirmed, free the room
-            if ($booking->status === 'confirmed') {
+            if ((int) $booking->status === BookingStatus::CONFIRMED->value) {
                 // Free the room when deleting a confirmed booking
-                $this->roomsRepository->update($booking->room_id, ['status' => 'available']);
+                $this->roomsRepository->update($booking->room_id, ['status' => true]);
             }
 
             $deleted = $this->bookingRepository->delete($id);
@@ -538,6 +607,63 @@ final class BookingService
                 'data'    => null,
                 'message' => __('booking.messages.retrieved_failed'),
             ];
+        }
+    }
+
+    /**
+     * Handle Check-in for a booking
+     *
+     * @param int $id
+     * @return array
+     */
+    public function handleCheckIn(int $id): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($id);
+            if (!$booking) {
+                return ['success' => false, 'message' => 'Booking not found'];
+            }
+
+            DB::beginTransaction();
+            $booking->update(['stay_status' => 'checked_in']);
+            $this->roomsRepository->update($booking->room_id, ['status' => false]);
+            DB::commit();
+
+            return ['success' => true, 'message' => 'Check-in successful'];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error("Check-in failed: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Check-in failed'];
+        }
+    }
+
+    /**
+     * Handle Check-out for a booking
+     *
+     * @param int $id
+     * @return array
+     */
+    public function handleCheckOut(int $id): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($id);
+            if (!$booking) {
+                return ['success' => false, 'message' => 'Booking not found'];
+            }
+
+            DB::beginTransaction();
+            $booking->update([
+                'stay_status' => 'checked_out',
+                'status' => 3, // Assuming 3 is 'Completed'
+            ]);
+            $this->roomsRepository->update($booking->room_id, ['status' => true]);
+            DB::commit();
+
+            return ['success' => true, 'message' => 'Check-out successful'];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error("Check-out failed: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Check-out failed'];
         }
     }
 }

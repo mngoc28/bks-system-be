@@ -88,6 +88,11 @@ final class BuildingsController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // For partner portal, we automatically assign the user_id to the authenticated user if not provided
+        if (!$request->has('user_id') || $request->user_id == 0) {
+            $request->merge(['user_id' => auth()->id()]);
+        }
+
         $validator = $this->buildingsValidation->createBuildingValidation($request);
 
         if ($validator->fails()) {

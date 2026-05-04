@@ -207,33 +207,17 @@ class BuildingsTableSeeder extends Seeder
                 'Khách sạn Mường Thanh Luxu', 'Sài Gòn Hotel', 'Hanoi Continental', 'Pullman Panorama', 'Rex Hotel Saigon', 
                 'Novotel Suite', 'Sofitel Legend', 'Sheraton View', 'InterContinental Lake', 'Fusion Suites'
             ],
-            'nha-nghi-motel-guesthouse' => [
+            'nha-nghi-guesthouse' => [
                 'Nhà nghỉ Sen Hồng', 'Nhà nghỉ Mai Vàng', 'Guesthouse Bình Yên', 'Nhà nghỉ 24h', 'Motel Hải Yến',
                 'Nhà nghỉ Cát Tường', 'Guesthouse Phố Cổ', 'Nhà nghỉ Minh Tâm', 'Nhà nghỉ Hoàn Kiếm'
             ],
-            'can-ho-chung-cu' => [
-                'Vinhomes Central Park', 'Masteri Thảo Điền', 'Sunrise City', 'Vinhomes Ocean Park', 'Goldmark City',
-                'Landmark 81 Residence', 'The Manor', 'Ciputra Hanoi', 'The Nassim', 'Royal City'
+            'can-ho-dich-vu-theo-phong' => [
+                'Vinhomes Serviced Room', 'Masteri Suite Room', 'Sunrise City Apart', 'Ocean Park Residence',
+                'Landmark 81 Serviced', 'The Manor Room', 'Ciputra Suite', 'The Nassim Room'
             ],
-            'biet-thu-villa' => [
-                'Villa Sunset Beach', 'The Hillside Villa', 'Biệt thự Gardenia', 'Villa Sunshine', 'Rose Garden Villa',
-                'Vintage Villa', 'Luxury Ocean Villa', 'The Retreat Villa', 'Green Valley Villa'
-            ],
-            'homestay' => [
+            'homestay-co-chia-phong' => [
                 'Mây Homestay', 'Nhà của Bu', 'Lá Đỏ Homestay', 'Homestay Cỏ May', 'The Barn Homestay',
                 'Little House', 'Rustic Homestay', 'Hidden Gem Homestay', 'Peaceful Corner'
-            ],
-            'resort-khu-nghi-duong' => [
-                'Vinpearl Resort', 'Amanoi Resort', 'InterContinental Danang', 'Six Senses Ninh Van', 'Four Seasons The Nam Hai',
-                'Pullman Beach Resort', 'Furama Resort', 'Banyan Tree Lang Co', 'Anantara Resort'
-            ],
-            'phong-tro-nha-tro' => [
-                'Nhà trọ Sinh Viên', 'Phòng trọ Hạnh Phúc', 'Nhà trọ Công Nhân', 'Phòng trọ Giá Rẻ', 'Nhà trọ 365',
-                'Phòng trọ An Bình', 'Nhà trọ Xanh', 'Phòng trọ Văn Phòng'
-            ],
-            'camping-glamping' => [
-                'Đà Lạt Glamping', 'Tanyoli Park', 'Cảnh Dương Beach Camp', 'Moosell Glamping', 'Twin Beans Farm',
-                'The Camp Chi-Lăng', 'Camping Hồ Tuyền Lâm'
             ],
         ];
 

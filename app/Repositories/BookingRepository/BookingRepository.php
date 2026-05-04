@@ -39,12 +39,16 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
         $query = $this->model->select(
             'bookings.id',
             'users.name as user_name',
+            'users.phone as user_phone',
             'rooms.room_number as room_name',
+            'rooms.id as room_id',
             'buildings.name as building_name',
+            'buildings.id as building_id',
             'bookings.start_date',
             'bookings.end_date',
             'room_prices.price',
             'bookings.status as booking_status',
+            'bookings.note',
             'partner.name as partner_name',
             'bookings.created_at',
         );
@@ -378,13 +382,16 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      * @param int $userId
      * @return \App\Models\Booking|null
      */
-    public function getActiveBookingByUserId(int $userId)
+    public function getActiveBookingByUserId(int $userId): ?\App\Models\Booking
     {
-        return $this->model->with(['room', 'room.building'])
+        /** @var \App\Models\Booking|null $booking */
+        $booking = $this->model->with(['room', 'room.building'])
             ->where('user_id', $userId)
             ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
             ->orderBy('start_date', 'asc')
             ->first();
+
+        return $booking;
     }
 
     /**
@@ -405,17 +412,36 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     }
 
     /**
-     * Get full booking history for a user
+     * Get full booking history for a user with pagination
      *
      * @param int $userId
-     * @return Collection
+     * @param int $perPage
+     * @return LengthAwarePaginator
      */
-    public function getBookingHistoryByUserId(int $userId): Collection
+    public function getBookingHistoryByUserId(int $userId, int $perPage = 10): LengthAwarePaginator
     {
-        return $this->model->with(['room', 'room.building'])
+        return $this->model->with(['room', 'room.building', 'price'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get single booking detail for a user
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @return \App\Models\Booking|null
+     */
+    public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking
+    {
+        /** @var \App\Models\Booking|null $booking */
+        $booking = $this->model->with(['room.building', 'price', 'services'])
+            ->where('id', $bookingId)
+            ->where('user_id', $userId)
+            ->first();
+
+        return $booking;
     }
 
     // =========================================================================
@@ -434,18 +460,22 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
         $query = $this->model->select(
             'bookings.id',
             'users.name as user_name',
+            'users.phone as user_phone',
             'rooms.room_number as room_name',
+            'rooms.id as room_id',
             'buildings.name as building_name',
+            'buildings.id as building_id',
             'bookings.start_date',
             'bookings.end_date',
-            'room_prices.price',
+            DB::raw('COALESCE(room_prices.price, 0) as price'),
             'bookings.status as booking_status',
+            'bookings.note',
             'partner.name as partner_name',
             'bookings.created_at',
         );
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
+            ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
             ->join('users', 'bookings.user_id', '=', 'users.id')
             ->leftJoin('users as partner', 'buildings.user_id', '=', 'partner.id')

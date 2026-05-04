@@ -78,6 +78,8 @@ return [
     'password_required'                => 'Vui lòng nhập mật khẩu.',
     'password_string'                  => 'Mật khẩu phải là chuỗi.',
     'password_min'                     => 'Mật khẩu phải có ít nhất 8 ký tự.',
+    'password_regex'                   => 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm ít nhất một chữ cái, ' .
+                                          'một số và một ký tự đặc biệt (!@#$%^&*).',
     'password_confirmation_required'   => 'Mật khẩu xác nhận là bắt buộc.',
     'password_confirmation_string'     => 'Mật khẩu xác nhận phải là chuỗi.',
     'password_confirmation_not_match'  => 'Mật khẩu không khớp.',

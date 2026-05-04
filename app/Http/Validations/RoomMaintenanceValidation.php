@@ -35,11 +35,15 @@ class RoomMaintenanceValidation
     {
         return Validator::make($request->all(), [
             'room_id' => ['required', 'integer', 'min:1'],
+            'property_id' => ['nullable', 'integer', 'min:1'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'maintenance_type' => ['required', 'string', 'in:scheduled,emergency'],
-            'start_time' => ['required', 'date'],
+            'status' => ['nullable', 'string', 'in:planned,in_progress,completed,cancelled'],
+            'start_time' => ['required_without:start_date', 'date'],
+            'start_date' => ['required_without:start_time', 'date'],
             'end_time' => ['nullable', 'date', 'after_or_equal:start_time'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ]);
     }
 }
