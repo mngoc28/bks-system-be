@@ -436,7 +436,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking
     {
         /** @var \App\Models\Booking|null $booking */
-        $booking = $this->model->with(['room.building', 'price', 'services'])
+        $booking = $this->model->with(['room.building', 'price', 'services', 'contracts'])
             ->where('id', $bookingId)
             ->where('user_id', $userId)
             ->first();
@@ -611,9 +611,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     {
         return $this->model->select(
             'bookings.id',
-            'users.name as customerName',
-            'rooms.room_number as roomName',
-            'bookings.start_date as checkInDate',
+            'users.name as user_name',
+            'rooms.room_number as room_number',
+            'bookings.start_date as start_date',
             'bookings.status'
         )
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
@@ -624,5 +624,35 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             ->orderBy('bookings.created_at', 'desc')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Count bookings matching criteria for a specific partner
+     *
+     * @param int $partnerId
+     * @param array $filters
+     * @return int
+     */
+    public function countBookingsForPartner(int $partnerId, array $filters = []): int
+    {
+        $query = $this->model->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->where('buildings.user_id', $partnerId);
+
+        foreach ($filters as $key => $value) {
+            if ($key === 'status') {
+                $query->where('bookings.status', $value);
+            } elseif ($key === 'stay_status') {
+                $query->where('bookings.stay_status', $value);
+            } elseif ($key === 'start_date') {
+                $query->whereDate('bookings.start_date', $value);
+            } elseif ($key === 'end_date') {
+                $query->whereDate('bookings.end_date', $value);
+            } else {
+                $query->where($key, $value);
+            }
+        }
+
+        return $query->count();
     }
 }

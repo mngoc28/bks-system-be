@@ -33,9 +33,11 @@ final class RoomPrice extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'price'      => 'decimal:2',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'price'          => 'decimal:2',
+        'deposit_amount' => 'decimal:2',
+        'minimum_stay'   => 'integer',
+        'created_at'     => 'datetime',
+        'updated_at'     => 'datetime',
     ];
 
     /**

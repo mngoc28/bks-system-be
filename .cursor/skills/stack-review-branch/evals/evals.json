@@ -1,0 +1,23 @@
+{
+  "skill_name": "review-branch",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review the code changes on my current branch against develop",
+      "expected_output": "A structured code review report with severity-classified findings covering the diff between the current branch and develop. Should include summary, severity breakdown table, individual findings with file/line references, and actionable suggestions.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I just finished a feature branch, can you check it against main for any issues before I open a PR?",
+      "expected_output": "A comprehensive code review that examines all changes between the feature branch and main, identifies potential bugs, security issues, performance concerns, and provides a structured report with severity levels. Should also include positive observations.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "review-branch against origin/master",
+      "expected_output": "A code review report comparing the current branch against origin/master with the standard template: summary, severity breakdown, findings with code snippets and suggestions, positive observations, and questions for the author.",
+      "files": []
+    }
+  ]
+}

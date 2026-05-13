@@ -43,4 +43,22 @@ interface ContractRepositoryInterface extends RepositoryInterface
      * @return Contract|null
      */
     public function getPartnerContractDetail(int $id, int $partnerId): ?Contract;
+
+    /**
+     * Get long-term contracts whose booking end_date is within `$daysAhead`
+     * from today, that are not terminated and not yet reminded. Used by the
+     * daily renewal-reminder scheduler.
+     *
+     * @return Collection<int, Contract>
+     */
+    public function getLongTermContractsDueForReminder(int $daysAhead): Collection;
+
+    /**
+     * Get contracts where renewal_reminder_at is set and the contract is not
+     * terminated, scoped to a partner. Powers the Phase 5 Alert Center entry
+     * "Contract sắp hết hạn".
+     *
+     * @return Collection<int, Contract>
+     */
+    public function getExpiringContractsForPartner(int $partnerId): Collection;
 }

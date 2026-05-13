@@ -8,6 +8,7 @@ use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Validations\DashboardValidation;
 use App\Services\DashboardService;
+use App\Services\PartnerKpiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,17 +17,75 @@ final class PartnerDashboardController extends Controller
 {
     protected DashboardService $dashboardService;
     protected DashboardValidation $dashboardValidation;
+    protected PartnerKpiService $partnerKpiService;
 
     /**
      * Constructor
      *
      * @param DashboardService $dashboardService
      * @param DashboardValidation $dashboardValidation
+     * @param PartnerKpiService $partnerKpiService
      */
-    public function __construct(DashboardService $dashboardService, DashboardValidation $dashboardValidation)
-    {
+    public function __construct(
+        DashboardService $dashboardService,
+        DashboardValidation $dashboardValidation,
+        PartnerKpiService $partnerKpiService
+    ) {
         $this->dashboardService    = $dashboardService;
         $this->dashboardValidation = $dashboardValidation;
+        $this->partnerKpiService   = $partnerKpiService;
+    }
+
+    /**
+     * Get headline KPIs (occupancy, GMV, net revenue, time-to-confirm,
+     * pending count) for the authenticated partner.
+     *
+     * @return JsonResponse
+     */
+    public function getKpis(): JsonResponse
+    {
+        $partnerId = (int) Auth::id();
+        $result = $this->partnerKpiService->getDashboardKpis($partnerId);
+
+        if (! $result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Get 30-day occupancy chart data for the authenticated partner.
+     *
+     * @return JsonResponse
+     */
+    public function getOccupancyChart(): JsonResponse
+    {
+        $partnerId = (int) Auth::id();
+        $result = $this->partnerKpiService->getOccupancyChart($partnerId);
+
+        if (! $result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Get 30-day GMV / net revenue chart data for the authenticated partner.
+     *
+     * @return JsonResponse
+     */
+    public function getGmvChart(): JsonResponse
+    {
+        $partnerId = (int) Auth::id();
+        $result = $this->partnerKpiService->getGmvChart($partnerId);
+
+        if (! $result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
     }
 
     /**

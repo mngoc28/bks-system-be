@@ -1,0 +1,36 @@
+---
+description: Mandatory Laravel implementation standards for coding, module structure, and database delivery.
+alwaysApply: true
+---
+
+# Laravel Implementation Standards (Mandatory)
+
+Apply these standards whenever implementing or refactoring backend/server-side code in this repository.
+
+## 1) PHP Coding Standard
+
+- Follow PSR-12 style for all PHP files.
+- Keep naming clear and consistent (`camelCase` methods/variables, meaningful names).
+- Prefer clean, maintainable code over clever shortcuts.
+
+## 2) Module Structure
+
+- Follow the existing Laravel app-layer structure used in this project (`app/Http`, `app/Services`, `app/Repositories`, `app/Models`, `routes`, `database`).
+- Place new backend code in the corresponding existing layer with correct namespace conventions; do not introduce a `Modules/<ModuleName>` structure unless explicitly requested.
+
+## 3) Server-Side Contracts and Views
+
+- Add explicit return types where applicable.
+- Add PHPDoc with `@return` for server-side methods when it improves contract clarity.
+- If feature scope includes web UI rendering, provide corresponding Blade templates/views.
+
+## 4) Reuse and Common Logic
+
+- Avoid duplicating logic across modules/classes.
+- Extract shared logic into reusable/common services/helpers/components when truly shared.
+
+## 5) Database Delivery
+
+- Any DB schema change must include migration.
+- Provide corresponding seeder/factory setup when test/setup data is needed.
+- Keep DB documentation synchronized in `docs/databases_docs/` when mapping/schema changes.

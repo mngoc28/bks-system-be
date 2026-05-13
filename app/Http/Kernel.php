@@ -74,5 +74,6 @@ class Kernel extends HttpKernel
         "bindings"         => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         "jwt.auth"         => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
         "jwt.refresh"      => \Tymon\JWTAuth\Http\Middleware\RefreshToken::class,
+        "partner360"       => \App\Http\Middleware\EnsurePartner360Enabled::class,
     ];
 }

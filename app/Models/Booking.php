@@ -108,6 +108,16 @@ final class Booking extends Model
     }
 
     /**
+     * Append-only timeline of lifecycle events for this booking.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function timelineEvents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BookingTimelineEvent::class, 'booking_id');
+    }
+
+    /**
      * Summary of getStartDateAttribute
      * @param mixed $value
      * @return string

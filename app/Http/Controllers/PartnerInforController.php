@@ -111,7 +111,12 @@ final class PartnerInforController extends Controller
      */
     public function showSelf(): JsonResponse
     {
-        return $this->show((int) auth()->id());
+        $result = $this->partnerInforServices->handleGetProfileForPartner();
+        if (!$result["success"]) {
+            return $this->errorResponse($result["data"], $result["message"], HttpStatus::NOT_FOUND);
+        }
+
+        return $this->successResponse($result["data"], $result["message"]);
     }
 
     /**
@@ -122,6 +127,11 @@ final class PartnerInforController extends Controller
      */
     public function updateSelf(Request $request): JsonResponse
     {
-        return $this->update($request, (int) auth()->id());
+        $result = $this->partnerInforServices->handleUpdateProfileForPartner($request);
+        if (!$result["success"]) {
+            return $this->errorResponse($result["data"], $result["message"], HttpStatus::INTERNAL_SERVER_ERROR);
+        }
+
+        return $this->successResponse($result["data"], $result["message"]);
     }
 }

@@ -46,10 +46,10 @@ class RoomPriceService
                             'unit' => $price['unit'],
                         ],
                         [
-                            'price' => $price['unit_price'],
-                            'created_by' => Auth::id(),
+                            'price' => (float) ($price['unit_price'] ?? 0),
+                            'deposit_amount' => (float) ($price['deposit_amount'] ?? 0),
+                            'minimum_stay' => (int) ($price['minimum_stay'] ?? 1),
                             'updated_by' => Auth::id(),
-                            'created_at' => Carbon::now(),
                             'updated_at' => Carbon::now(),
                         ]
                     );

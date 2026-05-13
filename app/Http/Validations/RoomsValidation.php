@@ -22,6 +22,8 @@ final class RoomsValidation
             $request->all(),
             [
                 'building_id' => ['nullable', 'integer', 'exists:buildings,id'],
+                'building_ids' => ['nullable', 'array', 'max:100'],
+                'building_ids.*' => ['integer', 'exists:buildings,id'],
                 'title'       => ['nullable', 'string', 'max:100'],
                 'room_number' => ['nullable', 'string', 'max:50'],
                 'room_type'   => ['nullable', 'in:' . implode(',', RoomType::roomTypeValues())],
@@ -29,6 +31,10 @@ final class RoomsValidation
             ],
             [
                 'building_id.exists' => __('room.validation.building_id.exists'),
+                'building_ids.array' => __('room.validation.building_id.exists'),
+                'building_ids.max' => __('room.validation.building_id.exists'),
+                'building_ids.*.integer' => __('room.validation.building_id.integer'),
+                'building_ids.*.exists' => __('room.validation.building_id.exists'),
                 'title.string'        => __('room.validation.title.string'),
                 'title.max'           => __('room.validation.title.max'),
                 'room_number.string'  => __('room.validation.room_number.string'),
@@ -38,6 +44,8 @@ final class RoomsValidation
             ],
             [
                 'building_id' => __('room.attributes.building_id'),
+                'building_ids' => __('room.attributes.building_id'),
+                'building_ids.*' => __('room.attributes.building_id'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),
                 'room_type'   => __('room.attributes.room_type'),

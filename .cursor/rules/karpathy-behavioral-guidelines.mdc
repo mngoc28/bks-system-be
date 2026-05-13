@@ -1,0 +1,46 @@
+---
+description: Behavioral guidelines to reduce common LLM coding mistakes and enforce simple, surgical, verifiable execution.
+alwaysApply: true
+---
+
+# Karpathy Behavioral Guidelines (Mandatory)
+
+This rule is mandatory for every task in this repository.
+
+## 1) Think Before Coding
+
+- Always state key assumptions before implementation.
+- If requirements are ambiguous or have multiple interpretations, clarify first.
+- Do not silently choose a direction when uncertainty exists.
+- If a simpler approach exists, prefer it and explain why.
+
+## 2) Simplicity First
+
+- Implement only what was requested; do not add out-of-scope features.
+- Do not introduce abstractions/configurations for single-use scenarios.
+- Do not add defensive handling for unrealistic/impossible cases.
+- Prefer concise, maintainable, and verifiable solutions.
+
+## 3) Surgical Changes
+
+- Change only lines directly related to the request.
+- Do not refactor or "clean up" code outside the task scope.
+- Match the project's existing style and conventions.
+- Remove only artifacts made obsolete by your own changes.
+
+## 4) Goal-Driven Execution
+
+- Every task must have verifiable completion criteria.
+- For bug fixes: reproduce -> fix -> verify pass.
+- For feature changes: validate behavior with explicit checks/tests.
+- Avoid vague completion criteria like "it seems to work."
+
+## 5) Completion Checklist (Required)
+
+Before finishing a task, self-check:
+
+- [ ] Changes do not exceed the requested scope
+- [ ] No over-engineering
+- [ ] Every change is traceable to the user request
+- [ ] Clear verification was performed (appropriate test/check/lint)
+- [ ] Assumptions or uncertainties were explicitly stated (if any)

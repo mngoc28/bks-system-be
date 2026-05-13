@@ -107,6 +107,16 @@ final class Room extends Model
     }
 
     /**
+     * Get the utility fees for this room.
+     *
+     * @return HasMany
+     */
+    public function utilityFees(): HasMany
+    {
+        return $this->hasMany(UtilityFee::class, 'room_id');
+    }
+
+    /**
      * Get the user who created this room.
      *
      * @return BelongsTo
