@@ -85,6 +85,40 @@ class BookingValidation
     }
 
     /**
+     * Partner cancel booking validation. The reason is mandatory and stored
+     * into `bookings.cancellation_reason` for later audit / customer support.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Validation\Validator
+     */
+    public function partnerCancelBookingValidation(Request $request, int $id): \Illuminate\Validation\Validator
+    {
+        $messages = $this->getCustomMessages();
+        $data = array_merge(['id' => $id], $request->all());
+        return Validator::make($data, [
+            'id'     => 'required|integer|exists:bookings,id',
+            'reason' => 'required|string|min:5|max:500',
+        ], $messages);
+    }
+
+    /**
+     * Partner mark booking as no-show. Only requires booking id; eligibility
+     * (status / start_date) is enforced in the service layer because business
+     * rules are centralized there.
+     *
+     * @param int $id
+     * @return \Illuminate\Validation\Validator
+     */
+    public function partnerNoShowBookingValidation(int $id): \Illuminate\Validation\Validator
+    {
+        $messages = $this->getCustomMessages();
+        return Validator::make(['id' => $id], [
+            'id' => 'required|integer|exists:bookings,id',
+        ], $messages);
+    }
+
+    /**
      * Update booking validation (admin)
      * Allows updating start_date, end_date, status
      *

@@ -547,6 +547,16 @@ final class DashboardService
 
             $estimatedRevenue = $revenueData->sum('revenue');
 
+            $pendingBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
+                'status' => 0 // Pending
+            ]);
+            $confirmedBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
+                'status' => 1 // Confirmed
+            ]);
+            $cancelledBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
+                'status' => 2 // Cancelled
+            ]);
+
             return [
                 "success" => true,
                 "data" => [
@@ -555,6 +565,21 @@ final class DashboardService
                     "vacantRooms" => (int) $vacantRooms,
                     "occupancyRate" => (float) $occupancyRate,
                     "estimatedRevenue" => (float) $estimatedRevenue,
+                    "pendingBookingsCount" => (int) $pendingBookingsCount,
+                    "confirmedBookingsCount" => (int) $confirmedBookingsCount,
+                    "cancelledBookingsCount" => (int) $cancelledBookingsCount,
+                    "todayCheckInCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
+                        'start_date' => now()->format('Y-m-d'),
+                        'status' => 1 // Confirmed
+                    ]),
+                    "todayCheckOutCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
+                        'end_date' => now()->format('Y-m-d'),
+                        'status' => 1 // Confirmed
+                    ]),
+                    "inStayCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
+                        'status' => 1, // Confirmed
+                        'stay_status' => 'checked_in'
+                    ]),
                 ],
                 "message" => __("dashboard.messages.stats_fetched_successfully"),
             ];

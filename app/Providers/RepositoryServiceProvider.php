@@ -52,6 +52,10 @@ use App\Repositories\PropertyTypeRepository\PropertyTypeRepository;
 use App\Repositories\PropertyTypeRepository\PropertyTypeRepositoryInterface;
 use App\Repositories\ContractRepository\EloquentContractRepository;
 use App\Repositories\ContractRepository\ContractRepositoryInterface;
+use App\Repositories\BookingTimelineRepository\BookingTimelineRepository;
+use App\Repositories\BookingTimelineRepository\BookingTimelineRepositoryInterface;
+use App\Repositories\RoomBlockRepository\RoomBlockRepository;
+use App\Repositories\RoomBlockRepository\RoomBlockRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -158,6 +162,14 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             ContractRepositoryInterface::class,
             EloquentContractRepository::class
+        );
+        $this->app->singleton(
+            BookingTimelineRepositoryInterface::class,
+            BookingTimelineRepository::class
+        );
+        $this->app->singleton(
+            RoomBlockRepositoryInterface::class,
+            RoomBlockRepository::class
         );
     }
 

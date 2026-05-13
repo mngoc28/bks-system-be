@@ -57,6 +57,20 @@ return [
     'url' => env('APP_URL'),
     'url_frontend' => env('FRONTEND_URL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Partner Portal 360 Feature Flag
+    |--------------------------------------------------------------------------
+    |
+    | Phase 5 (T5.6). When false, the Phase 3+ partner routes guarded by the
+    | `partner360` middleware return 403 with code `PARTNER_360_DISABLED`. The
+    | frontend mirrors this flag through `VITE_PARTNER_REALTIME` to hide UI
+    | such as Calendar block, quick confirm and bulk action.
+    |
+    */
+
+    'partner_360_enabled' => env('PARTNER_360_ENABLED', true),
+
     'asset_url' => env('ASSET_URL'),
     'url_backend' => env('APP_URL'),
 
@@ -194,7 +208,7 @@ return [
          */
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
+        App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\RepositoryServiceProvider::class,

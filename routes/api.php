@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BroadcastAuthController;
 use App\Http\Controllers\BuildingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProvincesController;
@@ -33,6 +34,8 @@ use App\Http\Controllers\Partner\PartnerChatController;
 use App\Http\Controllers\Partner\PartnerPriceRuleController;
 use App\Http\Controllers\Partner\PartnerReportController;
 use App\Http\Controllers\Partner\PartnerStayServiceController;
+use App\Http\Controllers\Partner\PartnerRoomBlockController;
+use App\Http\Controllers\Partner\PartnerCalendarController;
 use App\Http\Controllers\Stay\StayController;
 use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
@@ -60,6 +63,13 @@ Route::group([
      *  Refresh JWT token
      */
     Route::post('auth/refresh', [AuthController::class, 'refreshToken']);
+
+    /**
+     * Broadcast channel authorization (Pusher protocol).
+     * FE Echo client gửi POST /api/v1/broadcasting/auth kèm Authorization: Bearer <jwt>.
+     * Trả về Pusher signed payload để client subscribe private/presence channel.
+     */
+    Route::middleware(['jwt.auth'])->post('broadcasting/auth', [BroadcastAuthController::class, 'authenticate']);
 
     /**
      * Check permission
@@ -543,16 +553,39 @@ Route::group([
         });
 
         /**
+         * Room Blocks API (Partner Portal 360 Phase 3)
+         * Base Url /api/v1/partner/room-blocks/
+         */
+        Route::prefix('room-blocks')->middleware('partner360')->group(function () {
+            Route::get('/', [PartnerRoomBlockController::class, 'index']);
+            Route::post('/', [PartnerRoomBlockController::class, 'store']);
+            Route::delete('{id}', [PartnerRoomBlockController::class, 'destroy'])->whereNumber('id');
+        });
+
+        /**
+         * Calendar API (Partner Portal 360 Phase 3)
+         * Base Url /api/v1/partner/calendar
+         */
+        Route::middleware('partner360')->get('calendar', [PartnerCalendarController::class, 'index']);
+
+        /**
          * Bookings API
          * Base Url /api/v1/partner/bookings/
          */
         Route::prefix('bookings')->group(function () {
             Route::get('/', [PartnerBookingController::class, 'index']);
             Route::post('/', [BookingController::class, 'store']);
+            // Phase 3/4 (T3.13, T4.4): gắn feature flag partner360
+            Route::middleware('partner360')->group(function () {
+                Route::post('bulk-confirm', [PartnerBookingController::class, 'bulkConfirm']);
+                Route::post('bulk-cancel', [PartnerBookingController::class, 'bulkCancel']);
+                Route::put('{id}/move', [PartnerBookingController::class, 'move'])->whereNumber('id');
+            });
             Route::get('{id}', [BookingController::class, 'show'])->whereNumber('id');
             Route::put('{id}', [BookingController::class, 'update'])->whereNumber('id');
-            Route::put('{id}/cancel', [BookingController::class, 'cancel'])->whereNumber('id');
-            Route::put('{id}/confirm', [BookingController::class, 'confirmBooking'])->whereNumber('id');
+            Route::put('{id}/cancel', [PartnerBookingController::class, 'cancel'])->whereNumber('id');
+            Route::put('{id}/confirm', [PartnerBookingController::class, 'confirm'])->whereNumber('id');
+            Route::put('{id}/no-show', [PartnerBookingController::class, 'noShow'])->whereNumber('id');
             Route::put('{id}/check-in', [PartnerBookingController::class, 'checkIn'])->whereNumber('id');
             Route::put('{id}/check-out', [PartnerBookingController::class, 'checkOut'])->whereNumber('id');
         });
@@ -632,6 +665,12 @@ Route::group([
                 'getAllBuildingsBookingsCount'
             ]);
             Route::get('/stats', [PartnerDashboardController::class, 'getStats']);
+            Route::get('/kpis', [PartnerDashboardController::class, 'getKpis']);
+            // Phase 4/5 (T4.1, T4.2, T5.6): chart endpoints gắn feature flag.
+            Route::middleware('partner360')->group(function () {
+                Route::get('/charts/occupancy', [PartnerDashboardController::class, 'getOccupancyChart']);
+                Route::get('/charts/gmv', [PartnerDashboardController::class, 'getGmvChart']);
+            });
             Route::get('/pending-bookings', [PartnerDashboardController::class, 'getPendingBookings']);
             Route::get('/urgent-maintenances', [PartnerDashboardController::class, 'getUrgentMaintenances']);
             Route::get('/revenue-analytics', [PartnerDashboardController::class, 'getRevenueAnalytics']);
@@ -656,6 +695,14 @@ Route::group([
         Route::prefix('contracts')->group(function () {
             Route::get('/', [PartnerContractController::class, 'index']);
             Route::post('/', [PartnerContractController::class, 'store']);
+            // Phase 5 (T5.1, T5.5): renewal + termination + alert listing.
+            Route::middleware('partner360')->group(function () {
+                Route::get('expiring-soon', [PartnerContractController::class, 'expiringSoon']);
+                Route::put('{id}/renewal-reminder', [PartnerContractController::class, 'setRenewalReminder'])
+                    ->whereNumber('id');
+                Route::post('{id}/terminate', [PartnerContractController::class, 'terminate'])
+                    ->whereNumber('id');
+            });
             Route::get('{id}', [PartnerContractController::class, 'show'])->whereNumber('id');
         });
     });
@@ -680,6 +727,7 @@ Route::group([
             Route::get('/filter', [HomeController::class, 'filterRooms']);
         });
         Route::get('/provinces', [HomeController::class, 'getProvinces']);
+        Route::get('/building-types', [BuildingsController::class, 'getAllBuildingsTypes']);
         Route::get('/wards/{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
         Route::get('/partners/random', [HomeController::class, 'getRandomPartners']);
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);
@@ -724,6 +772,7 @@ Route::group([
         Route::prefix('contracts')->group(function () {
             Route::get('/', [StayContractController::class, 'index']);
             Route::get('{id}', [StayContractController::class, 'show'])->whereNumber('id');
+            Route::put('{id}/sign', [StayContractController::class, 'sign'])->whereNumber('id');
         });
 
         Route::prefix('services')->group(function () {

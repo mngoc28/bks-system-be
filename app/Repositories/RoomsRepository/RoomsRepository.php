@@ -211,6 +211,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->join('provinces as p', 'b.province_id', '=', 'p.id')
+            ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
             ->leftJoin('room_amenities as ra', 'rooms.id', '=', 'ra.room_id')
             ->leftJoin('amenities as a', 'ra.amenity_id', '=', 'a.id')
             ->leftJoin('room_prices as rp', 'rooms.id', '=', 'rp.room_id')
@@ -227,6 +228,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'p.name_en as province_name_en',
                 'ri.image_url as room_image',
                 'b.address_detail as building_address',
+                'pt.name as property_type_name',
+                'b.property_type_id',
                 DB::raw('GROUP_CONCAT(DISTINCT a.name) as amenities'),
                 DB::raw('ROUND(CASE
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
@@ -239,6 +242,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
+                DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
+                DB::raw(
+                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+                    ')), \']\'), \'[]\') as all_prices'
+                ),
             )
             ->groupBy(
                 'rooms.id',
@@ -252,6 +263,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'p.id',
                 'ri.image_url',
                 'b.address_detail',
+                'pt.name',
+                'b.property_type_id',
                 'rooms.updated_at'
             );
 
@@ -280,6 +293,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->join('provinces as p', 'b.province_id', '=', 'p.id')
+            ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
             ->leftJoin('room_amenities as ra', 'rooms.id', '=', 'ra.room_id')
             ->leftJoin('amenities as a', 'ra.amenity_id', '=', 'a.id')
             ->leftJoin('room_prices as rp', 'rooms.id', '=', 'rp.room_id')
@@ -296,6 +310,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'p.name_en as province_name_en',
                 'ri.image_url as room_image',
                 'b.address_detail as building_address',
+                'pt.name as property_type_name',
+                'b.property_type_id',
                 DB::raw('GROUP_CONCAT(DISTINCT a.name) as amenities'),
                 DB::raw('ROUND(CASE
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
@@ -308,6 +324,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
+                DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
+                DB::raw(
+                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+                    ')), \']\'), \'[]\') as all_prices'
+                ),
                 // Add row number for each province (ordered by updated_at DESC)
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
             )
@@ -323,6 +347,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'p.id',
                 'ri.image_url',
                 'b.address_detail',
+                'pt.name',
+                'b.property_type_id',
                 'rooms.updated_at'
             );
 
@@ -384,10 +410,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $join->on('rooms.id', '=', 'ri.room_id')
                 ->where('ri.sort', 1);
         })
-        ->leftjoin('room_services as rs', 'rooms.id', '=', 'rs.room_id')
-        ->leftJoin('services as s', 'rs.service_id', '=', 's.id')
         ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
         ->join('provinces as p', 'b.province_id', '=', 'p.id')
+        ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
+        ->leftjoin('room_services as rs', 'rooms.id', '=', 'rs.room_id')
+        ->leftJoin('services as s', 'rs.service_id', '=', 's.id')
+        ->leftJoin('utility_fees as uf', 'rooms.id', '=', 'uf.room_id')
         ->select(
             'rooms.id',
             'rooms.title',
@@ -398,6 +426,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'ri.image_url as room_image',
             'b.address_detail as building_address',
             'p.name as province_name',
+            'pt.name as property_type_name',
+            'b.property_type_id',
             DB::raw(
                 'CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
                     '\'{"id":\', s.id, \',"name":"\', REPLACE(s.name, \'"\', \'\\"\'), \'","price":\', s.price, \'}\'' .
@@ -415,6 +445,19 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
+            DB::raw(
+                'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+                '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+                '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+                '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+                ')), \']\'), \'[]\') as all_prices'
+            ),
+            DB::raw(
+                'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+                '\'{"type":"\', uf.fee_type, \'", "method":"\', uf.calc_method, ' .
+                '\'", "price":\', uf.unit_price, \', "included":\', uf.is_included, \'}\'' .
+                ')), \']\'), \'[]\') as utility_fees'
+            ),
         )->groupBy(
             'rooms.id',
             'rooms.title',
@@ -425,7 +468,9 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'ri.image_url',
             'b.address_detail',
             'rooms.updated_at',
-            'p.name'
+            'p.name',
+            'pt.name',
+            'b.property_type_id'
         )->where('rooms.id', $id)
             ->first();
     }
@@ -446,7 +491,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         $query = $this->model->with([
             'amenities:id,name',
             'services:id,name',
-            'prices:id,room_id,price_package_id,unit,price',
+            'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+            'utilityFees',
             'images' => function ($q) {
                 $q->where('sort', 1)->select('id', 'room_id', 'image_url');
             }
@@ -454,6 +500,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
             ->select(
                 'rooms.id',
+                'rooms.building_id',
                 'rooms.room_number',
                 'rooms.title',
                 'buildings.name as building_name',
@@ -470,7 +517,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $query->where('room_number', 'like', '%' . $request->room_number . '%');
         }
 
-        if ($request->filled('building_id')) {
+        if ($request->filled('building_ids') && is_array($request->input('building_ids'))) {
+            $ids = array_values(array_unique(array_filter(array_map('intval', $request->input('building_ids')))));
+            if ($ids !== []) {
+                $query->whereIn('rooms.building_id', $ids);
+            }
+        } elseif ($request->filled('building_id')) {
             $query->where('building_id', $request->building_id);
         }
 
@@ -496,7 +548,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         return $this->model->with([
             'amenities:id,name',
             'services:id,name',
-            'prices:id,room_id,price_package_id,unit,price',
+            'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+            'utilityFees',
             'images' => function ($q) {
                 $q->select('id', 'room_id', 'image_url', 'image_type');
             }

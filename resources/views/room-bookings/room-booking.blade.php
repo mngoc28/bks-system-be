@@ -230,8 +230,8 @@
                     @else
                     <br>
                     <p style="margin: 15px 0 5px 0;">Tài khoản của bạn đã tồn tại, vui lòng đăng nhập hệ thống để quản lý lịch sử đặt phòng:</p>
-                    <a href="{{ config('app.url_frontend') }}/login">
-                        {{ config('app.url_frontend') }}/login
+                    <a href="{{ config('app.url_frontend') }}/bks-stay/login">
+                        {{ config('app.url_frontend') }}/bks-stay/login
                     </a>
                     @endif
                 </div>
@@ -318,8 +318,8 @@
             <!-- Contact Information -->
             <div class="section">
                 <div class="section-title">Thông tin liên hệ</div>
-                <p><strong>Căn hộ/Phòng cho thuê theo ngày và tháng "BKS SYSTEM":</strong> <a href="https://bks.golineglobal.vn" style="color: #3B82F6;">https://bks.golineglobal.vn</a></p>
-                <p><strong>Hệ thống quản lý đặt phòng "StayConnect":</strong> <a href="https://bks.stayconnect.jp" style="color: #3B82F6;">StayConnect</a></p>
+                <p><strong>Căn hộ/Phòng cho thuê theo ngày và tháng "BKS SYSTEM":</strong> <a href="{{ config('app.url_frontend') }}" style="color: #3B82F6;">{{ config('app.url_frontend') }}</a></p>
+                <p><strong>Hệ thống quản lý đặt phòng "StayConnect":</strong> <a href="{{ config('app.url_frontend') }}/bks-stay" style="color: #3B82F6;">BKS Stay Portal</a></p>
                 <p><strong>Được vận hành bởi:</strong> {{ $data['company_name'] }} </p>
             </div>
 

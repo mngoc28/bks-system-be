@@ -1,6 +1,11 @@
 ---
-description: 
-globs: 
+description: Laravel/PHP guidelines for bks-system backend source files.
+globs:
+  - app/**/*.php
+  - routes/**/*.php
+  - database/**/*.php
+  - config/**/*.php
+  - tests/**/*.php
 alwaysApply: true
 ---
 

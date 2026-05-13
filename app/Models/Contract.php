@@ -32,9 +32,12 @@ final class Contract extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'status'     => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'status'              => 'integer',
+        'signature_date'      => 'datetime',
+        'renewal_reminder_at' => 'datetime',
+        'terminated_at'       => 'datetime',
+        'created_at'          => 'datetime',
+        'updated_at'          => 'datetime',
     ];
 
     /**

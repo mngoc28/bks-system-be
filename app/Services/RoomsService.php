@@ -28,6 +28,7 @@ final class RoomsService
     private RoomServiceService $roomServiceService;
     private RoomAmenityService $roomAmenityService;
     private RoomPriceService $roomPriceService;
+    private UtilityFeeService $utilityFeeService;
 
     /**
      * Constructor method.
@@ -48,7 +49,8 @@ final class RoomsService
         RoomPriceRepository $roomPriceRepository,
         RoomServiceService $roomServiceService,
         RoomAmenityService $roomAmenityService,
-        RoomPriceService $roomPriceService
+        RoomPriceService $roomPriceService,
+        UtilityFeeService $utilityFeeService
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->roomServiceRepository = $roomServiceRepository;
@@ -57,6 +59,7 @@ final class RoomsService
         $this->roomServiceService = $roomServiceService;
         $this->roomAmenityService = $roomAmenityService;
         $this->roomPriceService = $roomPriceService;
+        $this->utilityFeeService = $utilityFeeService;
     }
     /**
      * Get all rooms or search by criteria with pagination
@@ -164,6 +167,14 @@ final class RoomsService
                 }
             }
 
+            // 5. Save utility fees
+            if ($request->filled("utility_fees") && is_array($request->utility_fees)) {
+                $this->utilityFeeService->saveUtilityFees(
+                    $room->id,
+                    $request->utility_fees
+                );
+            }
+
             DB::commit();
 
             // Load relationships for response
@@ -227,6 +238,15 @@ final class RoomsService
                     "message" => $priceResult['message'],
                 ];
             }
+
+            // Update utility fees
+            if ($request->filled("utility_fees") && is_array($request->utility_fees)) {
+                $this->utilityFeeService->saveUtilityFees(
+                    $id,
+                    $request->utility_fees
+                );
+            }
+
             DB::commit();
             return [
                 "success" => true,
@@ -580,6 +600,10 @@ final class RoomsService
                             "message" => $priceResult['message'],
                         ];
                     }
+                }
+
+                if (is_array($request->utility_fees) && !empty($request->utility_fees)) {
+                    $this->utilityFeeService->saveUtilityFees($room->id, $request->utility_fees);
                 }
 
                 $createdRooms[] = $room;

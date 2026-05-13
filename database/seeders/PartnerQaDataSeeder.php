@@ -369,7 +369,11 @@ final class PartnerQaDataSeeder extends Seeder
         return [$start->toDateString(), $end->toDateString(), 'mixed_window'];
     }
 
-    private function cleanupPreviousQaData(int $partnerId): void
+    /**
+     * Remove QA buildings/rooms/bookings/news seeded for partner portal testing.
+     * Safe to call standalone via `php artisan partner:cleanup-qa-data`.
+     */
+    public function cleanupPreviousQaData(int $partnerId): void
     {
         $qaBuildingIds = DB::table('buildings')
             ->where('user_id', $partnerId)

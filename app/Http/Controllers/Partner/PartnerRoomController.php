@@ -142,6 +142,7 @@ final class PartnerRoomController extends Controller
             'amenities'   => $request->input('amenities', []),
             'services'    => $request->input('services', []),
             'prices'      => $this->normalizePrices($request->input('prices', [])),
+            'utility_fees'=> $request->input('utility_fees', []),
         ]);
 
         $result = $this->roomsService->createRoom($request);
@@ -187,6 +188,7 @@ final class PartnerRoomController extends Controller
             'amenities' => $request->input('amenities', []),
             'services'  => $request->input('services', []),
             'prices'    => $this->normalizePrices($request->input('prices', [])),
+            'utility_fees' => $request->input('utility_fees', []),
         ]);
 
         $result = $this->roomsService->updateRoom($request, (int) $id);
@@ -236,6 +238,7 @@ final class PartnerRoomController extends Controller
     {
         $request->merge([
             'prices' => $this->normalizePrices($request->input('prices', [])),
+            'utility_fees' => $request->input('utility_fees', []),
         ]);
 
         $result = $this->roomsService->handleBulkCreateRooms($request);
@@ -381,6 +384,8 @@ final class PartnerRoomController extends Controller
                 'price_package_id' => $packageId,
                 'unit' => $unit,
                 'unit_price' => (float) $unitPrice,
+                'deposit_amount' => (float) ($item['deposit_amount'] ?? 0),
+                'minimum_stay' => (int) ($item['minimum_stay'] ?? 1),
             ];
         }
 

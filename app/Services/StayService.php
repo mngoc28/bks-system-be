@@ -139,7 +139,22 @@ final class StayService
      */
     public function getBookingDetail(int $id, int $userId)
     {
-        return $this->bookingRepository->getBookingDetailByUserId($id, $userId);
+        $booking = $this->bookingRepository->getBookingDetailByUserId($id, $userId);
+
+        // Ensure a contract exists for pending bookings to make the flow work
+        if ($booking && $booking->status === 0 && $booking->contracts->isEmpty()) {
+            Contract::create([
+                'booking_id' => $booking->id,
+                'title'      => 'Hợp đồng thuê phòng #' . $booking->id,
+                'content'    => 'Nội dung hợp đồng đang được cập nhật...',
+                'status'     => 0, // Pending
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+            $booking->load('contracts');
+        }
+
+        return $booking;
     }
 
     /**

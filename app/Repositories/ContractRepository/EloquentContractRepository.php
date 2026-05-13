@@ -6,6 +6,7 @@ namespace App\Repositories\ContractRepository;
 
 use App\Models\Contract;
 use App\Repositories\BaseRepository;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 final class EloquentContractRepository extends BaseRepository implements ContractRepositoryInterface
@@ -74,8 +75,63 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
         $contract = $this->model->where('id', $id)
             ->whereHas('booking.room.building', function ($query) use ($partnerId) {
                 $query->where('user_id', $partnerId);
-            })->with(['booking.user', 'booking.room.building', 'booking.price'])->first();
+            })->with([
+                'booking.user',
+                'booking.room.building',
+                'booking.price',
+                'booking.room.utilityFees',
+            ])->first();
 
         return $contract;
+    }
+
+    /**
+     * Long-term contracts (LEASE_AGREEMENT) whose underlying booking ends in
+     * the next `$daysAhead` days, not terminated, not yet reminded.
+     *
+     * @return Collection<int, Contract>
+     */
+    public function getLongTermContractsDueForReminder(int $daysAhead): Collection
+    {
+        $today    = Carbon::today();
+        $deadline = $today->copy()->addDays($daysAhead);
+
+        /** @var list<Contract> $contracts */
+        $contracts = $this->model->query()
+            ->where('contract_type', 'LEASE_AGREEMENT')
+            ->whereNull('renewal_reminder_at')
+            ->whereNull('terminated_at')
+            ->whereHas('booking', function ($q) use ($today, $deadline) {
+                $q->whereBetween('end_date', [$today->toDateString(), $deadline->toDateString()]);
+            })
+            ->with(['booking.room.building'])
+            ->get()
+            ->all();
+
+        return new Collection($contracts);
+    }
+
+    /**
+     * Active reminders (LEASE_AGREEMENT, reminder set, not terminated) scoped
+     * to one partner.
+     *
+     * @return Collection<int, Contract>
+     */
+    public function getExpiringContractsForPartner(int $partnerId): Collection
+    {
+        /** @var list<Contract> $contracts */
+        $contracts = $this->model->query()
+            ->where('contract_type', 'LEASE_AGREEMENT')
+            ->whereNotNull('renewal_reminder_at')
+            ->whereNull('terminated_at')
+            ->whereHas('booking.room.building', function ($q) use ($partnerId) {
+                $q->where('user_id', $partnerId);
+            })
+            ->with(['booking.user', 'booking.room.building'])
+            ->orderBy('renewal_reminder_at')
+            ->get()
+            ->all();
+
+        return new Collection($contracts);
     }
 }

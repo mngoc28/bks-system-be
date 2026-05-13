@@ -145,8 +145,17 @@ class AuthService
         try {
             $user = $this->usersRepository->findOneBy([
                 'verification_token' => $token,
-            ]);
-            if ($user['is_email_verified']) {
+            ], false);
+
+            if (!$user) {
+                return [
+                    'status'  => false,
+                    'message' => "VET4: " . __('auth.verify_email_invalid_token'),
+                    'data'    => "VET4",
+                ];
+            }
+
+            if ($user->is_email_verified) {
                 return [
                     'status'  => false,
                     'message' => "VET5: " . __('auth.verify_email_already_verified'),
@@ -154,7 +163,7 @@ class AuthService
                 ];
             }
 
-            if (Carbon::parse($user['token_expires_at'])->isPast()) {
+            if (Carbon::parse($user->token_expires_at)->isPast()) {
                 return [
                     'status'  => false,
                     'message' => "VET3: " . __('auth.verify_email_expired_token'),
@@ -162,10 +171,11 @@ class AuthService
                 ];
             }
 
-            $this->usersRepository->update($user['id'], [
+            $this->usersRepository->update($user->id, [
                 'is_email_verified'  => true,
                 'email_verified_at'  => now(),
                 'token_expires_at'   => null,
+                'status'             => EnumsStatus::ACTIVE->value,
             ]);
 
             return [
@@ -193,7 +203,7 @@ class AuthService
         try {
             $user = $this->usersRepository->findOneBy([
                 'verification_token' => $request->input('token'),
-            ]);
+            ], false);
 
             if (! $user) {
                 return [
@@ -204,12 +214,12 @@ class AuthService
             }
 
             $newToken = Str::random(20) . time();
-            $this->usersRepository->update($user['id'], [
+            $this->usersRepository->update($user->id, [
                 'verification_token' => $newToken,
                 'token_expires_at'   => Carbon::now()->addMinutes(config('const.TIME_TOKEN_CHECK_VERIFY_EMAIL')),
             ]);
 
-            VerifyMail::dispatch($newToken, $user['name'], $user['email']);
+            VerifyMail::dispatch($newToken, $user->name, $user->email);
 
             return [
                 'status'  => true,
@@ -235,7 +245,11 @@ class AuthService
     {
         try {
             $credentials = $request->only(['email', 'password']);
-            if (! $token = Auth::guard('api')->attempt($credentials)) {
+
+            // Check if user exists first to provide better error message
+            $user = $this->usersRepository->findOneBy(['email' => $credentials['email']], false);
+
+            if (!$user) {
                 return [
                     'status'  => false,
                     'message' => __('auth.email_not_exists'),
@@ -243,7 +257,13 @@ class AuthService
                 ];
             }
 
-            $user = Auth::guard('api')->user();
+            if (! $token = Auth::guard('api')->attempt($credentials)) {
+                return [
+                    'status'  => false,
+                    'message' => __('auth.password'),
+                    'data'    => null,
+                ];
+            }
 
             // Combined role check for portals
             if (!in_array($user->role, [UserType::ADMIN, UserType::PARTNER, UserType::USER])) {
@@ -277,7 +297,7 @@ class AuthService
                 Auth::guard('api')->logout();
                 return [
                     'status'  => false,
-                    'message' => __('auth.account_not_found'),
+                    'message' => __('auth.account_not_verified'),
                     'data'    => null,
                 ];
             }

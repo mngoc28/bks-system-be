@@ -191,4 +191,13 @@ interface BookingRepositoryInterface extends RepositoryInterface
      * @return Collection
      */
     public function getPendingBookingsForPartner(int $partnerId, int $limit = 5): Collection;
+
+    /**
+     * Count bookings matching criteria for a specific partner
+     *
+     * @param int $partnerId
+     * @param array $filters
+     * @return int
+     */
+    public function countBookingsForPartner(int $partnerId, array $filters = []): int;
 }
