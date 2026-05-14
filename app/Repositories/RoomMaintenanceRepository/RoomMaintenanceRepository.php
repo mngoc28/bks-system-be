@@ -95,7 +95,7 @@ class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanc
             'room_maintenances.created_at as createdAt'
         )
             ->join('rooms', 'room_maintenances.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             // Join with current active booking to get customer name
             ->leftJoin('bookings', function ($join) use ($today) {
                 $join->on('rooms.id', '=', 'bookings.room_id')
@@ -104,7 +104,7 @@ class RoomMaintenanceRepository extends BaseRepository implements RoomMaintenanc
                     ->where('bookings.end_date', '>=', $today);
             })
             ->leftJoin('users', 'bookings.user_id', '=', 'users.id')
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->whereIn('room_maintenances.status', ['planned', 'in_progress'])
             ->orderBy('room_maintenances.created_at', 'desc')
             ->limit($limit)

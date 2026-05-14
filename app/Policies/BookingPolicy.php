@@ -12,7 +12,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 /**
  * Authorization rules for partner operations on bookings.
  *
- * Ownership is resolved through `bookings.room.building.user_id`. Admin keeps
+ * Ownership is resolved through `bookings.room.property.user_id`. Admin keeps
  * unrestricted access to support audit at the partner level.
  */
 final class BookingPolicy
@@ -103,11 +103,11 @@ final class BookingPolicy
             return false;
         }
 
-        $building = $room->relationLoaded('building') ? $room->building : $room->building()->first();
-        if ($building === null) {
+        $property = $room->relationLoaded('property') ? $room->property : $room->property()->first();
+        if ($property === null) {
             return false;
         }
 
-        return (int) $building->user_id === (int) $user->id;
+        return (int) $property->user_id === (int) $user->id;
     }
 }

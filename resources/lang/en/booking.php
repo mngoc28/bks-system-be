@@ -99,7 +99,7 @@ return [
         'not_exist_price'        => 'Price :price_id does not exist for this room!',
         'completed_successfully' => 'Booking has been completed!',
         'unauthorized'           => 'You are not authorized to perform this action!',
-        'unauthorized_staff_action' => 'Staff can only manage bookings for their assigned buildings!',
+        'unauthorized_staff_action' => 'Staff can only manage bookings for their assigned properties!',
         'user_booking_created_successfully' => 'Booking created successfully! Please check your email for details.',
         'create_user_failed'     => 'Failed to create user for booking!',
         'room_in_private'        => 'This is a private room and cannot be booked!',

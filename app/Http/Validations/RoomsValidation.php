@@ -21,20 +21,20 @@ final class RoomsValidation
         return Validator::make(
             $request->all(),
             [
-                'building_id' => ['nullable', 'integer', 'exists:buildings,id'],
-                'building_ids' => ['nullable', 'array', 'max:100'],
-                'building_ids.*' => ['integer', 'exists:buildings,id'],
+                'property_id' => ['nullable', 'integer', 'exists:properties,id'],
+                'property_ids' => ['nullable', 'array', 'max:100'],
+                'property_ids.*' => ['integer', 'exists:properties,id'],
                 'title'       => ['nullable', 'string', 'max:100'],
                 'room_number' => ['nullable', 'string', 'max:50'],
                 'room_type'   => ['nullable', 'in:' . implode(',', RoomType::roomTypeValues())],
                 'status'      => ['nullable', 'in:' . implode(',', RoomStatus::statusValues())],
             ],
             [
-                'building_id.exists' => __('room.validation.building_id.exists'),
-                'building_ids.array' => __('room.validation.building_id.exists'),
-                'building_ids.max' => __('room.validation.building_id.exists'),
-                'building_ids.*.integer' => __('room.validation.building_id.integer'),
-                'building_ids.*.exists' => __('room.validation.building_id.exists'),
+                'property_id.exists' => __('room.validation.property_id.exists'),
+                'property_ids.array' => __('room.validation.property_id.exists'),
+                'property_ids.max' => __('room.validation.property_id.exists'),
+                'property_ids.*.integer' => __('room.validation.property_id.integer'),
+                'property_ids.*.exists' => __('room.validation.property_id.exists'),
                 'title.string'        => __('room.validation.title.string'),
                 'title.max'           => __('room.validation.title.max'),
                 'room_number.string'  => __('room.validation.room_number.string'),
@@ -43,9 +43,9 @@ final class RoomsValidation
                 'status.in'           => __('room.validation.status.in'),
             ],
             [
-                'building_id' => __('room.attributes.building_id'),
-                'building_ids' => __('room.attributes.building_id'),
-                'building_ids.*' => __('room.attributes.building_id'),
+                'property_id' => __('room.attributes.property_id'),
+                'property_ids' => __('room.attributes.property_id'),
+                'property_ids.*' => __('room.attributes.property_id'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),
                 'room_type'   => __('room.attributes.room_type'),
@@ -115,7 +115,7 @@ final class RoomsValidation
         return Validator::make(
             $request->all(),
             [
-                'building_id' => ['required', 'integer', 'exists:buildings,id'],
+                'property_id' => ['required', 'integer', 'exists:properties,id'],
                 'title' => ['required', 'string', 'max:100'],
                 'room_number' => ['required'],
                 'deposit' => ['nullable', 'numeric', 'min:0'],
@@ -137,10 +137,10 @@ final class RoomsValidation
                 'prices.*.unit_price' => ['required', 'numeric', 'min:0'],
             ],
             [
-                // Building
-                'building_id.required' => __('room.validation.building_id.required'),
-                'building_id.integer'  => __('room.validation.building_id.integer'),
-                'building_id.exists'   => __('room.validation.building_id.exists'),
+                // Property
+                'property_id.required' => __('room.validation.property_id.required'),
+                'property_id.integer'  => __('room.validation.property_id.integer'),
+                'property_id.exists'   => __('room.validation.property_id.exists'),
 
                 // Title
                 'title.required' => __('room.validation.title.required'),
@@ -212,7 +212,7 @@ final class RoomsValidation
                 'prices.*.unit_price.min'      => trans('room.validation.prices.unit_price.min'),
             ],
             [
-                'building_id' => __('room.attributes.building_id'),
+                'property_id' => __('room.attributes.property_id'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),
                 'deposit'     => __('room.attributes.deposit'),
@@ -252,7 +252,7 @@ final class RoomsValidation
             array_merge($request->all(), ['id' => $id]),
             [
                 'id'          => ['required', 'integer', 'exists:rooms,id'],
-                'building_id' => ['sometimes', 'required', 'integer', 'exists:buildings,id'],
+                'property_id' => ['sometimes', 'required', 'integer', 'exists:properties,id'],
                 'title'       => ['sometimes', 'string', 'max:100'],
                 'room_number' => ['sometimes', 'required', 'string', 'max:50'],
                 'deposit'     => ['nullable', 'numeric', 'min:0'],
@@ -284,7 +284,7 @@ final class RoomsValidation
                 'id.required'          => __('room.validation.id.required'),
                 'id.integer'           => __('room.validation.id.integer'),
                 'id.exists'            => __('room.validation.id.exists'),
-                'building_id.exists'   => __('room.validation.building_id.exists'),
+                'property_id.exists'   => __('room.validation.property_id.exists'),
                 'title.string'         => __('room.validation.title.string'),
                 'title.max'            => __('room.validation.title.max'),
                 'room_number.required' => __('room.validation.room_number.required'),
@@ -332,7 +332,7 @@ final class RoomsValidation
                 'prices.*.unit_price.min'    => __('room.validation.prices.unit_price.min'),
             ],
             [
-                'building_id' => __('room.attributes.building_id'),
+                'property_id' => __('room.attributes.property_id'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),
                 'deposit'     => __('room.attributes.deposit'),

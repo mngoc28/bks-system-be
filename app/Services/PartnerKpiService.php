@@ -245,8 +245,8 @@ class PartnerKpiService
 
         $activeBookings = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId)
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
             ->whereIn('bookings.status', [
                 BookingStatus::CONFIRMED->value,
                 BookingStatus::COMPLETED->value,
@@ -294,9 +294,9 @@ class PartnerKpiService
 
         $revenueByDate = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
             ->whereBetween('bookings.start_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
             ->selectRaw('DATE(bookings.start_date) as date, COALESCE(SUM(room_prices.price), 0) as gmv')
@@ -334,8 +334,8 @@ class PartnerKpiService
 
         $value = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId)
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
             ->where('bookings.status', BookingStatus::CONFIRMED->value)
             ->whereNotNull('bookings.confirmed_at')
             ->where('bookings.confirmed_at', '>=', $since)

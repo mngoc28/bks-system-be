@@ -75,8 +75,12 @@ npm run build
 cd api-doc
 npm install apidoc -g
 apidoc -i . -o ../public/apidoc
+# (tuỳ chọn) bản copy trong api-doc/public để mở file HTML tương đối khi dev:
+apidoc -i . -o ./public/apidoc
 cd ..
 ```
+
+Nguồn mô tả API nằm trong `api-doc/*.js` (ví dụ `properties.js`, `property-image.js`, `dashboard.js`). Sau khi sửa nguồn, chạy lại lệnh trên để cập nhật `main.bundle.js`.
 
 ## 🐳 Chạy với Docker
 

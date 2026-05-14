@@ -40,12 +40,12 @@ interface RoomsRepositoryInterface extends RepositoryInterface
     public function roomDetail($id): mixed;
 
     /**
-     * Get room names by building ID
+     * Get room names by property ID
      *
-     * @param int $buildingId
+     * @param int $propertyId
      * @return Collection
      */
-    public function getRoomNamesByBuildingId(int $buildingId): Collection;
+    public function getRoomNamesByPropertyId(int $propertyId): Collection;
 
     /**
      * Get latest rooms
@@ -119,11 +119,11 @@ interface RoomsRepositoryInterface extends RepositoryInterface
     public function getEmptyRoomsForPartner(int $partnerId): int;
 
     /**
-     * Get rooms occupancy data for a specific building/partner
+     * Get rooms occupancy data for a specific property/partner
      *
      * @param int $partnerId
-     * @param int $buildingId
+     * @param int $propertyId
      * @return Collection
      */
-    public function getOccupancyForPartner(int $partnerId, int $buildingId): Collection;
+    public function getOccupancyForPartner(int $partnerId, int $propertyId): Collection;
 }

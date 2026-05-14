@@ -31,7 +31,7 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
     {
         return $this->model->whereHas('booking', function ($query) use ($userId) {
             $query->where('user_id', $userId);
-        })->with(['booking.room.building'])->get();
+        })->with(['booking.room.property'])->get();
     }
 
     /**
@@ -46,7 +46,7 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
         return $this->model->where('id', $id)
             ->whereHas('booking', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
-            })->with(['booking.user', 'booking.room.building', 'booking.price'])->first();
+            })->with(['booking.user', 'booking.room.property', 'booking.price'])->first();
     }
 
     /**
@@ -57,9 +57,9 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
      */
     public function getContractsForPartner(int $partnerId): Collection
     {
-        return $this->model->whereHas('booking.room.building', function ($query) use ($partnerId) {
+        return $this->model->whereHas('booking.room.property', function ($query) use ($partnerId) {
             $query->where('user_id', $partnerId);
-        })->with(['booking.user', 'booking.room.building'])->get();
+        })->with(['booking.user', 'booking.room.property'])->get();
     }
 
     /**
@@ -73,11 +73,11 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
     {
         /** @var Contract|null $contract */
         $contract = $this->model->where('id', $id)
-            ->whereHas('booking.room.building', function ($query) use ($partnerId) {
+            ->whereHas('booking.room.property', function ($query) use ($partnerId) {
                 $query->where('user_id', $partnerId);
             })->with([
                 'booking.user',
-                'booking.room.building',
+                'booking.room.property',
                 'booking.price',
                 'booking.room.utilityFees',
             ])->first();
@@ -104,7 +104,7 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
             ->whereHas('booking', function ($q) use ($today, $deadline) {
                 $q->whereBetween('end_date', [$today->toDateString(), $deadline->toDateString()]);
             })
-            ->with(['booking.room.building'])
+            ->with(['booking.room.property'])
             ->get()
             ->all();
 
@@ -124,10 +124,10 @@ final class EloquentContractRepository extends BaseRepository implements Contrac
             ->where('contract_type', 'LEASE_AGREEMENT')
             ->whereNotNull('renewal_reminder_at')
             ->whereNull('terminated_at')
-            ->whereHas('booking.room.building', function ($q) use ($partnerId) {
+            ->whereHas('booking.room.property', function ($q) use ($partnerId) {
                 $q->where('user_id', $partnerId);
             })
-            ->with(['booking.user', 'booking.room.building'])
+            ->with(['booking.user', 'booking.room.property'])
             ->orderBy('renewal_reminder_at')
             ->get()
             ->all();

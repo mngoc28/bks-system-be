@@ -15,20 +15,22 @@
  * @apiSuccess {Array} data Array of latest rooms
  * @apiSuccess {Number} data[].id Room ID
  * @apiSuccess {String} data[].title Room title
+ * @apiSuccess {String} data[].room_type Room type code
+ * @apiSuccess {Number} data[].people Max guests (capacity)
  * @apiSuccess {String} data[].description Room description
- * @apiSuccess {Number} data[].price Room price
- * @apiSuccess {String} data[].price_unit Price unit (per night, per month, etc.)
- * @apiSuccess {Number} data[].building_id Building ID
- * @apiSuccess {String} data[].building_name Building name
- * @apiSuccess {String} data[].building_address Building address
- * @apiSuccess {Number} data[].province_id Province ID
- * @apiSuccess {String} data[].province_name Province name
- * @apiSuccess {Number} data[].area Room area in square meters
- * @apiSuccess {Number} data[].max_guests Maximum number of guests
- * @apiSuccess {String} data[].main_image Main room image URL
- * @apiSuccess {Array} data[].images Array of room image URLs
- * @apiSuccess {String} data[].created_at Creation timestamp
- * @apiSuccess {String} data[].updated_at Update timestamp
+ * @apiSuccess {Number} data[].area Room area (m²)
+ * @apiSuccess {Number} data[].property_id Property ID
+ * @apiSuccess {String} data[].property_name Property name
+ * @apiSuccess {String} data[].province_name Province name (Vietnamese)
+ * @apiSuccess {String} data[].province_name_en Province slug / English key
+ * @apiSuccess {String} data[].room_image Main room image URL (from joined row)
+ * @apiSuccess {String} data[].property_address Property address detail (legacy JSON key)
+ * @apiSuccess {String} data[].property_type_name Property type label
+ * @apiSuccess {Number} data[].property_type_id Property type ID
+ * @apiSuccess {String} data[].amenities Comma-separated amenity names
+ * @apiSuccess {Number} data[].cheapest_daily_price Cheapest effective daily price
+ * @apiSuccess {Number} data[].cheapest_monthly_price Cheapest monthly package price
+ * @apiSuccess {String} data[].all_prices JSON array string of price objects (unit, price, deposit_amount, minimum_stay)
  *
  * @apiSuccessExample {json} Success-Response:
  * HTTP/1.1 200 OK
@@ -39,23 +41,22 @@
  *     {
  *       "id": 1,
  *       "title": "Phòng Deluxe 101",
+ *       "room_type": "studio",
+ *       "people": 2,
  *       "description": "Phòng 1 phòng ngủ cao cấp với view biển",
- *       "price": 1500000,
- *       "price_unit": "per_night",
- *       "building_id": 1,
- *       "building_name": "BKS Beach Resort",
- *       "building_address": "123 Đường Biển, Nha Trang",
- *       "province_id": 1,
- *       "province_name": "Khánh Hòa",
  *       "area": 45,
- *       "max_guests": 2,
- *       "main_image": "https://res.cloudinary.com/example/image/upload/v1234567890/rooms/room1.jpg",
- *       "images": [
- *         "https://res.cloudinary.com/example/image/upload/v1234567890/rooms/room1.jpg",
- *         "https://res.cloudinary.com/example/image/upload/v1234567890/rooms/room1_2.jpg"
- *       ],
- *       "created_at": "2025-12-29T10:00:00.000000Z",
- *       "updated_at": "2025-12-29T10:00:00.000000Z"
+ *       "property_id": 1,
+ *       "property_name": "BKS Beach Resort",
+ *       "province_name": "Khánh Hòa",
+ *       "province_name_en": "khanh_hoa",
+ *       "room_image": "https://res.cloudinary.com/example/image/upload/v1234567890/rooms/room1.jpg",
+ *       "property_address": "123 Đường Biển, Nha Trang",
+ *       "property_type_name": "Resort",
+ *       "property_type_id": 2,
+ *       "amenities": "WiFi,Điều hòa",
+ *       "cheapest_daily_price": 1500000,
+ *       "cheapest_monthly_price": 30000000,
+ *       "all_prices": "[{\"unit\":\"day\",\"price\":1500000,\"deposit_amount\":500000,\"minimum_stay\":1}]"
  *     }
  *   ]
  * }

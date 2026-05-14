@@ -1,4 +1,4 @@
-# BKS System - Database Overview & Core Schema
+﻿# BKS System - Database Overview & Core Schema
 
 ## Metadata tài liệu
 
@@ -6,7 +6,7 @@
 |---|---|
 | Người tạo | Cursor Agent |
 | Ngày tạo | 2026-05-10 |
-| Phạm vi baseline | Các bảng lõi liên quan Partner Portal 360: buildings, rooms, room_prices, bookings, contracts, utility_fees và delta đề xuất |
+| Phạm vi baseline | Các bảng lõi liên quan Partner Portal 360: **properties**, rooms, room_prices, bookings, contracts, utility_fees và delta đề xuất |
 | Quy ước | File này là canonical schema overview cho các phân tích DB trong repository |
 
 ## Nhật ký thay đổi
@@ -16,10 +16,11 @@
 | 2026-05-10 | Cursor Agent | Tạo baseline canonical theo `srs_partner_portal_360.md`; ghi nhận bảng hiện có và delta đề xuất cho Dashboard/Bookings/Calendar Partner Portal |
 | 2026-05-10 | Cursor Agent | Đồng bộ với `docs/designs/design_001.md`: chốt CHECK constraint cho `room_blocks` (`end_date >= start_date`, `block_type` thuộc enum `maintenance/owner_use/off_market`); chốt chiến lược pessimistic lock theo `room_id` cho confirm booking; bổ sung quy ước backfill `bookings.confirmed_at = updated_at` cho status confirmed; không thay đổi cấu trúc bảng so với baseline |
 | 2026-05-10 | Cursor Agent (stack-task Phase 1) | Phase 1 đã ship migration thực tế. (1) `bookings`: thêm `confirmed_at`, `cancelled_at`, `cancellation_reason`, `no_show_at`, `source` (đều nullable) + 5 index `idx_bookings_confirmed_at`, `idx_bookings_cancelled_at`, `idx_bookings_status_created_at`, `idx_bookings_room_dates_status`, `idx_bookings_source`. (2) `contracts`: thêm `renewal_reminder_at`, `terminated_at`, `termination_reason` (đều nullable) + index `idx_contracts_renewal_reminder`. (3) Tạo bảng mới `booking_timeline_events` với schema: `id`, `booking_id` (FK CASCADE→bookings.id), `actor_id` (FK SET NULL→users.id), `event_type VARCHAR(50)`, `from_status/to_status VARCHAR(50)` nullable, `note TEXT` nullable, `metadata JSON` nullable, `timestamps`. Index `(booking_id, created_at)`, `event_type`, `actor_id`. Migration files: `2026_05_10_120001_add_partner_portal_360_columns_to_bookings_table.php`, `2026_05_10_120002_add_renewal_fields_to_contracts_table.php`, `2026_05_10_120003_create_booking_timeline_events_table.php`. Tất cả migration kèm `down()` rollback hoàn chỉnh. |
-| 2026-05-10 | Cursor Agent (stack-task Phase 2) | Phase 2 KHÔNG thay đổi schema. Bổ sung runtime semantics cho `booking_timeline_events`: thêm giá trị `event_type='broadcast_dispatched'` (do listener `App\Listeners\RecordBookingTimeline` ghi sau khi events `BookingCreated|BookingConfirmed|BookingCancelled` được dispatch). `metadata` chứa `partner_id`, `property_id`, `actor_id`, `source` (tên event gốc). Đây là marker phụ trợ cho audit realtime, không thay timeline transition đồng bộ Phase 1. Phase 2 cũng đăng ký channel auth `private-partner.{user_id}` và `private-property.{building_id}` ở `routes/channels.php` — không có bảng/cột mới. |
+| 2026-05-10 | Cursor Agent (stack-task Phase 2) | Phase 2 KHÔNG thay đổi schema. Bổ sung runtime semantics cho `booking_timeline_events`: thêm giá trị `event_type='broadcast_dispatched'` (do listener `App\Listeners\RecordBookingTimeline` ghi sau khi events `BookingCreated|BookingConfirmed|BookingCancelled` được dispatch). `metadata` chứa `partner_id`, `property_id`, `actor_id`, `source` (tên event gốc). Đây là marker phụ trợ cho audit realtime, không thay timeline transition đồng bộ Phase 1. Phase 2 cũng đăng ký channel auth `private-partner.{user_id}` và `private-property.{property_id}` ở `routes/channels.php` — không có bảng/cột mới. |
 | 2026-05-10 | Cursor Agent (stack-task Phase 3) | Phase 3 ship migration thực tế cho `room_blocks` (file `2026_05_10_120004_create_room_blocks_table.php`). Cấu trúc: `id`, `room_id` (FK CASCADE→rooms.id), `start_date DATE`, `end_date DATE`, `block_type VARCHAR(30)` ∈ {`maintenance`, `owner_use`, `off_market`}, `reason VARCHAR(255)`, `note TEXT?`, `created_by/updated_by` (FK SET NULL→users.id), `timestamps`. Index `idx_rb_room_dates(room_id, start_date, end_date)`, `idx_rb_block_type`. CHECK constraint qua raw SQL: `chk_rb_dates(end_date >= start_date)` và `chk_rb_block_type(block_type IN (...))`. Bổ sung runtime: timeline event `event_type='conflict_detected'` (ghi từ `BookingTimelineService::recordConflictDetected` khi `BookingService::handleConfirmBooking|handleMove` phát hiện conflict). Không thay đổi schema `bookings/contracts`. |
-| 2026-05-12 | Cursor Agent (stack-task Phase 4) | Phase 4 KHÔNG thay đổi schema. Bổ sung runtime/API semantics: dashboard chart occupancy đọc `bookings/rooms/buildings` theo interval `[start_date,end_date)` và status `CONFIRMED|COMPLETED`; dashboard chart GMV group theo `bookings.start_date`, loại `CANCELLED`, join `room_prices.price`; KPI cache keys gồm `partner:{id}:kpi:dashboard`, `partner:{id}:kpi:charts:occupancy`, `partner:{id}:kpi:charts:gmv`. Bulk action endpoint dùng existing `bookings` schema và mỗi item gọi single confirm/cancel để giữ lock/timeline/broadcast. |
-| 2026-05-12 | Cursor Agent (stack-task Phase 5) | Phase 5 KHÔNG thay đổi schema (các cột `contracts.renewal_reminder_at/terminated_at/termination_reason` đã ship ở Phase 1 + migration `2026_05_05_111229_add_contract_type_to_contracts_table.php` cho `contract_type`). Bổ sung runtime/API semantics: scheduler `partner:send-contract-renewal-reminders` chạy daily 06:00 Asia/Ho_Chi_Minh, query `contracts` với điều kiện `contract_type='LEASE_AGREEMENT'` + `renewal_reminder_at IS NULL` + `terminated_at IS NULL` + join `bookings.end_date BETWEEN today AND today+30d`; khi tag thì set `renewal_reminder_at = now()` và dispatch `ContractRenewalReminderQueued` (channels `private-partner.{user_id}` + `private-property.{building_id}`, alias `.contract.renewal_reminder`). Endpoint `GET /partner/contracts/expiring-soon` đọc `renewal_reminder_at IS NOT NULL AND terminated_at IS NULL`. Endpoint `POST /partner/contracts/:id/terminate` set `terminated_at=now()` + `termination_reason` (≥5 chars, idempotent). `ContractDetail` API trả thêm `bookings.room.utility_fees` (bảng đã có từ migration `2026_05_05_141930_create_utility_fees_table.php`). Không thêm cột/bảng mới. |
+| 2026-05-12 | Cursor Agent (stack-task Phase 4) | Phase 4 KHÔNG thay đổi schema. Bổ sung runtime/API semantics: dashboard chart occupancy đọc `bookings/rooms/properties` theo interval `[start_date,end_date)` và status `CONFIRMED|COMPLETED`; dashboard chart GMV group theo `bookings.start_date`, loại `CANCELLED`, join `room_prices.price`; KPI cache keys gồm `partner:{id}:kpi:dashboard`, `partner:{id}:kpi:charts:occupancy`, `partner:{id}:kpi:charts:gmv`. Bulk action endpoint dùng existing `bookings` schema và mỗi item gọi single confirm/cancel để giữ lock/timeline/broadcast. |
+| 2026-05-12 | Cursor Agent (stack-task Phase 5) | Phase 5 KHÔNG thay đổi schema (các cột `contracts.renewal_reminder_at/terminated_at/termination_reason` đã ship ở Phase 1 + migration `2026_05_05_111229_add_contract_type_to_contracts_table.php` cho `contract_type`). Bổ sung runtime/API semantics: scheduler `partner:send-contract-renewal-reminders` chạy daily 06:00 Asia/Ho_Chi_Minh, query `contracts` với điều kiện `contract_type='LEASE_AGREEMENT'` + `renewal_reminder_at IS NULL` + `terminated_at IS NULL` + join `bookings.end_date BETWEEN today AND today+30d`; khi tag thì set `renewal_reminder_at = now()` và dispatch `ContractRenewalReminderQueued` (channels `private-partner.{user_id}` + `private-property.{property_id}`, alias `.contract.renewal_reminder`). Endpoint `GET /partner/contracts/expiring-soon` đọc `renewal_reminder_at IS NOT NULL AND terminated_at IS NULL`. Endpoint `POST /partner/contracts/:id/terminate` set `terminated_at=now()` + `termination_reason` (≥5 chars, idempotent). `ContractDetail` API trả thêm `bookings.room.utility_fees` (bảng đã có từ migration `2026_05_05_141930_create_utility_fees_table.php`). Không thêm cột/bảng mới. |
+| 2026-05-13 | Cursor Agent | Đồng bộ tài liệu schema: bảng lõi `properties` → `properties`, `rooms.property_id` → `rooms.property_id`; cập nhật ER diagram và quy tắc ownership Partner. |
 
 ## Nguyên tắc dùng chung
 
@@ -40,15 +41,15 @@
 | phone | string | - | Số điện thoại khách/partner |
 | email | string | Unique | Email đăng nhập |
 
-### buildings
+### properties
 
 | Column | Type | Key | Notes |
 |---|---|---|---|
-| id | bigint | PK | Tài sản/tòa nhà |
-| user_id | bigint | FK -> users.id | Partner owner của building |
+| id | bigint | PK | Bất động sản / tài sản cho thuê (logical “property”) |
+| user_id | bigint | FK -> users.id | Partner sở hữu |
 | province_id | bigint | FK -> provinces.id | Tỉnh/thành |
 | ward_id | bigint | FK -> wards.id | Phường/xã |
-| name | string(255) | Index | Tên building |
+| name | string(255) | Index | Tên hiển thị |
 | address_detail | string(255) | - | Địa chỉ chi tiết |
 | number_of_floors | integer | - | Số tầng |
 | number_of_units | integer | - | Số đơn vị/phòng |
@@ -57,14 +58,14 @@
 | area | decimal(10,2) | - | Diện tích |
 | description | text | - | Mô tả |
 
-**Index cần đảm bảo cho Partner Portal 360:** `buildings(user_id)`.
+**Index cần đảm bảo cho Partner Portal 360:** `properties(user_id)`.
 
 ### rooms
 
 | Column | Type | Key | Notes |
 |---|---|---|---|
 | id | bigint | PK | Phòng/đơn vị cho thuê |
-| building_id | bigint | FK -> buildings.id | Building chứa phòng |
+| property_id | bigint | FK -> properties.id | Property chứa phòng |
 | title | string(255) | - | Tên phòng |
 | room_number | string(50) | - | Mã/số phòng |
 | deposit | decimal(12,2) | - | Tiền cọc ở mức room nếu có |
@@ -200,8 +201,8 @@ Mục đích: cho Partner chặn lịch phòng vì bảo trì, owner-use hoặc 
 
 ```mermaid
 erDiagram
-  USERS ||--o{ BUILDINGS : owns
-  BUILDINGS ||--o{ ROOMS : contains
+  USERS ||--o{ PROPERTIES : owns
+  PROPERTIES ||--o{ ROOMS : contains
   ROOMS ||--o{ ROOM_PRICES : has
   ROOMS ||--o{ BOOKINGS : receives
   ROOMS ||--o{ ROOM_BLOCKS : blocks
@@ -213,7 +214,7 @@ erDiagram
 
 ## Quy tắc dữ liệu liên quan Partner Portal 360
 
-1. Partner chỉ xem/sửa dữ liệu có đường liên kết `buildings.user_id = users.id` của chính Partner đó.
+1. Partner chỉ xem/sửa dữ liệu có đường liên kết `properties.user_id = users.id` của chính Partner đó.
 2. Booking conflict được xác định theo cùng `room_id`, khoảng ngày giao nhau, và booking status chưa cancelled/completed.
 3. `room_blocks` cũng tham gia conflict check như booking thật.
 4. `confirmed_at` là nguồn tính time-to-confirm.
@@ -222,3 +223,4 @@ erDiagram
 7. Khi confirm/move booking phải dùng pessimistic lock `SELECT ... FOR UPDATE` theo `room_id` để tránh race condition (theo `design_001.md`).
 8. Dashboard Phase 4 chart occupancy/GMV dùng live query từ bảng hiện có + cache 60s, chưa cần bảng snapshot theo ngày.
 8. Backfill `bookings.confirmed_at = updated_at` cho booking đang ở `status = 1` để có baseline KPI; ghi `metadata.backfilled = true` ở timeline để phân biệt với event thật.
+

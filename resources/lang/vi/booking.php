@@ -101,7 +101,7 @@ return [
         'not_exist_price'        => 'Không tồn tại giá có id = :price_id cho phòng này!',
         'completed_successfully' => 'Đặt phòng đã hoàn thành. Hiện tại phòng trống!',
         'unauthorized'    => 'Không được phép!',
-        'unauthorized_staff_action' => 'Nhân viên không thể thao tác với booking của tòa nhà khác!',
+        'unauthorized_staff_action' => 'Nhân viên không thể thao tác với booking thuộc cơ sở không được phân công!',
         'user_booking_created_successfully' => "Đặt phòng thành công! Vui lòng kiểm tra email để xem chi tiết.",
         'create_user_failed'     => 'Tạo tài khoản người dùng cho đặt phòng thất bại!',
         'room_in_private'        => 'Đây là phòng riêng và không thể đặt phòng!',

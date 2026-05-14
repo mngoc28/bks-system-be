@@ -7,7 +7,7 @@
  * @apiDescription Public endpoint - No authentication required. Returns paginated list of rooms with search functionality.
  *
  * @apiParam {String} [room_number]     Search by room number
- * @apiParam {Number} [building_id]  Search by building ID
+ * @apiParam {Number} [property_id]  Search by property ID
  * @apiParam {Number} [price_min]     Minimum price filter
  * @apiParam {Number} [price_max]     Maximum price filter
  * @apiParam {Number} [area_min]     Minimum area filter
@@ -31,7 +31,7 @@
  *     "data": [
  *       {
  *         "id": 6,
- *         "building_id": 30,
+ *         "property_id": 30,
  *         "room_number": "R006",
  *         "price": "3468107.00",
  *         "area": 38.5,
@@ -138,7 +138,7 @@
     "message": "Room found successfully",
     "data": {
         "id": 2,
-        "building_id": 9,
+        "property_id": 9,
         "room_number": "R002",
         "price": "4418507.00",
         "area": 41.5,
@@ -234,7 +234,7 @@
  * @apiParam {String} [status] Room status (available, occupied, maintenance, booked)
  * @apiParam {String} [description] Room description
  * @apiParam {String} [image_url] Room image URL
- * @apiParam {Number} building_id Building ID
+ * @apiParam {Number} property_id Property ID
  * @apiParam {Number} [created_by] Creator ID
  * @apiParam {Array} [service_ids] List of services to attach to the room
  *
@@ -246,7 +246,7 @@
  *   "status": "success",
  *   "message": "Room created successfully",
  *   "data": {
- *       "building_id": "5",
+ *       "property_id": "5",
  *       "room_number": "R200",
  *       "price": "3400000.00",
  *       "area": 34.5,
@@ -276,7 +276,7 @@
  * @apiParam {String} [status] Room status (available, occupied, maintenance, booked)
  * @apiParam {String} [description] Room description
  * @apiParam {String} [image_url] Room image URL
- * @apiParam {Number} [building_id] Building ID
+ * @apiParam {Number} [property_id] Property ID
  * @apiParam {Number} [updated_by] Updater ID
  * @apiParam {Array} [service_ids] List of services to attach to the room
  *

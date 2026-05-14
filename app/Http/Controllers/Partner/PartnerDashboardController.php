@@ -89,13 +89,14 @@ final class PartnerDashboardController extends Controller
     }
 
     /**
-     * get total of buildings for partner
+     * Get total properties for partner.
+     *
      * @return JsonResponse
      */
-    public function getSystemBuilding(): JsonResponse
+    public function getSystemProperty(): JsonResponse
     {
         $partnerId = Auth::id();
-        $result = $this->dashboardService->getSystemBuildingForPartner($partnerId);
+        $result = $this->dashboardService->getSystemPropertyForPartner($partnerId);
         if ($result['success']) {
             return $this->successResponse(
                 $result['data'],
@@ -174,13 +175,14 @@ final class PartnerDashboardController extends Controller
     }
 
     /**
-     * Get bookings count for all buildings of partner
+     * Get bookings count grouped by property for partner.
+     *
      * @return JsonResponse
      */
-    public function getAllBuildingsBookingsCount(): JsonResponse
+    public function getAllPropertiesBookingsCount(): JsonResponse
     {
         $partnerId = Auth::id();
-        $result = $this->dashboardService->getAllBuildingsBookingsCountForPartner($partnerId);
+        $result = $this->dashboardService->getAllPropertiesBookingsCountForPartner($partnerId);
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }

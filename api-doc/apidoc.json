@@ -7,8 +7,8 @@
   "order": [
     "Auth",
     "Dashboard",
-    "Buildings",
-    "BuildingImages",
+    "Properties",
+    "PropertyImages",
     "Rooms",
     "Services",
     "Bookings",

@@ -65,7 +65,7 @@ final class PartnerQaDataSeeder extends Seeder
         $amenityIds = DB::table('amenities')->pluck('id')->values()->all();
         $serviceIds = DB::table('services')->pluck('id')->values()->all();
 
-        $buildingMeta = [];
+        $propertyMeta = [];
         $roomIds = [];
         $roomTypeSlugByRoomId = [];
         $roomPriceIdsByRoom = [];
@@ -83,7 +83,7 @@ final class PartnerQaDataSeeder extends Seeder
             $propertyCount = (int) ($profile['property_count'] ?? 1);
 
             for ($p = 1; $p <= $propertyCount; $p++) {
-                $buildingId = (int) DB::table('buildings')->insertGetId([
+                $propertyId = (int) DB::table('properties')->insertGetId([
                     'user_id' => $partnerId,
                     'province_id' => $provinceId,
                     'ward_id' => $wardId,
@@ -102,7 +102,7 @@ final class PartnerQaDataSeeder extends Seeder
                     'updated_at' => Carbon::now()->subDays(10 - $idx),
                 ]);
 
-                $buildingMeta[$buildingId] = [
+                $propertyMeta[$propertyId] = [
                     'room_count' => $profile['room_count'],
                     'label' => $profile['label'],
                     'slug' => (string) $type->slug,
@@ -113,8 +113,8 @@ final class PartnerQaDataSeeder extends Seeder
         }
 
         $roomCounter = 1;
-        $buildingIndex = 0;
-        foreach ($buildingMeta as $buildingId => $meta) {
+        $propertyIndex = 0;
+        foreach ($propertyMeta as $propertyId => $meta) {
             for ($i = 1; $i <= (int) $meta['room_count']; $i++) {
                 $baseArea = 18 + ($i * 2.5);
                 $basePeople = $i % 3 === 0 ? 4 : 2;
@@ -142,9 +142,9 @@ final class PartnerQaDataSeeder extends Seeder
                 }
 
                 $roomId = (int) DB::table('rooms')->insertGetId([
-                    'building_id' => $buildingId,
-                    'title' => sprintf('QA %s Room %02d-%02d', $meta['label'], $buildingIndex + 1, $i),
-                    'room_number' => sprintf('QA-%d%02d', $buildingIndex + 1, $i),
+                    'property_id' => $propertyId,
+                    'title' => sprintf('QA %s Room %02d-%02d', $meta['label'], $propertyIndex + 1, $i),
+                    'room_number' => sprintf('QA-%d%02d', $propertyIndex + 1, $i),
                     'deposit' => $baseDeposit,
                     'area' => $baseArea,
                     'floor_number' => $baseFloor,
@@ -225,7 +225,7 @@ final class PartnerQaDataSeeder extends Seeder
 
                 $roomCounter++;
             }
-            $buildingIndex++;
+            $propertyIndex++;
         }
 
         if (!empty($userIds)) {
@@ -266,11 +266,11 @@ final class PartnerQaDataSeeder extends Seeder
 
         $maintenanceStates = ['planned', 'in_progress', 'completed', 'cancelled'];
         foreach (array_slice($roomIds, 0, min(12, count($roomIds))) as $idx => $roomId) {
-            $buildingId = (int) DB::table('rooms')->where('id', $roomId)->value('building_id');
+            $maintenancePropertyId = (int) DB::table('rooms')->where('id', $roomId)->value('property_id');
 
             DB::table('room_maintenances')->insert([
                 'room_id' => $roomId,
-                'property_id' => $buildingId,
+                'property_id' => $maintenancePropertyId,
                 'title' => sprintf('QA Maintenance %02d', $idx + 1),
                 'description' => 'QA seeded maintenance task for list/filter/status verification.',
                 'maintenance_type' => $idx % 2 === 0 ? 'emergency' : 'scheduled',
@@ -370,19 +370,19 @@ final class PartnerQaDataSeeder extends Seeder
     }
 
     /**
-     * Remove QA buildings/rooms/bookings/news seeded for partner portal testing.
+     * Remove QA properties/rooms/bookings/news seeded for partner portal testing.
      * Safe to call standalone via `php artisan partner:cleanup-qa-data`.
      */
     public function cleanupPreviousQaData(int $partnerId): void
     {
-        $qaBuildingIds = DB::table('buildings')
+        $qaPropertyIds = DB::table('properties')
             ->where('user_id', $partnerId)
             ->where('name', 'like', 'QA %')
             ->pluck('id')
             ->values()
             ->all();
 
-        if (empty($qaBuildingIds)) {
+        if (empty($qaPropertyIds)) {
             DB::table('news')
                 ->where('user_id', $partnerId)
                 ->where('title', 'like', 'QA %')
@@ -391,7 +391,7 @@ final class PartnerQaDataSeeder extends Seeder
         }
 
         $qaRoomIds = DB::table('rooms')
-            ->whereIn('building_id', $qaBuildingIds)
+            ->whereIn('property_id', $qaPropertyIds)
             ->pluck('id')
             ->values()
             ->all();
@@ -405,8 +405,8 @@ final class PartnerQaDataSeeder extends Seeder
             DB::table('rooms')->whereIn('id', $qaRoomIds)->delete();
         }
 
-        DB::table('room_maintenances')->whereIn('property_id', $qaBuildingIds)->delete();
-        DB::table('buildings')->whereIn('id', $qaBuildingIds)->delete();
+        DB::table('room_maintenances')->whereIn('property_id', $qaPropertyIds)->delete();
+        DB::table('properties')->whereIn('id', $qaPropertyIds)->delete();
         DB::table('news')
             ->where('user_id', $partnerId)
             ->where('title', 'like', 'QA %')

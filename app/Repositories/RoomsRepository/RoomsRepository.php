@@ -8,7 +8,6 @@ use App\Enums\BookingStatus;
 use App\Enums\ImageType;
 use App\Enums\RoomStatus;
 use App\Models\Room;
-use App\Models\Building;
 use App\Repositories\BaseRepository;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -66,22 +65,22 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 $q->where('sort', 1)->select('id', 'room_id', 'image_url');
             }
         ])
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
                 'rooms.id',
-                'rooms.building_id',
+                'rooms.property_id',
                 'rooms.room_number',
                 'rooms.title',
-                'buildings.name as building_name',
+                'properties.name as property_name',
                 'rooms.room_type',
                 'rooms.status',
                 'rooms.area',
                 'rooms.people'
             );
 
-        // Filter for partner: only show rooms from buildings they manage
+        // Filter for partner: only show rooms from properties they manage
         if (Auth::check() && Auth::user()->role === 'partner') {
-            $query->where('buildings.user_id', Auth::id());
+            $query->where('properties.user_id', Auth::id());
         }
 
         // Filter by room_number (partial match)
@@ -89,9 +88,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $query->where('room_number', 'like', '%' . $request->room_number . '%');
         }
 
-        // Filter by building_id
-        if ($request->filled('building_id')) {
-            $query->where('building_id', $request->building_id);
+        if ($request->filled('property_id')) {
+            $query->where('property_id', $request->property_id);
         }
 
         // Filter by title (partial match)
@@ -118,7 +116,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'id',
                 'room_number',
                 'title',
-                'building_name',
+                'property_name',
                 'room_type',
                 'status',
                 'area',
@@ -126,8 +124,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ])
             && in_array($sortDirection, ['asc', 'desc'])
         ) {
-            if ($sortField === 'building_name') {
-                $query->orderBy('buildings.name', $sortDirection);
+            if ($sortField === 'property_name') {
+                $query->orderBy('properties.name', $sortDirection);
             } else {
                 $query->orderBy('rooms.' . $sortField, $sortDirection);
             }
@@ -157,12 +155,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'images' => function ($q) {
                 $q->select('id', 'room_id', 'image_url', 'image_type');
             }
-        ])->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+        ])->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
                 'rooms.id',
                 'rooms.room_number',
                 'rooms.title',
-                'rooms.building_id',
+                'rooms.property_id',
                 'rooms.room_type',
                 'rooms.floor_number',
                 'rooms.deposit',
@@ -172,27 +170,27 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.description',
                 'rooms.created_at',
                 'rooms.updated_at',
-                'buildings.name as building_name'
+                'properties.name as property_name'
             )->where('rooms.id', $id);
 
-        // Filter for partner: only show rooms from buildings they manage
+        // Filter for partner: only show rooms from properties they manage
         if (Auth::check() && Auth::user()->role === 'partner') {
-            $query->where('buildings.user_id', Auth::id());
+            $query->where('properties.user_id', Auth::id());
         }
         $result = $query->first();
         return $result;
     }
 
     /**
-     * Get room names by building ID
+     * Get room names by property ID
      *
-     * @param int $buildingId
+     * @param int $propertyId
      * @return \Illuminate\Support\Collection
      */
-    public function getRoomNamesByBuildingId(int $buildingId): \Illuminate\Support\Collection
+    public function getRoomNamesByPropertyId(int $propertyId): \Illuminate\Support\Collection
     {
         return $this->model
-            ->where('building_id', $buildingId)
+            ->where('property_id', $propertyId)
             ->select('id', 'room_number')
             ->get();
     }
@@ -208,7 +206,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     {
         // First get rooms with row numbers per province
         $roomsQuery = $this->model
-            ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
+            ->join('properties as b', 'rooms.property_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->join('provinces as p', 'b.province_id', '=', 'p.id')
             ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
@@ -224,10 +222,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.people',
                 'rooms.description',
                 'rooms.area',
+                'b.id as property_id',
+                'b.name as property_name',
                 'p.name as province_name',
                 'p.name_en as province_name_en',
                 'ri.image_url as room_image',
-                'b.address_detail as building_address',
+                'b.address_detail as property_address',
                 'pt.name as property_type_name',
                 'b.property_type_id',
                 DB::raw('GROUP_CONCAT(DISTINCT a.name) as amenities'),
@@ -258,6 +258,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.people',
                 'rooms.description',
                 'rooms.area',
+                'b.id',
+                'b.name',
                 'p.name',
                 'p.name_en',
                 'p.id',
@@ -290,7 +292,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
 
         // First get rooms with row numbers per province
         $roomsQuery = $this->model
-            ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
+            ->join('properties as b', 'rooms.property_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->join('provinces as p', 'b.province_id', '=', 'p.id')
             ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
@@ -309,7 +311,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'p.name as province_name',
                 'p.name_en as province_name_en',
                 'ri.image_url as room_image',
-                'b.address_detail as building_address',
+                'b.address_detail as property_address',
                 'pt.name as property_type_name',
                 'b.property_type_id',
                 DB::raw('GROUP_CONCAT(DISTINCT a.name) as amenities'),
@@ -376,7 +378,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     {
         return $this->model
             ->with(['amenities:id,name', 'services:id,name,price'])
-            ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
+            ->join('properties as b', 'rooms.property_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->leftjoin('partner_info as pi', 'pi.id', '=', 'u.id')
             ->where('rooms.id', $roomId)
@@ -388,8 +390,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'pi.company_name',
                 'pi.phone as company_phone',
                 'pi.address',
-                'b.name as building_name',
-                'b.address_detail as building_address'
+                'b.name as property_name',
+                'b.address_detail as property_address'
             )
             ->first();
     }
@@ -410,7 +412,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $join->on('rooms.id', '=', 'ri.room_id')
                 ->where('ri.sort', 1);
         })
-        ->join('buildings as b', 'rooms.building_id', '=', 'b.id')
+        ->join('properties as b', 'rooms.property_id', '=', 'b.id')
         ->join('provinces as p', 'b.province_id', '=', 'p.id')
         ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
         ->leftjoin('room_services as rs', 'rooms.id', '=', 'rs.room_id')
@@ -424,7 +426,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.description',
             'rooms.area',
             'ri.image_url as room_image',
-            'b.address_detail as building_address',
+            'b.address_detail as property_address',
             'p.name as province_name',
             'pt.name as property_type_name',
             'b.property_type_id',
@@ -497,19 +499,19 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 $q->where('sort', 1)->select('id', 'room_id', 'image_url');
             }
         ])
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
                 'rooms.id',
-                'rooms.building_id',
+                'rooms.property_id',
                 'rooms.room_number',
                 'rooms.title',
-                'buildings.name as building_name',
+                'properties.name as property_name',
                 'rooms.room_type',
                 'rooms.status',
                 'rooms.area',
                 'rooms.people'
             )
-            ->where('buildings.user_id', $partnerId);
+            ->where('properties.user_id', $partnerId);
 
         $query->orderBy('rooms.id', 'desc');
 
@@ -517,13 +519,13 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $query->where('room_number', 'like', '%' . $request->room_number . '%');
         }
 
-        if ($request->filled('building_ids') && is_array($request->input('building_ids'))) {
-            $ids = array_values(array_unique(array_filter(array_map('intval', $request->input('building_ids')))));
+        if ($request->filled('property_ids') && is_array($request->input('property_ids'))) {
+            $ids = array_values(array_unique(array_filter(array_map('intval', $request->input('property_ids')))));
             if ($ids !== []) {
-                $query->whereIn('rooms.building_id', $ids);
+                $query->whereIn('rooms.property_id', $ids);
             }
-        } elseif ($request->filled('building_id')) {
-            $query->where('building_id', $request->building_id);
+        } elseif ($request->filled('property_id')) {
+            $query->where('property_id', $request->property_id);
         }
 
         if ($request->filled('status')) {
@@ -553,12 +555,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'images' => function ($q) {
                 $q->select('id', 'room_id', 'image_url', 'image_type');
             }
-        ])->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+        ])->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
                 'rooms.id',
                 'rooms.room_number',
                 'rooms.title',
-                'rooms.building_id',
+                'rooms.property_id',
                 'rooms.room_type',
                 'rooms.floor_number',
                 'rooms.deposit',
@@ -568,10 +570,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.description',
                 'rooms.created_at',
                 'rooms.updated_at',
-                'buildings.name as building_name'
+                'properties.name as property_name'
             )
             ->where('rooms.id', $id)
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->first();
     }
 
@@ -584,8 +586,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      */
     public function countRoomsForPartner(int $partnerId, array $filters = []): int
     {
-        $query = $this->model->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId);
+        $query = $this->model->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId);
 
         if (!empty($filters)) {
             $query->where($filters);
@@ -603,8 +605,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     public function getEmptyRoomsForPartner(int $partnerId): int
     {
         $today = now()->toDateString();
-        return $this->model->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId)
+        return $this->model->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
             ->where('rooms.status', RoomStatus::PUBLIC)
             ->whereDoesntHave('bookings', function ($query) use ($today) {
                 $query->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
@@ -613,21 +615,21 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     }
 
     /**
-     * Get rooms occupancy data for a specific building/partner
+     * Get rooms occupancy data for a specific property/partner
      *
      * @param int $partnerId
-     * @param int $buildingId
+     * @param int $propertyId
      * @return \Illuminate\Support\Collection
      */
-    public function getOccupancyForPartner(int $partnerId, int $buildingId): \Illuminate\Support\Collection
+    public function getOccupancyForPartner(int $partnerId, int $propertyId): \Illuminate\Support\Collection
     {
         $today = now()->toDateString();
         $confirmedStatus = BookingStatus::CONFIRMED->value;
 
         return $this->model
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId)
-            ->where('rooms.building_id', $buildingId)
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
+            ->where('rooms.property_id', $propertyId)
             ->select(
                 'rooms.id',
                 'rooms.room_number',

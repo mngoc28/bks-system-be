@@ -6,7 +6,7 @@ namespace Tests\Unit\Services;
 
 use App\Events\ContractRenewalReminderQueued;
 use App\Models\Booking;
-use App\Models\Building;
+use App\Models\Property;
 use App\Models\Contract;
 use App\Models\Room;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
@@ -189,19 +189,19 @@ final class ContractServiceTest extends TestCase
     }
 
     /**
-     * Builds an in-memory Contract with the booking/room/building chain so the
+     * Builds an in-memory Contract with the booking/room/property chain so the
      * dispatcher can derive partner & property ids without touching the DB.
      */
     private function makeContract(int $id, string $type): Contract
     {
-        $building = new Building();
-        $building->id = 500;
-        $building->user_id = 7;
+        $property = new Property();
+        $property->id = 500;
+        $property->user_id = 7;
 
         $room = new Room();
         $room->id = 11;
-        $room->building_id = 500;
-        $room->setRelation('building', $building);
+        $room->property_id = 500;
+        $room->setRelation('property', $property);
 
         $booking = new Booking();
         $booking->id = 1000 + $id;

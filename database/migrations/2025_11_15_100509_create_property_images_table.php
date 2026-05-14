@@ -13,9 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('building_images', function (Blueprint $table) {
+        Schema::create('property_images', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('building_id');
+            $table->unsignedBigInteger('property_id');
             $table->string('image_url', 255);
             $table->string('id_image_cloudinary', 255)->nullable();
             $table->integer('image_type')->default(0)->comment('0: other, 1: exterior, 2: interior, 3: bathroom, 4: kitchen');
@@ -26,11 +26,11 @@ return new class extends Migration
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
             // Indexes
-            $table->index('building_id');
-            $table->index(['building_id', 'image_type']);
+            $table->index('property_id');
+            $table->index(['property_id', 'image_type']);
 
             // Foreign keys
-            $table->foreign('building_id')->references('id')->on('buildings')->onDelete('cascade');
+            $table->foreign('property_id')->references('id')->on('properties')->onDelete('cascade');
         });
     }
 
@@ -41,6 +41,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('building_images');
+        Schema::dropIfExists('property_images');
     }
 };

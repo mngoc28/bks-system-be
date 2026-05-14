@@ -18,10 +18,10 @@ return [
             'exists'   => 'ID phòng không tồn tại',
             'unique'   => 'ID phòng đã được sử dụng trong đặt phòng',
         ],
-        'building_id' => [
-            'exists' => 'Tòa nhà đã chọn không tồn tại',
-            'integer'  => 'ID tòa nhà phải là số nguyên',
-            'required' => 'ID tòa nhà là bắt buộc',
+        'property_id' => [
+            'exists'   => 'Cơ sở đã chọn không tồn tại',
+            'integer'  => 'ID cơ sở phải là số nguyên',
+            'required' => 'ID cơ sở là bắt buộc',
         ],
         'title' => [
             'required' => 'Tiêu đề phòng là bắt buộc',
@@ -148,7 +148,7 @@ return [
         ],
     ],
     'attributes' => [
-        'building_id' => 'ID tòa nhà',
+        'property_id' => 'ID cơ sở',
         'title'       => 'Tiêu đề',
         'room_number' => 'Số phòng',
         'deposit'     => 'Tiền cọc',

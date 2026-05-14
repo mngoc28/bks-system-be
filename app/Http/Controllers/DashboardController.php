@@ -76,12 +76,13 @@ final class DashboardController extends Controller
     }
 
     /**
-     * get total of buildings in the system
+     * Get total properties in the system.
+     *
      * @return JsonResponse
      */
-    public function getSystemBuilding(): JsonResponse
+    public function getSystemProperty(): JsonResponse
     {
-        $result = $this->dashboardService->getSystemBuilding();
+        $result = $this->dashboardService->getSystemProperty();
         if ($result['success']) {
             return $this->successResponse(
                 $result['data'],
@@ -157,12 +158,13 @@ final class DashboardController extends Controller
     }
 
     /**
-     * Get bookings count for all buildings
+     * Get bookings count grouped by property.
+     *
      * @return JsonResponse
      */
-    public function getAllBuildingsBookingsCount(): JsonResponse
+    public function getAllPropertiesBookingsCount(): JsonResponse
     {
-        $result = $this->dashboardService->getAllBuildingsBookingsCount();
+        $result = $this->dashboardService->getAllPropertiesBookingsCount();
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
         }

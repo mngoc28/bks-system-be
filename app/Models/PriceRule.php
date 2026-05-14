@@ -20,9 +20,9 @@ class PriceRule extends Model
         'updated_at'   => 'datetime',
     ];
 
-    public function building(): BelongsTo
+    public function property(): BelongsTo
     {
-        return $this->belongsTo(Building::class);
+        return $this->belongsTo(Property::class);
     }
 
     public function room(): BelongsTo

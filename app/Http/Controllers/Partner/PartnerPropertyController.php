@@ -6,48 +6,38 @@ namespace App\Http\Controllers\Partner;
 
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Validations\BuildingsValidation;
-use App\Services\BuildingsServices;
-use App\Services\BuildingImageService;
+use App\Http\Validations\PropertiesValidation;
+use App\Services\PropertiesService;
+use App\Services\PropertyImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class PartnerBuildingController extends Controller
+final class PartnerPropertyController extends Controller
 {
-    /**
-     * Building services and validation instance
-     */
-    protected BuildingsServices $buildingServices;
-    protected BuildingsValidation $buildingsValidation;
-    protected BuildingImageService $buildingImageService;
+    protected PropertiesService $propertiesService;
+    protected PropertiesValidation $propertiesValidation;
+    protected PropertyImageService $propertyImageService;
 
-    /**
-     * Constructor
-     *
-     * @param BuildingsServices $buildingServices
-     * @param BuildingsValidation $buildingsValidation
-     * @param BuildingImageService $buildingImageService
-     */
     public function __construct(
-        BuildingsServices $buildingServices,
-        BuildingsValidation $buildingsValidation,
-        BuildingImageService $buildingImageService
+        PropertiesService $propertiesService,
+        PropertiesValidation $propertiesValidation,
+        PropertyImageService $propertyImageService
     ) {
-        $this->buildingServices = $buildingServices;
-        $this->buildingsValidation = $buildingsValidation;
-        $this->buildingImageService = $buildingImageService;
+        $this->propertiesService     = $propertiesService;
+        $this->propertiesValidation = $propertiesValidation;
+        $this->propertyImageService  = $propertyImageService;
     }
 
     /**
-     * Store new building
+     * Store new property (partner portal).
      */
     public function store(Request $request): JsonResponse
     {
-        $validator = $this->buildingsValidation->createBuildingValidation($request);
+        $validator = $this->propertiesValidation->createPropertyValidation($request);
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingServices->createBuilding($request->all());
+        $result = $this->propertiesService->createProperty($request->all());
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
         }
@@ -55,15 +45,15 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Update building
+     * Update property (partner portal).
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $validator = $this->buildingsValidation->updateBuildingValidation($request, (int)$id);
+        $validator = $this->propertiesValidation->updatePropertyValidation($request, (int)$id);
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingServices->updateBuilding((int)$id, $request->all());
+        $result = $this->propertiesService->updateProperty((int)$id, $request->all());
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
         }
@@ -71,15 +61,15 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Delete building
+     * Delete property (partner portal).
      */
     public function destroy($id): JsonResponse
     {
-        $validator = $this->buildingsValidation->deleteBuildingValidation((int)$id);
+        $validator = $this->propertiesValidation->deletePropertyValidation((int)$id);
         if ($validator->fails()) {
              return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingServices->deleteBuilding((int)$id);
+        $result = $this->propertiesService->deleteProperty((int)$id);
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
         }
@@ -87,19 +77,19 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Get all buildings for partner
+     * List/search properties for partner.
      *
      * @param Request $request
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $validator = $this->buildingsValidation->searchBuildingValidation($request);
+        $validator = $this->propertiesValidation->searchPropertyValidation($request);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingServices->handleGetAllBuildingsForPartner($request);
+        $result = $this->propertiesService->handleGetAllPropertiesForPartner($request);
 
         if (!$result["success"]) {
             return $this->errorResponse($result["message"], null, HttpStatus::BAD_REQUEST);
@@ -109,20 +99,20 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Get building detail for partner
+     * Get property detail for partner
      *
      * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
-        $validator = $this->buildingsValidation->detailBuildingValidation($id);
+        $validator = $this->propertiesValidation->detailPropertyValidation($id);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingServices->handleGetBuildingDetailForPartner($id);
+        $result = $this->propertiesService->handleGetPropertyDetailForPartner($id);
 
         if (!$result["success"]) {
             $statusCode = $result["data"] === null
@@ -135,13 +125,13 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Get building names for partner
+     * Get property display names for partner
      *
      * @return JsonResponse
      */
-    public function getBuildingNames(): JsonResponse
+    public function getPropertyNames(): JsonResponse
     {
-        $result = $this->buildingServices->handleGetBuildingNamesForPartner();
+        $result = $this->propertiesService->handleGetPropertyNamesForPartner();
 
         if (!$result["success"]) {
             return $this->errorResponse(
@@ -155,16 +145,16 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Get building images
+     * Get property images
      */
     public function getImages($id): JsonResponse
     {
-        $result = $this->buildingImageService->getByBuildingId((int)$id);
+        $result = $this->propertyImageService->getByPropertyId((int)$id);
         return $this->successResponse($result['data'], $result['message']);
     }
 
     /**
-     * Add building image
+     * Add property image
      */
     public function storeImages(Request $request, $id): JsonResponse
     {
@@ -175,10 +165,10 @@ final class PartnerBuildingController extends Controller
         ]);
 
         $data = $request->all();
-        $data['building_id'] = (int)$id;
+        $data['property_id'] = (int)$id;
         $data['image_type'] = $data['image_type'] ?? 1;
 
-        $result = $this->buildingImageService->store($data);
+        $result = $this->propertyImageService->store($data);
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
         }
@@ -186,11 +176,11 @@ final class PartnerBuildingController extends Controller
     }
 
     /**
-     * Delete building image
+     * Delete property image
      */
     public function deleteImage($id, $imageId): JsonResponse
     {
-        $result = $this->buildingImageService->destroy((int)$imageId);
+        $result = $this->propertyImageService->destroy((int)$imageId);
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
         }

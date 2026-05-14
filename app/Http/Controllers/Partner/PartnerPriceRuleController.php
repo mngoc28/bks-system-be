@@ -14,12 +14,12 @@ use Illuminate\Support\Facades\Auth;
 final class PartnerPriceRuleController extends Controller
 {
     /**
-     * List all price rules for a building
+     * List all price rules for a property
      */
     public function index(Request $request): JsonResponse
     {
-        $buildingId = $request->query('building_id');
-        $rules = PriceRule::where('building_id', $buildingId)
+        $propertyId = $request->query('property_id');
+        $rules = PriceRule::where('property_id', $propertyId)
             ->with(['room'])
             ->get();
         return $this->successResponse($rules, 'Price rules retrieved successfully');
@@ -32,7 +32,7 @@ final class PartnerPriceRuleController extends Controller
     {
         $partnerId = Auth::id();
         $data = $request->validate([
-            'building_id' => 'required|exists:buildings,id',
+            'property_id' => 'required|exists:properties,id',
             'room_id'     => 'nullable|exists:rooms,id',
             'name'        => 'required|string|max:255',
             'type'        => 'required|in:markup,discount',

@@ -69,8 +69,8 @@ Route::group(['prefix' => 'v1'], function () {
 ## 3. Naming Convention
 
 ### URL
-- Sử dụng **kebab-case** cho path segments: `/user-profiles`, `/order-history`, `/building-images`.
-- Sử dụng **danh từ số nhiều** cho resource: `/users`, `/buildings`, `/bookings`.
+- Sử dụng **kebab-case** cho path segments: `/user-profiles`, `/order-history`, `/property-images`.
+- Sử dụng **danh từ số nhiều** cho resource: `/users`, `/properties`, `/bookings`.
 - Nhóm theo vai trò (Role-based prefix):
     - `/api/v1/admin/...`: Quản trị viên (admin).
     - `/api/v1/partner/...`: Đối tác (partner).
@@ -92,12 +92,12 @@ Route::group(['prefix' => 'v1'], function () {
 - **Services**: `[Name]Service.php` — `UserService.php`
 - **Repositories**: `[Name]Repository.php` — `UserRepository.php`
 - **Interfaces**: `[Name]RepositoryInterface.php` — `UserRepositoryInterface.php`
-- **Models**: `[Name].php` (PascalCase, số ít) — `User.php`, `BuildingImage.php`
+- **Models**: `[Name].php` (PascalCase, số ít) — `User.php`, `PropertyImage.php`
 - **Validation Classes**: `[Name]Validation.php` — `UserValidation.php`
 
 ### Code Convention
 - **JSON Keys / DB Columns**: `snake_case` — `first_name`, `created_at`.
-- **PHP Variables**: `camelCase` — `$userId`, `$buildingData`.
+- **PHP Variables**: `camelCase` — `$userId`, `$propertyData`.
 - **Constants (Enum/Config)**: `UPPER_SNAKE_CASE` — `DEFAULT_PER_PAGE`.
 
 ---

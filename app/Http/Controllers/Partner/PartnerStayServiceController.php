@@ -29,7 +29,7 @@ final class PartnerStayServiceController extends Controller
     }
 
     /**
-     * List all stay service requests for partner's buildings
+     * List all stay service requests for partner's properties
      *
      * @return JsonResponse
      */

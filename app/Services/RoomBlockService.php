@@ -237,13 +237,13 @@ final class RoomBlockService
 
     private function dispatchChanged(RoomBlock $block, Room $room, string $action): void
     {
-        $building = $room->relationLoaded('building') ? $room->building : $room->building()->first();
-        if ($building === null) {
+        $property = $room->relationLoaded('property') ? $room->property : $room->property()->first();
+        if ($property === null) {
             return;
         }
 
-        $partnerId  = (int) $building->user_id;
-        $propertyId = (int) $building->id;
+        $partnerId  = (int) $property->user_id;
+        $propertyId = (int) $property->id;
         $actorId    = Auth::id();
 
         try {

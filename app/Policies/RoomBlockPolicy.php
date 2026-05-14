@@ -12,7 +12,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 /**
  * Authorization rules cho thao tác room block của Partner.
  *
- * Ownership đi qua `room_blocks.room.building.user_id`. Admin được bypass
+ * Ownership đi qua `room_blocks.room.property.user_id`. Admin được bypass
  * (giống `BookingPolicy`) để hỗ trợ thao tác audit.
  */
 final class RoomBlockPolicy
@@ -63,11 +63,11 @@ final class RoomBlockPolicy
             return false;
         }
 
-        $building = $room->relationLoaded('building') ? $room->building : $room->building()->first();
-        if ($building === null) {
+        $property = $room->relationLoaded('property') ? $room->property : $room->property()->first();
+        if ($property === null) {
             return false;
         }
 
-        return (int) $building->user_id === (int) $user->id;
+        return (int) $property->user_id === (int) $user->id;
     }
 }

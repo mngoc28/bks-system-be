@@ -37,9 +37,9 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
             ->select('province_id', DB::raw('COUNT(*) as ward_count'))
             ->groupBy('province_id');
 
-        $countRoom = DB::table('buildings')
+        $countRoom = DB::table('properties')
             ->select('province_id', DB::raw('COUNT(*) as room_count'))
-            ->leftJoin('rooms as rm', 'rm.building_id', '=', 'buildings.id')
+            ->leftJoin('rooms as rm', 'rm.property_id', '=', 'properties.id')
             ->groupBy('province_id');
 
         $query = $this->model->select(
@@ -101,8 +101,8 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
         $wardCount = $wards->count();
 
         $rooms = DB::table('rooms')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.province_id', $id)
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.province_id', $id)
             ->select(
                 'rooms.id',
                 'rooms.title',

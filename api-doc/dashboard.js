@@ -21,7 +21,7 @@
  *       "availableRooms": 100,
  *       "bookedRooms": 40,
  *       "maintenanceRooms": 10,
- *       "totalBuildings": 5,
+ *       "totalProperties": 5,
  *       "totalServices": 26,
  *       "totalUsers": 99,
  *       "totalStaff": 20
@@ -134,36 +134,36 @@
  */
 
 /**
- * @api {get} /api/v1/admin/dashboard/buildings-bookings-count Get Bookings Count by Building
- * @apiName GetAllBuildingsBookingsCount
+ * @api {get} /api/v1/admin/dashboard/properties-bookings-count Get Bookings Count by Property
+ * @apiName GetAllPropertiesBookingsCount
  * @apiGroup Dashboard
  * @apiVersion 1.0.0
  *
- * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of bookings grouped by building. Only counts bookings with status != 'cancelled'.
+ * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of bookings grouped by property. Only counts bookings with status != 'cancelled'.
  *
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
- * @apiSampleRequest /api/v1/admin/dashboard/buildings-bookings-count
+ * @apiSampleRequest /api/v1/admin/dashboard/properties-bookings-count
  *
  * @apiSuccessExample {json} Success-Response:
  * HTTP/1.1 200 Success
  * {
  *   "success": true,
- *   "message": "Lấy số lượng đặt phòng của tất cả các tòa nhà thành công",
+ *   "message": "Lấy số lượng đặt phòng theo từng cơ sở thành công",
  *   "data": [
  *     {
- *       "building_id": 1,
- *       "building_name": "Tòa nhà A",
+ *       "property_id": 1,
+ *       "property_name": "Cơ sở A",
  *       "total": 25
  *     },
  *     {
- *       "building_id": 2,
- *       "building_name": "Tòa nhà B",
+ *       "property_id": 2,
+ *       "property_name": "Cơ sở B",
  *       "total": 18
  *     },
  *     {
- *       "building_id": 3,
- *       "building_name": "Tòa nhà C",
+ *       "property_id": 3,
+ *       "property_name": "Cơ sở C",
  *       "total": 32
  *     }
  *   ]
@@ -176,7 +176,7 @@
  * @apiGroup Dashboard
  * @apiVersion 1.0.0
  *
- * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of partners.
+ * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of partners and related counters.
  *
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
@@ -186,58 +186,36 @@
  * HTTP/1.1 200 Success
  * {
  *   "success": true,
- *   "message": "Lấy danh sách phòng theo trạng thái thành công",
- *   "data": [
- *     {
- *       "status": "available",
- *       "total": 45
- *     },
- *     {
- *       "status": "booked",
- *       "total": 30
- *     },
- *     {
- *       "status": "maintenance",
- *       "total": 5
- *     }
- *   ]
+ *   "message": "Stats fetched successfully",
+ *   "data": {
+ *     "totalPartners": 12,
+ *     "newUPartnerThisMonth": 2,
+ *     "partnerPending": 1,
+ *     "partnerBlock": 0
+ *   }
  * }
  */
 
 /**
- * @api {get} /api/v1/admin/dashboard/system-building Get System Buildings
- * @apiName GetSystemBuilding
+ * @api {get} /api/v1/admin/dashboard/system-property Get System Properties
+ * @apiName GetSystemProperty
  * @apiGroup Dashboard
  * @apiVersion 1.0.0
  *
- * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of buildings in the system.
+ * @apiDescription Protected endpoint - Requires authentication and admin role. Get total number of properties in the system.
  *
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
- * @apiSampleRequest /api/v1/admin/dashboard/system-building
+ * @apiSampleRequest /api/v1/admin/dashboard/system-property
  *
  * @apiSuccessExample {json} Success-Response:
  * HTTP/1.1 200 Success
  * {
  *   "success": true,
- *   "message": "Lấy danh sách phòng theo tòa nhà thành công",
- *   "data": [
- *     {
- *       "building_id": 1,
- *       "building_name": "Tòa nhà A",
- *       "total": 50
- *     },
- *     {
- *       "building_id": 2,
- *       "building_name": "Tòa nhà B",
- *       "total": 35
- *     },
- *     {
- *       "building_id": 3,
- *       "building_name": "Tòa nhà C",
- *       "total": 42
- *     }
- *   ]
+ *   "message": "Stats fetched successfully",
+ *   "data": {
+ *     "totalProperties": 42
+ *   }
  * }
  */
 
@@ -257,29 +235,12 @@
  * HTTP/1.1 200 Success
  * {
  *   "success": true,
- *   "message": "Lấy danh sách đặt phòng gần đây thành công",
+ *   "message": "Stats fetched successfully",
  *   "data": {
- *     "recentBookings": [
- *       {
- *         "id": 150,
- *         "user_name": "Nguyễn Văn A",
- *         "room_number": "101",
- *         "start_date": "2025-01-20",
- *         "end_date": "2025-01-25",
- *         "status": "confirmed",
- *         "created_at": "2025-01-15T10:30:00.000000Z"
- *       },
- *       {
- *         "id": 149,
- *         "user_name": "Trần Thị B",
- *         "room_number": "205",
- *         "start_date": "2025-01-18",
- *         "end_date": "2025-01-22",
- *         "status": "pending",
- *         "created_at": "2025-01-14T15:20:00.000000Z"
- *       }
- *     ],
- *     "limit": 20
+ *     "totalRooms": 150,
+ *     "totalPrivateRooms": 20,
+ *     "totalPublicRooms": 130,
+ *     "totalAvailableRooms": 45
  *   }
  * }
  */

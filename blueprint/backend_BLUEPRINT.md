@@ -1,4 +1,4 @@
-# 🤖 AGENT BLUEPRINT — Laravel Layered Architecture Template
+﻿# 🤖 AGENT BLUEPRINT — Laravel Layered Architecture Template
 > **Mục đích**: Tài liệu này được viết để AI Agent đọc và tự động sinh code cho dự án Laravel mới theo đúng kiến trúc và phong cách của dự án `bks-system-be`.  
 > **Không được thay đổi phong cách code, cấu trúc thư mục, hay naming convention** được mô tả trong tài liệu này.
 
@@ -1004,9 +1004,9 @@ Mọi response phải theo format sau (thông qua `ApiResponser` trait):
 | Loại               | Convention       | Ví dụ                             |
 |--------------------|------------------|-----------------------------------|
 | URL path           | kebab-case       | `/user-profiles`, `/room-images`  |
-| URL resource       | số nhiều         | `/users`, `/buildings`            |
-| PHP class          | PascalCase       | `BuildingImage`, `UserService`    |
-| PHP variable       | camelCase        | `$userId`, `$buildingData`        |
+| URL resource       | số nhiều         | `/users`, `/properties`            |
+| PHP class          | PascalCase       | `PropertyImage`, `UserService`    |
+| PHP variable       | camelCase        | `$userId`, `$propertyData`        |
 | DB column / JSON   | snake_case       | `first_name`, `created_at`        |
 | Constant / Enum    | UPPER_SNAKE_CASE | `DEFAULT_PER_PAGE`, `BAD_REQUEST` |
 | Controller file    | `[Name]Controller.php`       |                   |
@@ -1014,7 +1014,7 @@ Mọi response phải theo format sau (thông qua `ApiResponser` trait):
 | Repository file    | `[Name]Repository.php`       |                   |
 | Interface file     | `[Name]RepositoryInterface.php` |                |
 | Validation file    | `[Name]Validation.php`       |                   |
-| Model file         | PascalCase, số ít — `BuildingImage.php` |          |
+| Model file         | PascalCase, số ít — `PropertyImage.php` |          |
 
 ---
 
@@ -1937,3 +1937,4 @@ Sử dụng trong validation:
 
 *Tài liệu này được tổng hợp từ dự án `bks-system-be`. Phiên bản: 2.0.0 — 2026-04-14*
 *Để sử dụng: Cung cấp file này cho AI Agent kèm theo yêu cầu tạo module mới, Agent sẽ tự sinh code theo đúng chuẩn này.*
+

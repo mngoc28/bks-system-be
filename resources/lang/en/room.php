@@ -12,10 +12,10 @@ return [
             |
             */
     'validation' => [
-        'building_id' => [
-            'exists'   => 'The selected building does not exist',
-            'integer'  => 'Building ID must be an integer',
-            'required' => 'Building ID is required',
+        'property_id' => [
+            'exists'   => 'The selected property does not exist',
+            'integer'  => 'Property ID must be an integer',
+            'required' => 'Property ID is required',
         ],
         'title' => [
             'required' => 'Room title is required',
@@ -141,7 +141,7 @@ return [
         ],
     ],
     'attributes' => [
-        'building_id' => 'building ID',
+        'property_id' => 'property ID',
         'title'       => 'title',
         'room_number' => 'room number',
         'deposit'     => 'deposit',

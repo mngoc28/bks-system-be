@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Drops Partner Portal QA seed artifacts (QA-named buildings and dependent rows).
+ * Drops Partner Portal QA seed artifacts (QA-named properties and dependent rows).
  *
  * This mirrors {@see PartnerQaDataSeeder::cleanupPreviousQaData()} without re-seeding.
  */
@@ -19,13 +19,13 @@ final class CleanupPartnerQaData extends Command
      * @var string
      */
     protected $signature = 'partner:cleanup-qa-data
-                            {--partner=2 : Partner user id (buildings.user_id)}
+                            {--partner=2 : Partner user id (properties.user_id)}
                             {--dry-run : Only print how many rows would be removed}';
 
     /**
      * @var string
      */
-    protected $description = 'Delete QA-seeded partner data (QA % buildings, rooms, bookings, related rows).';
+    protected $description = 'Delete QA-seeded partner data (QA % properties, rooms, bookings, related rows).';
 
     /**
      * @return int
@@ -35,7 +35,7 @@ final class CleanupPartnerQaData extends Command
         $partnerId = max(1, (int) $this->option('partner'));
         $dryRun = (bool) $this->option('dry-run');
 
-        $qaBuildingIds = DB::table('buildings')
+        $qaPropertyIds = DB::table('properties')
             ->where('user_id', $partnerId)
             ->where('name', 'like', 'QA %')
             ->pluck('id')
@@ -43,9 +43,9 @@ final class CleanupPartnerQaData extends Command
             ->all();
 
         $qaRoomIds = [];
-        if ($qaBuildingIds !== []) {
+        if ($qaPropertyIds !== []) {
             $qaRoomIds = DB::table('rooms')
-                ->whereIn('building_id', $qaBuildingIds)
+                ->whereIn('property_id', $qaPropertyIds)
                 ->pluck('id')
                 ->values()
                 ->all();
@@ -61,9 +61,9 @@ final class CleanupPartnerQaData extends Command
             ->count();
 
         $this->info(sprintf(
-            'Partner id=%d: QA buildings=%d, QA rooms=%d, bookings on those rooms=%d, QA-titled news=%d.',
+            'Partner id=%d: QA properties=%d, QA rooms=%d, bookings on those rooms=%d, QA-titled news=%d.',
             $partnerId,
-            count($qaBuildingIds),
+            count($qaPropertyIds),
             count($qaRoomIds),
             $bookingCount,
             $newsCount,
@@ -75,7 +75,7 @@ final class CleanupPartnerQaData extends Command
             return self::SUCCESS;
         }
 
-        if ($qaBuildingIds === [] && $newsCount === 0) {
+        if ($qaPropertyIds === [] && $newsCount === 0) {
             $this->info('Nothing to clean up.');
 
             return self::SUCCESS;

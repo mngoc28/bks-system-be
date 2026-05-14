@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('building_id');
+            $table->unsignedBigInteger('property_id');
             $table->string('title', 255);
             $table->string('room_number', 50)->nullable();
             $table->decimal('deposit', 12, 2)->nullable();
@@ -31,11 +31,11 @@ return new class extends Migration
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
             // Indexes
-            $table->index('building_id');
+            $table->index('property_id');
             $table->index('status');
 
             // Foreign keys
-            $table->foreign('building_id')->references('id')->on('buildings')->onDelete('restrict');
+            $table->foreign('property_id')->references('id')->on('properties')->onDelete('restrict');
         });
     }
 

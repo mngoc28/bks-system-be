@@ -1,325 +1,5 @@
 /**
- * @api {get} /api/v1/admin/building-images/building/:buildingId Get Images by Building ID
- * @apiName GetImagesByBuildingId
- * @apiGroup BuildingImages
- * @apiVersion 1.0.0
- *
- * @apiDescription Protected endpoint - Requires authentication and admin/partner role. Returns all images for a specific building, ordered by sort field.
- *
- * @apiHeader {String} Authorization Bearer token (JWT)
- *
- * @apiParam (Path) {Number} buildingId Building ID (required, must exist in buildings table)
- *
- * @apiSampleRequest /api/v1/admin/building-images/building/1
- *
- * @apiSuccess {String} success Response status (true)
- * @apiSuccess {String} message Success message
- * @apiSuccess {Array} data Array of building images
- * @apiSuccess {Number} data[].id Building image ID
- * @apiSuccess {Number} data[].building_id Building ID
- * @apiSuccess {String} data[].image_url Image URL
- * @apiSuccess {String} data[].id_image_cloudinary Cloudinary image ID
- * @apiSuccess {Number} data[].image_type Image type (0: other, 1: exterior, 2: interior, 3: bathroom, 4: kitchen)
- * @apiSuccess {Number} data[].sort Sort order
- * @apiSuccess {Number} data[].created_by Creator user ID
- * @apiSuccess {Number} data[].updated_by Updater user ID
- * @apiSuccess {String} data[].created_at Creation timestamp
- * @apiSuccess {String} data[].updated_at Update timestamp
- *
- * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
- * {
- *   "success": true,
- *   "message": "Building images retrieved successfully",
- *   "data": [
- *     {
- *       "id": 1,
- *       "building_id": 1,
- *       "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1.jpg",
- *       "id_image_cloudinary": "buildings/image1",
- *       "image_type": 0,
- *       "sort": 1,
- *       "created_by": 1,
- *       "updated_by": 1,
- *       "created_at": "2025-11-24T10:00:00.000000Z",
- *       "updated_at": "2025-11-24T10:00:00.000000Z"
- *     },
- *     {
- *       "id": 2,
- *       "building_id": 1,
- *       "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image2.jpg",
- *       "id_image_cloudinary": "buildings/image2",
- *       "image_type": 1,
- *       "sort": 2,
- *       "created_by": 1,
- *       "updated_by": 1,
- *       "created_at": "2025-11-24T10:00:00.000000Z",
- *       "updated_at": "2025-11-24T10:00:00.000000Z"
- *     }
- *   ]
- * }
- *
- * @apiError (422) {String} success Response status (false)
- * @apiError (422) {Object} message Validation errors
- *
- * @apiErrorExample {json} Error-Response (Validation Error):
- * HTTP/1.1 422 Unprocessable Entity
- * {
- *   "success": false,
- *   "message": "The given data was invalid.",
- *   "errors": {
- *     "building_id": [
- *       "Building ID is required",
- *       "The selected building id does not exist."
- *     ]
- *   },
- *   "data": null
- * }
- */
-
-/**
- * @api {get} /api/v1/admin/building-images/:id Get Building Image by ID
- * @apiName GetBuildingImageById
- * @apiGroup BuildingImages
- * @apiVersion 1.0.0
- *
- * @apiDescription Protected endpoint - Requires authentication and admin/partner role. Returns a specific building image.
- *
- * @apiHeader {String} Authorization Bearer token (JWT)
- *
- * @apiParam (Path) {Number} id Building image ID (required, must exist in building_images table)
- *
- * @apiSampleRequest /api/v1/admin/building-images/1
- *
- * @apiSuccess {String} success Response status (true)
- * @apiSuccess {String} message Success message
- * @apiSuccess {Object} data Building image data
- *
- * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
- * {
- *   "success": true,
- *   "message": "Building image retrieved successfully",
- *   "data": {
- *     "id": 1,
- *     "building_id": 1,
- *     "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1.jpg",
- *     "id_image_cloudinary": "buildings/image1",
- *     "image_type": 0,
- *     "sort": 1,
- *     "created_by": 1,
- *     "updated_by": 1,
- *     "created_at": "2025-11-24T10:00:00.000000Z",
- *     "updated_at": "2025-11-24T10:00:00.000000Z"
- *   }
- * }
- *
- * @apiError (404) {String} success Response status (false)
- * @apiError (404) {String} message Error message
- *
- * @apiErrorExample {json} Error-Response (Not Found):
- * HTTP/1.1 404 Not Found
- * {
- *   "success": false,
- *   "message": "Building image not found",
- *   "data": null
- * }
- */
-
-/**
- * @api {post} /api/v1/admin/building-images Create Building Image
- * @apiName CreateBuildingImage
- * @apiGroup BuildingImages
- * @apiVersion 1.0.0
- *
- * @apiDescription Protected endpoint - Requires authentication and admin/partner role. Creates a new building image. Sort will be automatically set to max(sort) + 1 for the building.
- *
- * @apiHeader {String} Authorization Bearer token (JWT)
- *
- * @apiParam (Body) {Number} building_id Building ID (required, must exist in buildings table)
- * @apiParam (Body) {String} image_url Image URL (required, max: 255)
- * @apiParam (Body) {String} id_image_cloudinary Cloudinary image ID (required, max: 255)
- * @apiParam (Body) {Number} image_type Image type (required, integer, 0: other, 1: exterior, 2: interior, 3: bathroom, 4: kitchen)
- *
- * @apiParamExample {json} Request-Example:
- * {
- *   "building_id": 1,
- *   "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1.jpg",
- *   "id_image_cloudinary": "buildings/image1",
- *   "image_type": 0
- * }
- *
- * @apiSampleRequest /api/v1/admin/building-images
- *
- * @apiSuccess {String} success Response status (true)
- * @apiSuccess {String} message Success message
- * @apiSuccess {Object} data Created building image data (sort is automatically set to max(sort) + 1)
- *
- * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
- * {
- *   "success": true,
- *   "message": "Building image created successfully",
- *   "data": {
- *     "id": 1,
- *     "building_id": 1,
- *     "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1.jpg",
- *     "id_image_cloudinary": "buildings/image1",
- *     "image_type": 0,
- *     "sort": 1,
- *     "created_by": 1,
- *     "updated_by": 1,
- *     "created_at": "2025-11-24T10:00:00.000000Z",
- *     "updated_at": "2025-11-24T10:00:00.000000Z"
- *   }
- * }
- *
- * @apiError (422) {String} success Response status (false)
- * @apiError (422) {Object} message Validation errors
- *
- * @apiErrorExample {json} Error-Response (Validation Error):
- * HTTP/1.1 422 Unprocessable Entity
- * {
- *   "success": false,
- *   "message": "The given data was invalid.",
- *   "errors": {
- *     "building_id": [
- *       "Building ID is required",
- *       "The selected building id does not exist."
- *     ],
- *     "image_url": [
- *       "Image URL is required"
- *     ],
- *     "image_type": [
- *       "Image type is required",
- *       "Image type must be an integer."
- *     ]
- *   },
- *   "data": null
- * }
- */
-
-/**
- * @api {put} /api/v1/admin/building-images/:id Update Building Image
- * @apiName UpdateBuildingImage
- * @apiGroup BuildingImages
- * @apiVersion 1.0.0
- *
- * @apiDescription Protected endpoint - Requires authentication and admin/partner role. Updates a building image. Building ID and sort will remain unchanged.
- *
- * @apiHeader {String} Authorization Bearer token (JWT)
- *
- * @apiParam (Path) {Number} id Building image ID (required, must exist in building_images table)
- * @apiParam (Body) {String} image_url Image URL (required, max: 255)
- * @apiParam (Body) {String} id_image_cloudinary Cloudinary image ID (required, max: 255)
- * @apiParam (Body) {Number} image_type Image type (required, integer, 0: other, 1: exterior, 2: interior, 3: bathroom, 4: kitchen)
- *
- * @apiParamExample {json} Request-Example:
- * {
- *   "image_url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1_updated.jpg",
- *   "id_image_cloudinary": "buildings/image1_updated",
- *   "image_type": 1
- * }
- *
- * @apiSampleRequest /api/v1/admin/building-images/1
- *
- * @apiSuccess {String} success Response status (true)
- * @apiSuccess {String} message Success message
- * @apiSuccess {Boolean} data Update result (true, building_id and sort remain unchanged)
- *
- * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
- * {
- *   "success": true,
- *   "message": "Building image updated successfully",
- *   "data": true
- * }
- *
- * @apiError (404) {String} success Response status (false)
- * @apiError (404) {String} message Error message
- *
- * @apiErrorExample {json} Error-Response (Not Found):
- * HTTP/1.1 404 Not Found
- * {
- *   "success": false,
- *   "message": "Building image not found",
- *   "data": null
- * }
- *
- * @apiError (422) {String} success Response status (false)
- * @apiError (422) {Object} message Validation errors
- *
- * @apiErrorExample {json} Error-Response (Validation Error):
- * HTTP/1.1 422 Unprocessable Entity
- * {
- *   "success": false,
- *   "message": "The given data was invalid.",
- *   "errors": {
- *     "id": [
- *       "Building image ID is required",
- *       "The selected id does not exist."
- *     ],
- *     "image_url": [
- *       "Image URL is required"
- *     ]
- *   },
- *   "data": null
- * }
- */
-
-/**
- * @api {delete} /api/v1/admin/building-images/:id Delete Building Image
- * @apiName DeleteBuildingImage
- * @apiGroup BuildingImages
- * @apiVersion 1.0.0
- *
- * @apiDescription Protected endpoint - Requires authentication and admin/partner role. Deletes a building image.
- *
- * @apiHeader {String} Authorization Bearer token (JWT)
- *
- * @apiParam (Path) {Number} id Building image ID (required, must exist in building_images table)
- *
- * @apiSampleRequest /api/v1/admin/building-images/1
- *
- * @apiSuccess {String} success Response status (true)
- * @apiSuccess {String} message Success message
- * @apiSuccess {Boolean} data Delete result (true)
- *
- * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
- * {
- *   "success": true,
- *   "message": "Building image deleted successfully",
- *   "data": true
- * }
- *
- * @apiError (404) {String} success Response status (false)
- * @apiError (404) {String} message Error message
- *
- * @apiErrorExample {json} Error-Response (Not Found):
- * HTTP/1.1 404 Not Found
- * {
- *   "success": false,
- *   "message": "Building image not found",
- *   "data": null
- * }
- *
- * @apiError (422) {String} success Response status (false)
- * @apiError (422) {Object} message Validation errors
- *
- * @apiErrorExample {json} Error-Response (Validation Error):
- * HTTP/1.1 422 Unprocessable Entity
- * {
- *   "success": false,
- *   "message": "The given data was invalid.",
- *   "errors": {
- *     "id": [
- *       "Building image ID is required",
- *       "The selected id does not exist."
- *     ]
- *   },
- *   "data": null
- * }
+ * Property image admin APIs are documented in property-image.js (avoid duplicate apidoc entries).
  */
 
 /**
@@ -444,7 +124,7 @@
  *
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
- * @apiParam (Query) {Number} [building_id] Filter by building ID (optional)
+ * @apiParam (Query) {Number} [property_id] Filter by property ID (optional)
  * @apiParam (Query) {Number} [room_id] Filter by room ID (optional)
  * @apiParam (Query) {Number} [user_id] Filter by user ID (optional)
  * @apiParam (Query) {String} [start_date] Filter bookings from this date (YYYY-MM-DD format, optional)
@@ -453,26 +133,27 @@
  * @apiParam (Query) {Number} [page] Page number for pagination (default: 1, optional)
  * @apiParam (Query) {Number} [per_page] Number of items per page (default: 15, optional)
  *
- * @apiSampleRequest /api/v1/admin/bookings?building_id=30&status=1&page=1&per_page=10
+ * @apiSampleRequest /api/v1/admin/bookings?property_id=30&status=1&page=1&per_page=10
  *
  * @apiSuccess {String} success Response status (true)
  * @apiSuccess {String} message Success message
  * @apiSuccess {Object} data Paginated bookings data
  * @apiSuccess {Number} data.current_page Current page number
- * @apiSuccess {Array} data.data Array of bookings
+ * @apiSuccess {Array} data.data Array of booking rows (joined list view)
  * @apiSuccess {Number} data.data[].id Booking ID
- * @apiSuccess {String} data.data[].booking_code Unique booking code
+ * @apiSuccess {String} data.data[].user_name Guest / booker display name
+ * @apiSuccess {String} data.data[].user_phone Booker's phone
+ * @apiSuccess {String} data.data[].room_name Room label (e.g. room number)
  * @apiSuccess {Number} data.data[].room_id Room ID
- * @apiSuccess {Number} data.data[].user_id User ID
+ * @apiSuccess {String} data.data[].property_name Property name
+ * @apiSuccess {Number} data.data[].property_id Property ID
  * @apiSuccess {String} data.data[].start_date Booking start date
  * @apiSuccess {String} data.data[].end_date Booking end date
- * @apiSuccess {Number} data.data[].total_amount Total booking amount
- * @apiSuccess {Number} data.data[].status Booking status
+ * @apiSuccess {Number} data.data[].price Room price (from selected price row)
+ * @apiSuccess {Number} data.data[].booking_status Booking status code
  * @apiSuccess {String} data.data[].note Additional notes
+ * @apiSuccess {String} data.data[].partner_name Partner (property owner) name
  * @apiSuccess {String} data.data[].created_at Creation timestamp
- * @apiSuccess {String} data.data[].updated_at Update timestamp
- * @apiSuccess {Object} data.data[].room Room information
- * @apiSuccess {Object} data.data[].user User information (if applicable)
  * @apiSuccess {Number} data.from First item number on current page
  * @apiSuccess {Number} data.last_page Last page number
  * @apiSuccess {String} data.next_page_url Next page URL
@@ -491,26 +172,19 @@
  *     "data": [
  *       {
  *         "id": 1,
- *         "booking_code": "BK20251229001",
+ *         "user_name": "Nguyễn Văn A",
+ *         "user_phone": "0901234567",
+ *         "room_name": "101",
  *         "room_id": 21,
- *         "user_id": 101,
- *         "start_date": "2026-01-04",
- *         "end_date": "2026-01-05",
- *         "total_amount": 500000,
- *         "status": 1,
+ *         "property_name": "BKS Property",
+ *         "property_id": 30,
+ *         "start_date": "2026-01-04T00:00:00.000000Z",
+ *         "end_date": "2026-01-05T00:00:00.000000Z",
+ *         "price": 500000,
+ *         "booking_status": 1,
  *         "note": "Booked phòng để đi date",
- *         "created_at": "2025-12-29T10:00:00.000000Z",
- *         "updated_at": "2025-12-29T10:00:00.000000Z",
- *         "room": {
- *           "id": 21,
- *           "title": "Phòng Deluxe 101",
- *           "building_name": "BKS Building"
- *         },
- *         "user": {
- *           "id": 101,
- *           "name": "Nguyễn Văn A",
- *           "email": "nguyenvana@example.com"
- *         }
+ *         "partner_name": "Partner One",
+ *         "created_at": "2025-12-29T10:00:00.000000Z"
  *       }
  *     ],
  *     "from": 1,
@@ -586,7 +260,7 @@
  *     "room": {
  *       "id": 21,
  *       "title": "Phòng Deluxe 101",
- *       "building_name": "BKS Building"
+ *       "property_name": "BKS Property"
  *     },
  *     "user": {
  *       "id": 101,

@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Enums\RoomStatus;
 use App\Enums\Status;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
-use App\Repositories\BuildingRepository\BuildingsRepositoryInterface;
+use App\Repositories\PropertyRepository\PropertyRepositoryInterface;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use App\Repositories\RoomMaintenanceRepository\RoomMaintenanceRepositoryInterface;
 use App\Repositories\ServiceRepository\ServiceRepositoryInterface;
@@ -19,7 +19,7 @@ final class DashboardService
 {
     protected RoomsRepositoryInterface $roomsRepository;
     protected BookingRepositoryInterface $bookingRepository;
-    protected BuildingsRepositoryInterface $buildingsRepository;
+    protected PropertyRepositoryInterface $propertyRepository;
     protected ServiceRepositoryInterface $serviceRepository;
     protected UsersRepositoryInterface $usersRepository;
     protected RoomMaintenanceRepositoryInterface $roomMaintenanceRepository;
@@ -27,14 +27,14 @@ final class DashboardService
     public function __construct(
         RoomsRepositoryInterface $roomsRepository,
         BookingRepositoryInterface $bookingRepository,
-        BuildingsRepositoryInterface $buildingsRepository,
+        PropertyRepositoryInterface $propertyRepository,
         ServiceRepositoryInterface $serviceRepository,
         UsersRepositoryInterface $usersRepository,
         RoomMaintenanceRepositoryInterface $roomMaintenanceRepository
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->bookingRepository = $bookingRepository;
-        $this->buildingsRepository = $buildingsRepository;
+        $this->propertyRepository = $propertyRepository;
         $this->serviceRepository = $serviceRepository;
         $this->usersRepository = $usersRepository;
         $this->roomMaintenanceRepository = $roomMaintenanceRepository;
@@ -137,24 +137,25 @@ final class DashboardService
     }
 
     /**
-     * Total number of buildings in the system
+     * Total number of properties in the system.
+     *
      * @return array
      */
-    public function getSystemBuilding(): array
+    public function getSystemProperty(): array
     {
         try {
-            $totalBuildings = $this->buildingsRepository->countRecord();
+            $totalProperties = $this->propertyRepository->countRecord();
             return [
                 "success" => true,
                 "data" => [
-                    "totalBuildings" => $totalBuildings,
+                    "totalProperties" => $totalProperties,
                 ],
                 "message" => __(
                     "dashboard.messages.stats_fetched_successfully"
                 ),
             ];
         } catch (Exception $e) {
-            Log::error("Get system building fail" . $e->getMessage());
+            Log::error("Get system property fail" . $e->getMessage());
             return [
                 "success" => false,
                 "data" => null,
@@ -310,25 +311,25 @@ final class DashboardService
     }
 
     /**
-     * Get bookings count for all buildings
+     * Get bookings count grouped by property (admin).
      *
      * @return array
      */
-    public function getAllBuildingsBookingsCount(): array
+    public function getAllPropertiesBookingsCount(): array
     {
         try {
-            $bookingsByBuilding = $this->bookingRepository->getBookingsByBuilding();
+            $bookingsByProperty = $this->bookingRepository->getBookingsByProperty();
 
             return [
                 "success" => true,
-                "data" => $bookingsByBuilding,
+                "data" => $bookingsByProperty,
                 "message" => __(
-                    "dashboard.messages.all_buildings_bookings_count_fetched"
+                    "dashboard.messages.all_properties_bookings_count_fetched"
                 ),
             ];
         } catch (\Exception $e) {
             Log::error(
-                "Error fetching all buildings bookings count: " .
+                "Error fetching all properties bookings count: " .
                     $e->getMessage()
             );
 
@@ -336,7 +337,7 @@ final class DashboardService
                 "success" => false,
                 "data" => null,
                 "message" => __(
-                    "dashboard.messages.all_buildings_bookings_count_fetch_failed"
+                    "dashboard.messages.all_properties_bookings_count_fetch_failed"
                 ),
             ];
         }
@@ -347,26 +348,26 @@ final class DashboardService
     // =========================================================================
 
     /**
-     * Get buildings count for partner
+     * Get properties count for partner.
      *
      * @param int $partnerId
      * @return array
      */
-    public function getSystemBuildingForPartner(int $partnerId): array
+    public function getSystemPropertyForPartner(int $partnerId): array
     {
         try {
-            $totalBuildings = $this->buildingsRepository->countRecord([
+            $totalProperties = $this->propertyRepository->countRecord([
                 'user_id' => $partnerId
             ]);
             return [
                 "success" => true,
                 "data" => [
-                    "totalBuildings" => $totalBuildings,
+                    "totalProperties" => $totalProperties,
                 ],
                 "message" => __("dashboard.messages.stats_fetched_successfully"),
             ];
         } catch (Exception $e) {
-            Log::error("Partner get system building fail: " . $e->getMessage());
+            Log::error("Partner get system property fail: " . $e->getMessage());
             return [
                 "success" => false,
                 "data" => null,
@@ -496,27 +497,27 @@ final class DashboardService
     }
 
     /**
-     * Get bookings count by building for partner
+     * Get bookings count grouped by property for partner.
      *
      * @param int $partnerId
      * @return array
      */
-    public function getAllBuildingsBookingsCountForPartner(int $partnerId): array
+    public function getAllPropertiesBookingsCountForPartner(int $partnerId): array
     {
         try {
-            $bookingsByBuilding = $this->bookingRepository->getBookingsByBuildingForPartner($partnerId);
+            $bookingsByProperty = $this->bookingRepository->getBookingsByPropertyForPartner($partnerId);
 
             return [
                 "success" => true,
-                "data" => $bookingsByBuilding,
-                "message" => __("dashboard.messages.all_buildings_bookings_count_fetched"),
+                "data" => $bookingsByProperty,
+                "message" => __("dashboard.messages.all_properties_bookings_count_fetched"),
             ];
         } catch (\Exception $e) {
-            Log::error("Partner get buildings bookings count fail: " . $e->getMessage());
+            Log::error("Partner get properties bookings count fail: " . $e->getMessage());
             return [
                 "success" => false,
                 "data" => null,
-                "message" => __("dashboard.messages.all_buildings_bookings_count_fetch_failed"),
+                "message" => __("dashboard.messages.all_properties_bookings_count_fetch_failed"),
             ];
         }
     }
@@ -530,7 +531,7 @@ final class DashboardService
     public function getStatsForPartner(int $partnerId): array
     {
         try {
-            $totalBuildings = $this->buildingsRepository->countRecord(['user_id' => $partnerId]);
+            $totalProperties = $this->propertyRepository->countRecord(['user_id' => $partnerId]);
             $totalRooms = $this->roomsRepository->countRoomsForPartner($partnerId);
             $vacantRooms = $this->roomsRepository->getEmptyRoomsForPartner($partnerId);
 
@@ -560,7 +561,7 @@ final class DashboardService
             return [
                 "success" => true,
                 "data" => [
-                    "totalBuildings" => (int) $totalBuildings,
+                    "totalProperties" => (int) $totalProperties,
                     "totalRooms" => (int) $totalRooms,
                     "vacantRooms" => (int) $vacantRooms,
                     "occupancyRate" => (float) $occupancyRate,

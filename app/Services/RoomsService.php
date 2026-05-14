@@ -8,7 +8,7 @@ use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use App\Repositories\RoomServiceRepository\RoomServiceRepository;
 use App\Repositories\RoomAmenityRepository\RoomAmenityRepository;
 use App\Repositories\RoomPriceRepository\RoomPriceRepository;
-use App\Models\Building;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\PricePackage;
 use Illuminate\Http\Request;
@@ -302,22 +302,22 @@ final class RoomsService
     }
 
     /**
-     * Summary of getRoomNamesByBuildingId
-     * @param int $buildingId
+     * Summary of getRoomNamesByPropertyId
+     * @param int $propertyId
      * @return mixed
      */
-    public function getRoomNamesByBuildingId($buildingId): mixed
+    public function getRoomNamesByPropertyId($propertyId): mixed
     {
         try {
-            $buildingId = (int) $buildingId;
-            $roomNames = $this->roomsRepository->getRoomNamesByBuildingId($buildingId);
+            $propertyId = (int) $propertyId;
+            $roomNames = $this->roomsRepository->getRoomNamesByPropertyId($propertyId);
             return [
                 "success" => true,
                 "data" => $roomNames,
                 "message" => __("room.messages.retrieved_successfully"),
             ];
         } catch (\Exception $e) {
-            Log::error("Error fetching room names by building ID: " . $e->getMessage());
+            Log::error("Error fetching room names by property ID: " . $e->getMessage());
             return [
                 "success" => false,
                 "message" => __("room.messages.retrieved_failed"),
@@ -489,14 +489,14 @@ final class RoomsService
     public function handleGetRoomsOccupancy(Request $request): array
     {
         try {
-            $partnerId = Auth::id();
-            $buildingId = (int)$request->input('building_id');
+            $partnerId  = Auth::id();
+            $propertyId = (int) $request->input('property_id');
 
-            if (!$buildingId) {
-                return ["success" => false, "message" => "Vui lòng chọn bất động sản.", "data" => null];
+            if (! $propertyId) {
+                return ['success' => false, 'message' => 'Vui lòng chọn bất động sản.', 'data' => null];
             }
 
-            $occupancyData = $this->roomsRepository->getOccupancyForPartner($partnerId, $buildingId);
+            $occupancyData = $this->roomsRepository->getOccupancyForPartner($partnerId, $propertyId);
 
             // Calculate stats
             $total = $occupancyData->count();
@@ -533,28 +533,28 @@ final class RoomsService
     {
         try {
             DB::beginTransaction();
-            $roomsData = $request->input('rooms', []);
-            $buildingId = (int) $request->input('building_id');
-            $partnerId = (int) Auth::id();
+            $roomsData   = $request->input('rooms', []);
+            $propertyId  = (int) $request->input('property_id');
+            $partnerId   = (int) Auth::id();
 
-            if (empty($roomsData) || !is_array($roomsData)) {
+            if (empty($roomsData) || ! is_array($roomsData)) {
                 DB::rollBack();
                 return [
-                    "success" => false,
-                    "message" => "Danh sách phòng không hợp lệ.",
+                    'success' => false,
+                    'message' => 'Danh sách phòng không hợp lệ.',
                 ];
             }
 
-            $buildingOwned = Building::query()
-                ->where('id', $buildingId)
+            $propertyOwned = Property::query()
+                ->where('id', $propertyId)
                 ->where('user_id', $partnerId)
                 ->exists();
 
-            if (!$buildingOwned) {
+            if (! $propertyOwned) {
                 DB::rollBack();
                 return [
-                    "success" => false,
-                    "message" => "Bạn không có quyền thao tác với bất động sản này.",
+                    'success' => false,
+                    'message' => 'Bạn không có quyền thao tác với bất động sản này.',
                 ];
             }
 
@@ -571,7 +571,7 @@ final class RoomsService
                 }
 
                 $room = $this->roomsRepository->create([
-                    'building_id' => $buildingId,
+                    'property_id' => $propertyId,
                     'title'       => $roomName,
                     'room_number' => $roomName,
                     'area'        => $data['area'] ?? $request->input('area', 0),
@@ -638,7 +638,7 @@ final class RoomsService
             $partnerId = (int) Auth::id();
             Room::query()
                 ->whereIn('id', $ids)
-                ->whereHas('building', function ($query) use ($partnerId) {
+                ->whereHas('property', function ($query) use ($partnerId) {
                     $query->where('user_id', $partnerId);
                 })
                 ->update(['status' => $status, 'updated_by' => $partnerId]);
@@ -662,7 +662,7 @@ final class RoomsService
             $partnerId = (int) Auth::id();
             Room::query()
                 ->whereIn('id', $ids)
-                ->whereHas('building', function ($query) use ($partnerId) {
+                ->whereHas('property', function ($query) use ($partnerId) {
                     $query->where('user_id', $partnerId);
                 })
                 ->delete();

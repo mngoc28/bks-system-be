@@ -97,12 +97,12 @@ final class StayService
                     'image' => $activeBooking->room->images[0]->image_url
                         ?? 'https://images.unsplash.com/photo-1590490359683-' .
                         '658d3d23f972?auto=format&fit=crop&q=80&w=800',
-                    'location' => $activeBooking->room->building->name ?? 'N/A',
+                    'location' => $activeBooking->room->property->name ?? 'N/A',
                 ] : null,
                 'recent_history' => $recentHistory->map(function ($item) {
                     return [
                         'id' => $item->id,
-                        'hotel' => $item->room->building->name ?? 'BKS Hotel',
+                        'hotel' => $item->room->property->name ?? 'BKS Hotel',
                         'date' => $item->start_date,
                         'amount' => $item->price->price ?? 0,
                         'status' => 'Completed',
@@ -167,7 +167,7 @@ final class StayService
     {
         return Contract::whereHas('booking', function ($query) use ($userId) {
             $query->where('user_id', $userId);
-        })->with(['booking.room.building'])->orderBy('created_at', 'desc')->paginate(10);
+        })->with(['booking.room.property'])->orderBy('created_at', 'desc')->paginate(10);
     }
 
     /**
@@ -274,16 +274,16 @@ final class StayService
      */
     public function getPartnerServiceRequests(int $partnerId): array
     {
-        // Get all buildings for this partner
-        $buildingIds = \App\Models\Building::where('user_id', $partnerId)->pluck('id')->toArray();
-        if (empty($buildingIds)) {
+        // Get all properties for this partner
+        $propertyIds = \App\Models\Property::where('user_id', $partnerId)->pluck('id')->toArray();
+        if (empty($propertyIds)) {
             return [];
         }
 
-        // Get service requests (pivot records) for those buildings
-        return \App\Models\BookingService::with(['booking.room.building', 'booking.user', 'service'])
-            ->whereHas('booking.room', function ($query) use ($buildingIds) {
-                $query->whereIn('building_id', $buildingIds);
+        // Get service requests (pivot records) for those properties
+        return \App\Models\BookingService::with(['booking.room.property', 'booking.user', 'service'])
+            ->whereHas('booking.room', function ($query) use ($propertyIds) {
+                $query->whereIn('property_id', $propertyIds);
             })
             ->orderBy('created_at', 'desc')
             ->get()
@@ -300,13 +300,13 @@ final class StayService
      */
     public function updateServiceRequestStatus(int $requestId, int $partnerId, int $status): array
     {
-        $request = \App\Models\BookingService::with('booking.room.building')->find($requestId);
+        $request = \App\Models\BookingService::with('booking.room.property')->find($requestId);
         if (!$request) {
             return ['success' => false, 'message' => 'Request not found'];
         }
 
-        // Check if partner owns the building
-        if ($request->booking->room->building->user_id !== $partnerId) {
+        // Check if partner owns the property
+        if ($request->booking->room->property->user_id !== $partnerId) {
             return ['success' => false, 'message' => 'Unauthorized'];
         }
 

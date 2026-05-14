@@ -1,4 +1,4 @@
-# Implementation Plan: Partner Portal 360 (Dashboard / Bookings / Calendar)
+﻿# Implementation Plan: Partner Portal 360 (Dashboard / Bookings / Calendar)
 
 ## Document Information
 - **Plan ID:** P001
@@ -197,7 +197,7 @@ Phase 5: Long-term Contract subset
 - **Completed:** 2026-05-10
 
 #### [T1.6] `BookingPolicy` ✅ DONE
-- **Description:** Tạo policy với ability `view`, `confirm`, `cancel`, `noShow`, `update` kiểm `Booking->room->building->user_id === $user->id`. Đăng ký vào `AuthServiceProvider`.
+- **Description:** Tạo policy với ability `view`, `confirm`, `cancel`, `noShow`, `update` kiểm `Booking->room->property->user_id === $user->id`. Đăng ký vào `AuthServiceProvider`.
 - **Acceptance Criteria:**
   - [x] Partner A không thể confirm/cancel booking của Partner B — verified bằng `BookingPolicyTest::test_partner_cannot_confirm_other_partners_booking`.
   - [x] Admin bypass qua `before()` hook.
@@ -594,7 +594,7 @@ Phase 5: Long-term Contract subset
 - **Description:** Trả `{bookings, blocks, property_id, room_id, from, to, cached_at}` cho `property_id|all`, `room_id?`, `from`, `to` (max 31 ngày). Booking enrich `room_label/room_title/guest_name/guest_phone/total_amount` (eager-load tránh N+1) phục vụ FE dialog.
 - **Acceptance Criteria:**
   - [x] Range > 31 ngày → 422.
-  - [x] Trả booking + block đúng theo ownership (filter qua `Room.building.user_id`).
+  - [x] Trả booking + block đúng theo ownership (filter qua `Room.property.user_id`).
 - **Files Affected:**
   - `app/Http/Controllers/Partner/PartnerCalendarController.php` (mới)
   - `app/Services/PartnerCalendarService.php` (mới)
@@ -650,7 +650,7 @@ Phase 5: Long-term Contract subset
 - **Completed:** 2026-05-10
 
 #### [T3.12] FE: filter "Tất cả tài sản" ✅ DONE
-- **Description:** Thêm option "Tất cả tài sản" (`__all__`) trong building selector của `Calendar.tsx`. Khi chọn → propertyId=null → `/partner/calendar` trả tất cả room thuộc partner. Note: chưa đồng bộ URL query (out-of-scope).
+- **Description:** Thêm option "Tất cả tài sản" (`__all__`) trong property selector của `Calendar.tsx`. Khi chọn → propertyId=null → `/partner/calendar` trả tất cả room thuộc partner. Note: chưa đồng bộ URL query (out-of-scope).
 - **Files Affected:**
   - `src/pages/Partner/Calendar.tsx`
 - **Dependencies:** [T3.11]
@@ -659,7 +659,7 @@ Phase 5: Long-term Contract subset
 - **Completed:** 2026-05-10
 
 #### [T3.13] FE: dialog tạo room block ✅ DONE
-- **Description:** Dialog tạo block: chọn phòng (bao gồm cả "Tất cả tài sản" → tất cả room với label `room — building`), ngày, loại (3 enum), lý do, ghi chú. Lỗi 409 hiển thị danh sách conflict; 403 hiển thị unauthorized; 422 surfacing field error.
+- **Description:** Dialog tạo block: chọn phòng (bao gồm cả "Tất cả tài sản" → tất cả room với label `room — property`), ngày, loại (3 enum), lý do, ghi chú. Lỗi 409 hiển thị danh sách conflict; 403 hiển thị unauthorized; 422 surfacing field error.
 - **Files Affected:**
   - `src/pages/Partner/components/RoomBlockDialog.tsx` (mới)
   - `src/pages/Partner/Calendar.tsx`
@@ -852,7 +852,7 @@ Phase 5: Long-term Contract subset
   - `app/Models/Contract.php` (cast cho `renewal_reminder_at`, `terminated_at`)
   - `app/Repositories/ContractRepository/ContractRepositoryInterface.php`
   - `app/Repositories/ContractRepository/EloquentContractRepository.php`
-  - `app/Policies/ContractPolicy.php` (mới — admin bypass, partner ownership qua Building.user_id)
+  - `app/Policies/ContractPolicy.php` (mới — admin bypass, partner ownership qua Property.user_id)
   - `app/Providers/AuthServiceProvider.php`
   - `app/Events/ContractRenewalReminderQueued.php` (mới — `ShouldBroadcast`, channel `private-partner.{id}` + `private-property.{id}`)
 - **Acceptance Criteria:**
@@ -860,7 +860,7 @@ Phase 5: Long-term Contract subset
   - [x] `setRenewalReminder` từ chối contract đã terminated (`CONTRACT_TERMINATED`).
   - [x] `terminate` yêu cầu reason ≥ 5 ký tự (`CONTRACT_TERMINATE_REASON_REQUIRED`).
   - [x] `terminate` idempotent — gọi lần 2 trả `CONTRACT_ALREADY_TERMINATED`.
-  - [x] Mỗi lần `setRenewalReminder` thành công dispatch `ContractRenewalReminderQueued` với `partner_id` + `property_id` lấy từ `Booking → Room → Building`.
+  - [x] Mỗi lần `setRenewalReminder` thành công dispatch `ContractRenewalReminderQueued` với `partner_id` + `property_id` lấy từ `Booking → Room → Property`.
 - **Dependencies:** [T1.2]
 - **Estimate:** 4h
 - **Completed:** 2026-05-12
@@ -950,7 +950,7 @@ Phase 5: Long-term Contract subset
 ### Phase 5 Review Notes (BA/TLA/QA) - 2026-05-12
 
 - **Business Analyst:** PASS. Long-term contract subset đủ surface area cho partner (Apartment/Homestay): scheduler 06:00 đánh dấu trước 30 ngày, partner xem detail có utility_fees, có thể đánh dấu nhắc gia hạn hoặc chấm dứt với lý do, Alert Center cập nhật real-time qua broadcast. Calendar badge "Contract" giúp ops nhìn biết booking lease nhanh.
-- **Technical Lead/Architect:** PASS. Repository-only write + ContractPolicy theo pattern Phase 3 (admin bypass, partner ownership qua Building.user_id). `partner360` middleware idempotent với cache driver (đọc config + env). Routes Phase 3/4 cũ được gắn middleware mà KHÔNG đụng endpoint Phase 1-2 → backwards-compatible. Event `ContractRenewalReminderQueued` đồng nhất pattern broadcast với `RoomBlockChanged`. Tránh load model thừa: trong service event chỉ gọi `loadMissing` đúng chain `booking.room.building`.
+- **Technical Lead/Architect:** PASS. Repository-only write + ContractPolicy theo pattern Phase 3 (admin bypass, partner ownership qua Property.user_id). `partner360` middleware idempotent với cache driver (đọc config + env). Routes Phase 3/4 cũ được gắn middleware mà KHÔNG đụng endpoint Phase 1-2 → backwards-compatible. Event `ContractRenewalReminderQueued` đồng nhất pattern broadcast với `RoomBlockChanged`. Tránh load model thừa: trong service event chỉ gọi `loadMissing` đúng chain `booking.room.property`.
 - **QA:** PASS. Unit suite 34/34 (96 assertions); ContractServiceTest cover happy/error path + scheduler batch idempotence. FE `npm run build` PASS sau khi xử lý nullable `nights`. Feature-level concurrency test (scheduler chạy đồng thời với terminate) hoãn sang QC do `phpunit.xml` chưa có testing DB.
 
 ### Phase 5 Downstream Handoff
@@ -1240,3 +1240,4 @@ Phase 5: Long-term Contract subset
 | DEC-260510-PP360-010 | Bulk action xếp Phase 4 thay vì Phase 2 | Cần `ConflictChecker` (Phase 3) hoạt động ổn định trước; bulk áp lực race condition cao |
 | DEC-260510-PP360-011 | KPI cache invalidation tập trung tại 1 listener `InvalidatePartnerKpiCache` | Tránh race và logic phân mảnh |
 | DEC-260510-PP360-012 | Backfill `confirmed_at` thực hiện ngay Phase 1, dùng metadata `backfilled=true` để tách khỏi avg time-to-confirm 30 ngày đầu | Cho có baseline KPI mà không làm méo dữ liệu |
+
