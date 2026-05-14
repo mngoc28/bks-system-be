@@ -1,4 +1,4 @@
-# Repository Knowledge Base
+﻿# Repository Knowledge Base
 
 ## 2026-05-10 - Partner Portal 360 SRS
 
@@ -24,7 +24,7 @@
 
 - Backend dùng Laravel với route group `/api/v1/partner`, middleware `jwt.auth` và `role:partner`.
 - Frontend Partner Portal dùng React, các màn hình chính gồm `Dashboard.tsx`, `Bookings.tsx`, `Calendar.tsx`.
-- Dữ liệu ownership của Partner đi qua quan hệ `users -> buildings -> rooms -> bookings`.
+- Dữ liệu ownership của Partner đi qua quan hệ `users -> properties -> rooms -> bookings`.
 - Booking status hiện dùng `0 pending`, `1 confirmed`, `2 cancelled`, `3 completed`.
 - Stay status hiện dùng `pending`, `checked_in`, `checked_out`, `no_show`.
 - `contracts` đã có `contract_type`, `signature`, `signature_date`; booking dài hạn nên sinh `LEASE_AGREEMENT`, booking ngắn hạn dùng `TERMS_AND_CONDITIONS`.
@@ -176,7 +176,7 @@
 - Route: `POST /api/v1/broadcasting/auth` middleware `jwt.auth`.
 - Channels (`routes/channels.php`):
   - `partner.{partnerId}` → cho phép khi `Auth::user()->id === partnerId`.
-  - `property.{propertyId}` → cho phép khi `Building::find($propertyId)->user_id === Auth::user()->id`.
+  - `property.{propertyId}` → cho phép khi `Property::find($propertyId)->user_id === Auth::user()->id`.
 - Events `ShouldBroadcast`: `App\Events\BookingCreated|BookingConfirmed|BookingCancelled` với `broadcastOn` = `[private-partner.{X}, private-property.{Y}]`, `broadcastAs` = `booking.{created|confirmed|cancelled}`. Payload `broadcastWith()` chỉ gồm id/status/room_id/partner_id/property_id/dates/timestamps/actor_id; KHÔNG gửi PII (name/email/phone/note/reason text).
 - Listener: `App\Listeners\RecordBookingTimeline implements ShouldQueue` — ghi marker `event_type='broadcast_dispatched'` cho audit realtime, KHÔNG ghi trùng timeline transition của Phase 1 (xem DEC-260510-PP360-014).
 - Service hook: `BookingService` thêm `resolveBroadcastScope()` + `safeDispatch()`; dispatch event sau `DB::commit()` cho `handleCreateBooking|handleConfirmBooking|handleCancelBooking`.
@@ -233,7 +233,7 @@
 
 - Migration `room_blocks` (`2026_05_10_120004_create_room_blocks_table.php`) với CHECK constraints qua raw SQL (`chk_rb_dates`, `chk_rb_block_type`) — Laravel 9 schema builder không có API native cho CHECK.
 - Model `App\Models\RoomBlock` (`final`, casts date, hằng số `BLOCK_TYPE_*`); repo `RoomBlockRepository` extends `BaseRepository` với `listForRoomsInRange`, `findConflicting`. Đăng ký binding ở `RepositoryServiceProvider`.
-- `App\Policies\RoomBlockPolicy`: ownership qua `Room.building.user_id === Auth::id()`, admin bypass qua `before`.
+- `App\Policies\RoomBlockPolicy`: ownership qua `Room.property.user_id === Auth::id()`, admin bypass qua `before`.
 - `App\Services\ConflictChecker` (non-final để mockable): `findConflicts(roomId, start, end, excludeBookingId, excludeBlockId, useLock)` truy vấn cả `bookings` (loại `CANCELLED|COMPLETED`) và `room_blocks`; static `intervalsOverlap(a1,a2,b1,b2)` cho unit test logic. Quy ước `[start,end)` exclusive — back-to-back KHÔNG conflict.
 - `App\Services\RoomBlockService`: `create` chạy trong `DB::transaction` + `lockForUpdate` qua ConflictChecker; conflict trả `code=ROOM_BLOCK_CONFLICT` + payload chi tiết. `delete` policy + dispatch `RoomBlockChanged`. `safeDispatch`-style try/catch để failure broadcast không phá flow.
 - `App\Services\PartnerCalendarService`: `getCalendar(partnerId, propertyId?, roomId?, from, to)` cap 31 ngày, cache 30s qua key `calendar:{partnerId}:v{version}:{scope}:{room}:{from}:{to}` (version-pointer pattern). Eager-load `room/user/price` để enrich payload (`room_label`, `room_title`, `guest_name`, `guest_phone`, `total_amount = price × số đêm`).
@@ -259,7 +259,7 @@
 - `src/hooks/Partner/useBookingsRealtime.ts`: mở rộng `BookingEventName` thêm `room_block.changed`, listen cùng một channel partner; mọi event đều invalidate prefix `['partner','calendar']`. Polling fallback cũng invalidate calendar.
 - `src/pages/Partner/components/RoomBlockDialog.tsx` (mới): form chọn phòng/range/loại/lý do/note; xử lý 409/403/422.
 - `src/pages/Partner/Calendar.tsx` (refactor):
-  - Option "Tất cả tài sản" (`__all__`) → propertyId=null; merge rooms từ tất cả buildings (Promise.all).
+  - Option "Tất cả tài sản" (`__all__`) → propertyId=null; merge rooms từ tất cả properties (Promise.all).
   - Render booking + block với màu/style khác (block có `repeating-linear-gradient` stripe).
   - Banner cảnh báo overbooking khi cùng `room_id` có 2+ booking giao nhau theo interval `[start,end)`.
   - Drag-drop bookings (FullCalendar `editable` + `eventAllow` chỉ `kind=='booking'`); drop/resize → `partnerService.moveBooking`; 409 → `info.revert()` + toast.
@@ -353,7 +353,7 @@
   - `getLongTermContractsDueForReminder(int $daysAhead)`: query `contract_type=LEASE_AGREEMENT`, `renewal_reminder_at NULL`, `terminated_at NULL`, `booking.end_date BETWEEN today AND today+N`.
   - `getExpiringContractsForPartner(int $partnerId)`: alert listing.
   - `getPartnerContractDetail` eager-load thêm `booking.room.utilityFees`.
-- `ContractPolicy` mới: admin bypass; partner check ownership qua `Booking → Room → Building.user_id` (`view`, `manageRenewal`, `terminate`).
+- `ContractPolicy` mới: admin bypass; partner check ownership qua `Booking → Room → Property.user_id` (`view`, `manageRenewal`, `terminate`).
 - Console: `App\Console\Commands\SendContractRenewalReminders` (signature `partner:send-contract-renewal-reminders --days=30 --chunk=...`) + scheduler `dailyAt('06:00')->timezone('Asia/Ho_Chi_Minh')->withoutOverlapping()->onOneServer()`.
 - Event mới `ContractRenewalReminderQueued` (`ShouldBroadcast`, channels `private-partner.{id}` + `private-property.{id}`, alias `contract.renewal_reminder`).
 - Middleware `EnsurePartner360Enabled` (alias `partner360`): trả 403 `PARTNER_360_DISABLED` khi `config('app.partner_360_enabled')` (fallback env `PARTNER_360_ENABLED`) là false. Gắn vào: `/calendar`, `/room-blocks/*`, `/bookings/bulk-*`, `/bookings/{id}/move`, `/dashboard/charts/*`, và 3 endpoint contract Phase 5.
@@ -387,3 +387,4 @@
 - Feature concurrency test cho scheduler vs partner thao tác terminate hoãn tới QC do `phpunit.xml` chưa có DB testing.
 - Renewal reminder hiện set một lần (không nhắc lặp). Re-trigger sau N ngày sẽ do partner manual hoặc thêm task backlog.
 - Chấm dứt hợp đồng không tự update Booking status — booking handling sau termination thuộc backlog operations.
+

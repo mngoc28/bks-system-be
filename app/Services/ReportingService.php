@@ -27,14 +27,14 @@ final class ReportingService
         $totalDays = $start->diffInDays($end) + 1;
 
         // 1. Get total rooms owned by partner
-        $totalRooms = Room::whereHas('building', function ($query) use ($partnerId) {
+        $totalRooms = Room::whereHas('property', function ($query) use ($partnerId) {
             $query->where('user_id', $partnerId);
         })->count();
 
         $totalAvailableRoomNights = $totalRooms * $totalDays;
 
         // 2. Get bookings in range
-        $bookings = Booking::whereHas('room.building', function ($query) use ($partnerId) {
+        $bookings = Booking::whereHas('room.property', function ($query) use ($partnerId) {
                 $query->where('user_id', $partnerId);
         })
             ->whereIn('status', [BookingStatus::CONFIRMED->value, 3]) // Confirmed or Completed

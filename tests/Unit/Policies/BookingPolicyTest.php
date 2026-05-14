@@ -6,7 +6,7 @@ namespace Tests\Unit\Policies;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
-use App\Models\Building;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\User;
 use App\Policies\BookingPolicy;
@@ -115,8 +115,8 @@ final class BookingPolicyTest extends TestCase
     }
 
     /**
-     * Construct a Booking with stubbed room->building relation that returns a
-     * building owned by the given partner id. We rely on Eloquent's
+     * Construct a Booking with stubbed room->property relation that returns a
+     * property owned by the given partner id. We rely on Eloquent's
      * `setRelation` so the policy reads the in-memory graph instead of
      * triggering a DB query.
      */
@@ -124,13 +124,13 @@ final class BookingPolicyTest extends TestCase
         int $otherPartnerId,
         BookingStatus $status = BookingStatus::PENDING,
     ): Booking {
-        $building = new Building();
-        $building->id = 100;
-        $building->user_id = $otherPartnerId;
+        $property = new Property();
+        $property->id = 100;
+        $property->user_id = $otherPartnerId;
 
         $room = new Room();
         $room->id = 200;
-        $room->setRelation('building', $building);
+        $room->setRelation('property', $property);
 
         $booking = new Booking();
         $booking->id = 300;

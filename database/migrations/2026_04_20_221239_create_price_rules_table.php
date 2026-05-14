@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('price_rules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('building_id')->constrained('buildings')->onDelete('cascade');
+            $table->foreignId('property_id')->constrained('properties')->onDelete('cascade');
             $table->foreignId('room_id')->nullable()->constrained('rooms')->onDelete('cascade');
             $table->string('name');
             $table->enum('type', ['markup', 'discount'])->default('markup');

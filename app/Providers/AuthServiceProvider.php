@@ -5,13 +5,13 @@ namespace App\Providers;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Room;
-use App\Models\Building;
+use App\Models\Property;
 use App\Models\Booking;
 use App\Models\Contract;
 use App\Models\RoomBlock;
 use App\Policies\ServicePolicy;
 use App\Policies\RoomPolicy;
-use App\Policies\BuildingPolicy;
+use App\Policies\PropertyPolicy;
 use App\Policies\BookingPolicy;
 use App\Policies\ContractPolicy;
 use App\Policies\RoomBlockPolicy;
@@ -30,7 +30,7 @@ class AuthServiceProvider extends ServiceProvider
         Booking::class => BookingPolicy::class,
         Contract::class => ContractPolicy::class,
         RoomBlock::class => RoomBlockPolicy::class,
-        // Building::class => BuildingPolicy::class,
+        // Property::class => PropertyPolicy::class,
         // Room::class => RoomPolicy::class,
         // Service::class => ServicePolicy::class,
     ];

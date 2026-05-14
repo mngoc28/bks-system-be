@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 return [
 
@@ -42,7 +42,7 @@ return [
         4 => 'その他',
     ],
 
-    'buildingStructure' => [
+    'propertyStructure' => [
         1 => '木造',
         2 => '鉄筋コンクリート構造',
         3 => '鉄骨鉄筋コンクリート構造',
@@ -61,3 +61,4 @@ return [
     ],
     'limit_faq' => 10
 ];
+

@@ -42,8 +42,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'users.phone as user_phone',
             'rooms.room_number as room_name',
             'rooms.id as room_id',
-            'buildings.name as building_name',
-            'buildings.id as building_id',
+            'properties.name as property_name',
+            'properties.id as property_id',
             'bookings.start_date',
             'bookings.end_date',
             'room_prices.price',
@@ -55,13 +55,13 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->leftJoin('users as partner', 'buildings.user_id', '=', 'partner.id');
+            ->leftJoin('users as partner', 'properties.user_id', '=', 'partner.id');
 
         if (Auth::check() && Auth::user()->role === 'partner') {
             // Filter by partner_id
-            $query->where('buildings.user_id', Auth::id());
+            $query->where('properties.user_id', Auth::id());
         }
 
         if ($request->filled('room_id')) {
@@ -72,8 +72,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             $query->where('bookings.user_id', $request->user_id);
         }
 
-        if ($request->filled('building_id')) {
-            $query->where('rooms.building_id', $request->building_id);
+        if ($request->filled('property_id')) {
+            $query->where('rooms.property_id', $request->property_id);
         }
 
         if ($request->filled('start_date')) {
@@ -222,15 +222,15 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             return true;
         }
 
-        // Partner only allowed to manage bookings for their buildings
+        // Partner only allowed to manage bookings for their properties
         if ($role === 'partner') {
             // For creating new booking (check by room_id)
             if ($roomId && ! $bookingId) {
                 return $this->model
                     ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-                    ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+                    ->join('properties', 'rooms.property_id', '=', 'properties.id')
                     ->where('rooms.id', $roomId)
-                    ->where('buildings.user_id', Auth::user()->id)
+                    ->where('properties.user_id', Auth::user()->id)
                     ->exists();
             }
 
@@ -238,9 +238,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             if ($bookingId) {
                 return $this->model
                     ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-                    ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+                    ->join('properties', 'rooms.property_id', '=', 'properties.id')
                     ->where('bookings.id', $bookingId)
-                    ->where('buildings.user_id', Auth::user()->id)
+                    ->where('properties.user_id', Auth::user()->id)
                     ->exists();
             }
 
@@ -280,27 +280,27 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     }
 
     /**
-     * Get bookings grouped by building
+     * Get bookings grouped by property
      *
      * @return Collection
      */
-    public function getBookingsByBuilding(): Collection
+    public function getBookingsByProperty(): Collection
     {
         return $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
-                'buildings.id as building_id',
-                'buildings.name as building_name',
+                'properties.id as property_id',
+                'properties.name as property_name',
                 DB::raw('COUNT(*) as total')
             )
             ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
-            ->groupBy('buildings.id', 'buildings.name')
+            ->groupBy('properties.id', 'properties.name')
             ->get()
-            ->map(fn($b) => [
-                'building_id'   => $b->building_id,
-                'building_name' => $b->building_name,
-                'total'         => (int) $b->total,
+            ->map(fn ($b) => [
+                'property_id'   => (int) $b->getAttribute('property_id'),
+                'property_name' => (string) $b->getAttribute('property_name'),
+                'total'         => (int) $b->getAttribute('total'),
             ]);
     }
 
@@ -385,7 +385,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function getActiveBookingByUserId(int $userId): ?\App\Models\Booking
     {
         /** @var \App\Models\Booking|null $booking */
-        $booking = $this->model->with(['room', 'room.building'])
+        $booking = $this->model->with(['room', 'room.property'])
             ->where('user_id', $userId)
             ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
             ->orderBy('start_date', 'asc')
@@ -403,7 +403,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      */
     public function getRecentHistoryByUserId(int $userId, int $limit = 2): Collection
     {
-        return $this->model->with(['room', 'room.building', 'price'])
+        return $this->model->with(['room', 'room.property', 'price'])
             ->where('user_id', $userId)
             ->where('status', BookingStatus::COMPLETED->value)
             ->orderBy('end_date', 'desc')
@@ -420,7 +420,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      */
     public function getBookingHistoryByUserId(int $userId, int $perPage = 10): LengthAwarePaginator
     {
-        return $this->model->with(['room', 'room.building', 'price'])
+        return $this->model->with(['room', 'room.property', 'price'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -436,7 +436,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking
     {
         /** @var \App\Models\Booking|null $booking */
-        $booking = $this->model->with(['room.building', 'price', 'services', 'contracts'])
+        $booking = $this->model->with(['room.property', 'price', 'services', 'contracts'])
             ->where('id', $bookingId)
             ->where('user_id', $userId)
             ->first();
@@ -463,8 +463,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'users.phone as user_phone',
             'rooms.room_number as room_name',
             'rooms.id as room_id',
-            'buildings.name as building_name',
-            'buildings.id as building_id',
+            'properties.name as property_name',
+            'properties.id as property_id',
             'bookings.start_date',
             'bookings.end_date',
             DB::raw('COALESCE(room_prices.price, 0) as price'),
@@ -476,10 +476,10 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->leftJoin('users as partner', 'buildings.user_id', '=', 'partner.id')
-            ->where('buildings.user_id', $partnerId);
+            ->leftJoin('users as partner', 'properties.user_id', '=', 'partner.id')
+            ->where('properties.user_id', $partnerId);
 
         if ($request->filled('status')) {
             $query->where('bookings.status', $request->status);
@@ -505,8 +505,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     {
         $query = $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId)
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
             ->where('bookings.status', '!=', BookingStatus::CANCELLED->value);
 
         if ($startDate && $endDate) {
@@ -528,29 +528,29 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     }
 
     /**
-     * Get bookings grouped by building for a specific partner
+     * Get bookings grouped by property for a specific partner
      *
      * @param int $partnerId
      * @return Collection
      */
-    public function getBookingsByBuildingForPartner(int $partnerId): Collection
+    public function getBookingsByPropertyForPartner(int $partnerId): Collection
     {
         return $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->select(
-                'buildings.id as building_id',
-                'buildings.name as building_name',
+                'properties.id as property_id',
+                'properties.name as property_name',
                 DB::raw('COUNT(*) as total')
             )
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
-            ->groupBy('buildings.id', 'buildings.name')
+            ->groupBy('properties.id', 'properties.name')
             ->get()
-            ->map(fn($b) => [
-                'building_id'   => $b->building_id,
-                'building_name' => $b->building_name,
-                'total'         => (int) $b->total,
+            ->map(fn ($b) => [
+                'property_id'   => (int) $b->getAttribute('property_id'),
+                'property_name' => (string) $b->getAttribute('property_name'),
+                'total'         => (int) $b->getAttribute('total'),
             ]);
     }
 
@@ -566,9 +566,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     {
         $query = $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->whereIn('bookings.status', [BookingStatus::CONFIRMED->value, BookingStatus::COMPLETED->value]);
 
         if ($startDate && $endDate) {
@@ -617,9 +617,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.status'
         )
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('users', 'bookings.user_id', '=', 'users.id')
-            ->where('buildings.user_id', $partnerId)
+            ->where('properties.user_id', $partnerId)
             ->where('bookings.status', BookingStatus::PENDING->value)
             ->orderBy('bookings.created_at', 'desc')
             ->limit($limit)
@@ -636,8 +636,8 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function countBookingsForPartner(int $partnerId, array $filters = []): int
     {
         $query = $this->model->join('rooms', 'bookings.room_id', '=', 'rooms.id')
-            ->join('buildings', 'rooms.building_id', '=', 'buildings.id')
-            ->where('buildings.user_id', $partnerId);
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId);
 
         foreach ($filters as $key => $value) {
             if ($key === 'status') {

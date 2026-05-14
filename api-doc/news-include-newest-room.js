@@ -126,7 +126,7 @@
  * @apiSuccess {String} data.message Internal service message
  *
  * @apiSuccess {Number} data.data.id Room ID
- * @apiSuccess {Number} data.data.building_id Building ID
+ * @apiSuccess {Number} data.data.property_id Property ID
  * @apiSuccess {String} data.data.title Room title
  * @apiSuccess {String} data.data.room_number Room number
  * @apiSuccess {String|null} data.data.deposit Deposit amount
@@ -153,7 +153,7 @@
  *     "data": [
  *       {
  *         "id": 66,
- *         "building_id": 42,
+ *         "property_id": 42,
  *         "title": "Phòng Studio phong cách minimalist 66",
  *         "room_number": "R066",
  *         "deposit": "3377147.00",

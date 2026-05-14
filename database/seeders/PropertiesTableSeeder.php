@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -7,12 +7,12 @@ use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class BuildingsTableSeeder extends Seeder
+class PropertiesTableSeeder extends Seeder
 {
     public function run(): void
     {
         DB::statement('SET FOREIGN_KEY_CHECKS = 0');
-        DB::table('buildings')->truncate();
+        DB::table('properties')->truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS = 1');
 
         $faker = Faker::create('vi_VN');
@@ -26,7 +26,7 @@ class BuildingsTableSeeder extends Seeder
             $adminPartnerIds = [1];
         }
 
-        $buildingNames = [
+        $propertyNames = [
             'Chung cư Golden Palace',
             'Tòa nhà Diamond Tower',
             'Chung cư Sunrise City',
@@ -234,7 +234,7 @@ class BuildingsTableSeeder extends Seeder
             $location = $faker->randomElement($addressData);
             $description = $faker->randomElement($descriptions);
 
-            DB::table('buildings')->insert([
+            DB::table('properties')->insert([
                 'user_id'           => $faker->randomElement($adminPartnerIds),
                 'province_id'       => $faker->randomElement($provinceIds),
                 'ward_id'           => $faker->randomElement($wardIds),
@@ -255,3 +255,4 @@ class BuildingsTableSeeder extends Seeder
         }
     }
 }
+

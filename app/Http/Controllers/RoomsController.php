@@ -208,13 +208,14 @@ final class RoomsController extends Controller
     }
 
     /**
-     * Summary of getRoomNamesByBuildingId
-     * @param int $buildingId
+     * Room titles/numbers for a property (admin).
+     *
+     * @param int|string $propertyId
      * @return JsonResponse
      */
-    public function getRoomNamesByBuildingId($buildingId): JsonResponse
+    public function getRoomNamesByPropertyId($propertyId): JsonResponse
     {
-        $result = $this->roomsService->getRoomNamesByBuildingId($buildingId);
+        $result = $this->roomsService->getRoomNamesByPropertyId($propertyId);
         if (! $result['success']) {
             return $this->errorResponse(
                 $result['message'],

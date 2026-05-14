@@ -69,7 +69,7 @@ class RoomMaintenanceService
             }
 
             if (empty($payload['property_id'])) {
-                $payload['property_id'] = $room->building_id;
+                $payload['property_id'] = $room->property_id;
             }
 
             if (empty($payload['status'])) {

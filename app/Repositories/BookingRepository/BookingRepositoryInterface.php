@@ -76,11 +76,11 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function checkPriceExistsForRoom(int $room_id, int $price_id): bool;
 
     /**
-     * Get bookings grouped by building
+     * Get bookings grouped by property
      *
      * @return Collection
      */
-    public function getBookingsByBuilding(): Collection;
+    public function getBookingsByProperty(): Collection;
 
     /**
      * Get revenue by month
@@ -166,12 +166,12 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function getBookingsPerMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection;
 
     /**
-     * Get bookings grouped by building for a specific partner
+     * Get bookings grouped by property for a specific partner
      *
      * @param int $partnerId
      * @return Collection
      */
-    public function getBookingsByBuildingForPartner(int $partnerId): Collection;
+    public function getBookingsByPropertyForPartner(int $partnerId): Collection;
 
     /**
      * Get revenue by month for a specific partner

@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
+/**
+ * @property string $role
+ */
 final class User extends Authenticatable implements JWTSubject
 {
     use HasFactory;
@@ -71,6 +74,16 @@ final class User extends Authenticatable implements JWTSubject
     public function partnerInfo(): HasOne
     {
         return $this->hasOne(PartnerInfo::class, 'user_id');
+    }
+
+    /**
+     * Properties this user owns (partner dashboard).
+     *
+     * @return HasMany<Property>
+     */
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class, 'user_id');
     }
 
     /**

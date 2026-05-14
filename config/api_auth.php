@@ -21,8 +21,8 @@ return [
         'send-mail-reset-password',
 
         // Public read-only endpoints
-        'buildings/search',
-        'buildings/{id}',
+        'properties/search',
+        'properties/{id}',
         'rooms/search',
         'rooms/{id}',
     ],
@@ -35,8 +35,8 @@ return [
         'admin/*',
 
         // Protected CRUD endpoints
-        'buildings',
-        'buildings/{id}',
+        'properties',
+        'properties/{id}',
         'rooms',
         'rooms/{id}',
     ],

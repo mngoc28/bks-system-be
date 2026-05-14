@@ -109,7 +109,12 @@ final class ContractService
             $partnerId = Auth::id();
 
             $booking = $this->bookingRepository->find($request->booking_id);
-            if (!$booking || $booking->room->building->user_id !== $partnerId) {
+            if (
+                ! $booking
+                || ! $booking->room
+                || ! $booking->room->property
+                || (int) $booking->room->property->user_id !== $partnerId
+            ) {
                 return [
                     'success' => false,
                     'data'    => null,
@@ -320,7 +325,7 @@ final class ContractService
             $payload = $contracts->map(function (Contract $contract): array {
                 $booking = $contract->booking;
                 $room = $booking?->room;
-                $building = $room?->building;
+                $property = $room?->property;
 
                 return [
                     'id'                  => (int) $contract->id,
@@ -333,7 +338,7 @@ final class ContractService
                         ? IlluminateCarbon::parse($booking->end_date)->toDateString()
                         : null,
                     'room_label'          => $room?->title,
-                    'building_name'       => $building?->name,
+                    'property_name'       => $property?->name,
                     'guest_name'          => optional($booking?->user)->name,
                 ];
             })->values()->all();
@@ -385,18 +390,18 @@ final class ContractService
     private function dispatchReminderEvent(Contract $contract): void
     {
         try {
-            $contract->loadMissing(['booking.room.building']);
+            $contract->loadMissing(['booking.room.property']);
             $booking = $contract->booking;
             $room = $booking?->room;
-            $building = $room?->building;
-            if ($building === null || $booking === null) {
+            $property = $room?->property;
+            if ($property === null || $booking === null) {
                 return;
             }
 
             ContractRenewalReminderQueued::dispatch(
                 $contract,
-                (int) $building->user_id,
-                $building->id !== null ? (int) $building->id : null,
+                (int) $property->user_id,
+                $property->id !== null ? (int) $property->id : null,
                 IlluminateCarbon::parse($booking->end_date)->toDateString(),
             );
         } catch (Throwable $e) {

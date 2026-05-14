@@ -1,4 +1,4 @@
-# Repository Decisions Log
+﻿# Repository Decisions Log
 
 ## 2026-05-10 - Partner Portal 360 Scope
 
@@ -196,7 +196,7 @@
 |---|---|
 | Decision ID | DEC-260510-PP360-020 |
 | Context | Design Section 7 mô tả `/partner/calendar` trả tối thiểu booking + block. FE Calendar dialog cần `room_label`, `guest_name`, `phone`, `total_amount` để hiển thị chi tiết khi click event. Hai option: (A) enrich payload calendar; (B) FE fetch GET booking detail riêng |
-| Decision | Chọn (A): enrich `serializeBooking` với `room_label`, `room_title`, `building_id`, `guest_name`, `guest_phone`, `total_amount` (tính = price × số đêm). Eager-load `with(['room','user','price'])` để tránh N+1. PII chấp nhận được vì endpoint REST authenticated cho partner-owner (không phải broadcast) |
+| Decision | Chọn (A): enrich `serializeBooking` với `room_label`, `room_title`, `property_id`, `guest_name`, `guest_phone`, `total_amount` (tính = price × số đêm). Eager-load `with(['room','user','price'])` để tránh N+1. PII chấp nhận được vì endpoint REST authenticated cho partner-owner (không phải broadcast) |
 | Rationale | Giảm round-trip thứ hai khi user click event; UX tốt hơn (không loading flash). N+1 đã handle bằng eager-load với column whitelist. Broadcast event vẫn không gồm PII (giữ DEC-260510-PP360-006/008) |
 | Related artifact | `app/Services/PartnerCalendarService.php` |
 
@@ -239,3 +239,4 @@
 | Decision | Chọn (B). Middleware `partner360` chỉ apply với endpoint Phase 3 (`/calendar`, `/room-blocks/*`, `/bookings/{id}/move`), Phase 4 (`/dashboard/charts/*`, `/bookings/bulk-*`), và Phase 5 (`/contracts/expiring-soon`, `/contracts/:id/renewal-reminder`, `/contracts/:id/terminate`). Phase 1-2 endpoints (CRUD booking, `/dashboard/{kpis,stats,pending-bookings,urgent-maintenances,revenue-analytics}`) KHÔNG bị flag chặn |
 | Rationale | Backwards-compatible cho rollback nhanh: tắt flag = ẩn UI Phase 3+, BE trả 403 với code rõ ràng cho FE handle; Phase 1-2 vẫn hoạt động bình thường. FE `lib/featureFlags.ts` mirror flag qua `VITE_PARTNER_REALTIME` để ẩn UI thay vì để partner chạm 403 |
 | Related artifact | `app/Http/Middleware/EnsurePartner360Enabled.php`, `routes/api.php`, `config/app.php`, `bks-system-fe/src/lib/featureFlags.ts` |
+

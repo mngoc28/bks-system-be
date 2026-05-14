@@ -1,4 +1,4 @@
-# Lead: Partner Portal 360° Review & Cải tiến Dashboard / Bookings / Calendar
+﻿# Lead: Partner Portal 360° Review & Cải tiến Dashboard / Bookings / Calendar
 
 ## Document Information
 - **Lead ID:** L260510-partner-portal-360
@@ -26,7 +26,7 @@ Partner Portal hiện tại đã có nhiều module (Dashboard, Properties, Cale
 - **Hợp đồng dài hạn** cho căn hộ dịch vụ (Serviced Apartment) chưa flow chốt, gia hạn, thanh lý, tính utility fee gọn gàng — đây là segment ưu tiên trong lead này.
 
 ### Target Users
-- **Primary:** Partner SME của BKS, sở hữu **1–nhiều property** (apartment building hoặc cụm homestay), tự vận hành (không có nhân viên hoặc rất ít), tiếp cận portal qua **trình duyệt máy tính + mobile web**.
+- **Primary:** Partner SME của BKS, sở hữu **1–nhiều property** (apartment property hoặc cụm homestay), tự vận hành (không có nhân viên hoặc rất ít), tiếp cận portal qua **trình duyệt máy tính + mobile web**.
 - **Secondary:**
   - End User (khách thuê) — gián tiếp hưởng lợi từ tốc độ confirm và độ chính xác của lịch.
   - Admin BKS — gián tiếp hưởng lợi vì giảm support ticket.
@@ -201,3 +201,4 @@ Partner Portal hiện tại đã có nhiều module (Dashboard, Properties, Cale
 - `business-script/E2E_BOOKING_PARTNER_USER_SCRIPT.md` (luồng booking E2E chuẩn).
 - `.cursor/skills/stack-personas/business-analyst.md`, `.cursor/skills/stack-personas/technical-lead-architect.md`.
 - `.cursor/rules/karpathy-behavioral-guidelines.mdc`, `.cursor/rules/laravel-implementation-standards.mdc`, `.cursor/rules/php-laravel-rule.mdc`.
+

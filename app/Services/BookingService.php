@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
-use App\Repositories\BuildingRepository\BuildingsRepositoryInterface;
 use App\Repositories\RoomPriceRepository\RoomPriceRepositoryInterface;
 use App\Repositories\UsersRepository\UsersRepositoryInterface;
 use App\Repositories\PricePackageRepository\PricePackageRepositoryInterface;
@@ -39,7 +38,6 @@ final class BookingService
      */
     protected BookingRepositoryInterface $bookingRepository;
     protected RoomsRepositoryInterface $roomsRepository;
-    protected BuildingsRepositoryInterface $buildingsRepository;
     protected RoomPriceRepositoryInterface $roomPriceRepository;
     protected UsersRepositoryInterface $usersRepository;
     protected PricePackageRepositoryInterface $pricePackageRepository;
@@ -54,7 +52,6 @@ final class BookingService
     public function __construct(
         BookingRepositoryInterface $bookingRepository,
         RoomsRepositoryInterface $roomsRepository,
-        BuildingsRepositoryInterface $buildingsRepository,
         RoomPriceRepositoryInterface $roomPriceRepository,
         UsersRepositoryInterface $usersRepository,
         PricePackageRepositoryInterface $pricePackageRepository,
@@ -63,7 +60,6 @@ final class BookingService
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->roomsRepository = $roomsRepository;
-        $this->buildingsRepository = $buildingsRepository;
         $this->roomPriceRepository = $roomPriceRepository;
         $this->usersRepository = $usersRepository;
         $this->pricePackageRepository = $pricePackageRepository;
@@ -336,7 +332,7 @@ final class BookingService
     }
 
     /**
-     * Resolve partner_id (building owner) + property_id (building id) cho
+     * Resolve partner_id (property owner) + property_id (property id) cho
      * broadcast scope. Trả null cho mỗi field nếu không xác định được —
      * caller chịu trách nhiệm bỏ qua việc broadcast khi thiếu scope.
      *
@@ -350,14 +346,14 @@ final class BookingService
             return ['partner_id' => null, 'property_id' => null];
         }
 
-        $building = $room->building;
-        if (! $building) {
+        $property = $room->property;
+        if (! $property) {
             return ['partner_id' => null, 'property_id' => null];
         }
 
         return [
-            'partner_id'  => (int) $building->user_id,
-            'property_id' => (int) $building->id,
+            'partner_id'  => (int) $property->user_id,
+            'property_id' => (int) $property->id,
         ];
     }
 
@@ -500,8 +496,8 @@ final class BookingService
 
             // Sinh hợp đồng (Generate Contract)
             $room = $this->roomsRepository->find($booking->room_id);
-            if ($room && $room->building) {
-                $propertyType = $room->building->propertyType;
+            if ($room && $room->property) {
+                $propertyType = $room->property->propertyType;
                 $propertySlug = $propertyType ? strtolower($propertyType->slug) : '';
 
                 $isLongTerm = in_array($propertySlug, ['can-ho', 'apartment', 'can-ho-dich-vu']);
@@ -876,8 +872,8 @@ final class BookingService
                 'company_name'      => $room->company_name ?? '',
                 'company_phone'     => $room->company_phone ?? '',
                 'partner_address'   => $room->address ?? '',
-                'building_name'     => $room->building_name ?? '',
-                'building_address'  => $room->building_address ?? '',
+                'property_name'     => $room->property_name ?? '',
+                'property_address'  => $room->property_address ?? '',
                 'start_time'        => $startDate->format('d/m/Y'),
                 'end_time'          => $endDate->format('d/m/Y'),
                 'total_days'        => $totalDays,
@@ -1108,7 +1104,7 @@ final class BookingService
      *
      * Chỉ partner sở hữu booking được phép move (kiểm bằng `checkUser`).
      * Khi đổi `room_id`, phòng mới cũng phải thuộc partner đăng nhập —
-     * `checkUser` validate điều này thông qua join `buildings`.
+     * `checkUser` validate điều này thông qua join `properties`.
      *
      * @param Request $request Body: start_date, end_date, room_id (tuỳ chọn)
      * @param int $id

@@ -60,7 +60,7 @@ class ServiceRepository extends BaseRepository implements ServiceRepositoryInter
         }
 
         // Pagination parameters
-        $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE_BUILDING'));
+        $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE_PROPERTY'));
         $page    = (int) $request->input('page', config('const.DEFAULT_PAGE'));
         return $query->paginate($perPage, ['*'], 'page', $page);
     }

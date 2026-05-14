@@ -9,11 +9,11 @@
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
  * @apiParam (Body) {File} image Image file to upload (required, max: 10MB, formats: JPEG, JPG, PNG, GIF, WEBP)
- * @apiParam (Body) {String} [folder=buildings] Folder name in Cloudinary (optional, default: "buildings")
+ * @apiParam (Body) {String} [folder=properties] Folder name in Cloudinary (optional, default: "properties")
  *
  * @apiParamExample {multipart/form-data} Request-Example:
  * image: [binary file]
- * folder: "buildings"
+ * folder: "properties"
  *
  * @apiSampleRequest /api/v1/admin/cloudinary/upload-image
  *
@@ -29,8 +29,8 @@
  *   "success": true,
  *   "message": "Image uploaded successfully",
  *   "data": {
- *     "url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/example.jpg",
- *     "public_id": "buildings/example"
+ *     "url": "https://res.cloudinary.com/example/image/upload/v1234567890/properties/example.jpg",
+ *     "public_id": "properties/example"
  *   }
  * }
  *
@@ -91,13 +91,13 @@
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
  * @apiParam (Body) {File} images Image files to upload (required, min: 1, max: 10 files, each max: 10MB, formats: JPEG, JPG, PNG, GIF, WEBP). Use array format: images[] for multiple files.
- * @apiParam (Body) {String} [folder=buildings] Folder name in Cloudinary (optional, default: "buildings")
+ * @apiParam (Body) {String} [folder=properties] Folder name in Cloudinary (optional, default: "properties")
  *
  * @apiParamExample {multipart/form-data} Request-Example:
  * images[]: [binary file 1]
  * images[]: [binary file 2]
  * images[]: [binary file 3]
- * folder: "buildings"
+ * folder: "properties"
  *
  * @apiSampleRequest /api/v1/admin/cloudinary/upload-multiple-images
  *
@@ -117,16 +117,16 @@
  *   "data": {
  *     "images": [
  *       {
- *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image1.jpg",
- *         "public_id": "buildings/image1"
+ *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/properties/image1.jpg",
+ *         "public_id": "properties/image1"
  *       },
  *       {
- *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image2.jpg",
- *         "public_id": "buildings/image2"
+ *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/properties/image2.jpg",
+ *         "public_id": "properties/image2"
  *       },
  *       {
- *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/buildings/image3.jpg",
- *         "public_id": "buildings/image3"
+ *         "url": "https://res.cloudinary.com/example/image/upload/v1234567890/properties/image3.jpg",
+ *         "public_id": "properties/image3"
  *       }
  *     ],
  *     "total": 3
@@ -186,7 +186,7 @@
  *
  * @apiParamExample {json} Request-Example:
  * {
- *   "public_id": "buildings/example"
+ *   "public_id": "properties/example"
  * }
  *
  * @apiSampleRequest /api/v1/admin/cloudinary/delete-image

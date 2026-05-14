@@ -47,7 +47,7 @@ Route::middleware(['jwt.auth', 'role:admin'])->prefix('admin')->group(function (
 
 // Routes cho Partner
 Route::middleware(['jwt.auth', 'role:partner'])->prefix('partner')->group(function () {
-    // API Quản lý Building, Room của đối tác...
+    // API Quản lý Property, Room của đối tác...
 });
 
 // Routes cho Người thuê (Stay)
@@ -72,12 +72,12 @@ public function handle(Request $request, Closure $next, ...$roles) {
 ### 4.3. Chặn tại Controller (Data-level Security)
 Sử dụng **Laravel Policies** để đảm bảo người dùng không can thiệp vào dữ liệu của người khác.
 
-- **File**: `app/Policies/` (ví dụ `BuildingPolicy`, `UserPolicy`)
+- **File**: `app/Policies/` (ví dụ `PropertyPolicy`, `UserPolicy`)
 - **Cách gọi**: `$this->authorize('action', $model)` trong Controller.
 
 **Ví dụ thực tế:**
-- Một `Partner` có thể truy cập route `/partner/buildings/{id}` (đã qua middleware).
-- Tuy nhiên, trong `BuildingController@update`, Policy sẽ kiểm tra nếu `building->user_id == auth()->id()`. Nếu không, sẽ trả về `403 Forbidden`.
+- Một `Partner` có thể truy cập route `/partner/properties/{id}` (đã qua middleware).
+- Tuy nhiên, trong `PropertiesController@update` (hoặc `PartnerPropertyController@update`), Policy sẽ kiểm tra nếu `property->user_id == auth()->id()`. Nếu không, sẽ trả về `403 Forbidden`.
 
 ---
 
@@ -88,7 +88,7 @@ Sử dụng **Laravel Policies** để đảm bảo người dùng không can th
 | **Auth** | Login / Register / Reset Pass | ✅ | ✅ | ✅ | ✅ |
 | **User** | Xem/Sửa Profile cá nhân | ❌ | ✅ | ✅ | ✅ |
 | | Quản lý toàn bộ người dùng | ❌ | ❌ | ❌ | ✅ |
-| **Building** | Tìm kiếm & Xem công khai | ✅ | ✅ | ✅ | ✅ |
+| **Property** | Tìm kiếm & Xem công khai | ✅ | ✅ | ✅ | ✅ |
 | | Tạo mới / Sửa / Xóa | ❌ | ❌ | ✅ (Của mình) | ✅ (Tất cả) |
 | **Room** | Xem chi tiết phòng | ✅ | ✅ | ✅ | ✅ |
 | | Quản lý phòng (CRUD) | ❌ | ❌ | ✅ (Của mình) | ✅ (Tất cả) |

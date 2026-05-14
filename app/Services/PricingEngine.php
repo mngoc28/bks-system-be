@@ -29,11 +29,11 @@ final class PricingEngine
         $totalAmount = 0;
         $breakdown = [];
 
-        // Fetch active rules for this room or its building
+        // Fetch active rules for this room or its property
         $rules = PriceRule::where(function ($query) use ($room) {
                 $query->where('room_id', $room->id)
                       ->orWhere(function ($q) use ($room) {
-                          $q->where('building_id', $room->building_id)
+                          $q->where('property_id', $room->property_id)
                             ->whereNull('room_id');
                       });
         })
@@ -49,7 +49,7 @@ final class PricingEngine
             $appliedRule = null;
 
             // Find the most specific rule for this day
-            // Priority: Room specific > Building specific, then latest created
+            // Priority: Room specific > Property specific, then latest created
             $matchedRule = $rules->filter(function ($rule) use ($date) {
                 $isInDateRange = $date->between($rule->start_date, $rule->end_date);
                 if (!$isInDateRange) {

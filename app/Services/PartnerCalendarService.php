@@ -106,8 +106,8 @@ final class PartnerCalendarService
 
         $bookings = Booking::query()
             ->with([
-                'room:id,building_id,title,room_number',
-                'room.building:id,name',
+                'room:id,property_id,title,room_number',
+                'room.property:id,name',
                 'user:id,name,phone',
                 'price:id,price',
             ])
@@ -141,7 +141,7 @@ final class PartnerCalendarService
     private function resolvePartnerRoomIds(int $partnerId, ?int $propertyId, ?int $roomId): array
     {
         return Room::query()
-            ->whereHas('building', static function ($q) use ($partnerId, $propertyId): void {
+            ->whereHas('property', static function ($q) use ($partnerId, $propertyId): void {
                 $q->where('user_id', $partnerId);
                 if ($propertyId !== null) {
                     $q->where('id', $propertyId);
@@ -187,8 +187,8 @@ final class PartnerCalendarService
             'status'         => (int) $booking->status,
             'stay_status'    => $booking->stay_status,
             'confirmed_at'   => $booking->confirmed_at,
-            'building_id'    => $room ? (int) $room->building_id : null,
-            'building_name'  => $room?->building?->name,
+            'property_id'    => $room ? (int) $room->property_id : null,
+            'property_name'  => $room?->property?->name,
             'room_label'     => $roomLabel,
             'room_title'     => $room?->title,
             'guest_name'     => $user?->name,

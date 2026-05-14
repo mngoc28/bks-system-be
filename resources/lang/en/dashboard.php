@@ -28,7 +28,7 @@ return [
         'bookings_per_month_fetch_failed'   => 'Failed to fetch bookings per month',
         'revenue_per_month_fetched'         => 'Revenue per month fetched successfully',
         'revenue_per_month_fetch_failed'    => 'Failed to fetch revenue per month',
-        'all_buildings_bookings_count_fetched' => 'Bookings count for all buildings fetched successfully',
-        'all_buildings_bookings_count_fetch_failed' => 'Failed to fetch bookings count for all buildings',
+        'all_properties_bookings_count_fetched' => 'Bookings count for all properties fetched successfully',
+        'all_properties_bookings_count_fetch_failed' => 'Failed to fetch bookings count for all properties',
     ],
 ];

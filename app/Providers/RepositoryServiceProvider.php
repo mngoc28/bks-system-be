@@ -7,8 +7,8 @@ use App\Repositories\AmenityRepository\AmenityRepositoryInterface;
 use App\Repositories\BaseRepository;
 use App\Repositories\BookingRepository\BookingRepository;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
-use App\Repositories\BuildingRepository\BuildingsRepository;
-use App\Repositories\BuildingRepository\BuildingsRepositoryInterface;
+use App\Repositories\PropertyRepository\PropertyRepository;
+use App\Repositories\PropertyRepository\PropertyRepositoryInterface;
 use App\Repositories\ProvincesRepository\ProvincesRepository;
 use App\Repositories\ProvincesRepository\ProvincesRepositoryInterface;
 use App\Repositories\RepositoryInterface;
@@ -32,8 +32,8 @@ use App\Repositories\ChatbotAnswerRepository\ChatbotAnswerRepository;
 use App\Repositories\ChatbotAnswerRepository\ChatbotAnswerRepositoryInterface;
 use App\Repositories\ChatbotQuestionRepository\ChatbotQuestionRepository;
 use App\Repositories\ChatbotQuestionRepository\ChatbotQuestionRepositoryInterface;
-use App\Repositories\BuildingImageRepository\BuildingImageRepository;
-use App\Repositories\BuildingImageRepository\BuildingImageRepositoryInterface;
+use App\Repositories\PropertyImageRepository\PropertyImageRepository;
+use App\Repositories\PropertyImageRepository\PropertyImageRepositoryInterface;
 use App\Repositories\CouponRepository\CouponRepository;
 use App\Repositories\CouponRepository\CouponRepositoryInterface;
 use App\Repositories\NewRoomRepository\NewRoomRepository;
@@ -76,8 +76,8 @@ class RepositoryServiceProvider extends ServiceProvider
             UsersRepository::class
         );
         $this->app->singleton(
-            BuildingsRepositoryInterface::class,
-            BuildingsRepository::class
+            PropertyRepositoryInterface::class,
+            PropertyRepository::class
         );
         $this->app->singleton(
             ServiceRepositoryInterface::class,
@@ -132,8 +132,8 @@ class RepositoryServiceProvider extends ServiceProvider
             ChatbotAnswerRepository::class
         );
         $this->app->singleton(
-            BuildingImageRepositoryInterface::class,
-            BuildingImageRepository::class
+            PropertyImageRepositoryInterface::class,
+            PropertyImageRepository::class
         );
         $this->app->singleton(
             CouponRepositoryInterface::class,

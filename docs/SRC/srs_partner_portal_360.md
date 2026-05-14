@@ -1,4 +1,4 @@
-# Partner Portal 360 - Software Requirements Specification (SRS)
+﻿# Partner Portal 360 - Software Requirements Specification (SRS)
 
 ## Overview
 
@@ -200,16 +200,16 @@ Tại thời điểm phân tích, thư mục canonical `docs/SRC/` chưa có fil
 
 | Screen | Field | Type | Required | Default | Validation | Source |
 |---|---|---|---|---|---|---|
-| Dashboard | Property filter | Select | No | All properties | Chỉ gồm property thuộc Partner | `buildings.user_id` |
+| Dashboard | Property filter | Select | No | All properties | Chỉ gồm property thuộc Partner | `properties.user_id` |
 | Dashboard | Date range | Date range | No | 30 ngày gần nhất | `start_date <= end_date`, tối đa 12 tháng | UI |
 | Bookings | Keyword | Text | No | Empty | Tìm theo tên khách, số điện thoại, phòng, tòa | API query |
 | Bookings | Status | Select | No | All | pending/confirmed/cancelled/completed | `bookings.status` |
 | Bookings | Stay status | Select | No | All | pending/checked_in/checked_out/no_show | `bookings.stay_status` |
-| Bookings | Property | Select | No | All | Thuộc Partner hiện tại | `buildings.id` |
+| Bookings | Property | Select | No | All | Thuộc Partner hiện tại | `properties.id` |
 | Bookings | Room | Select | No | All | Thuộc property đã chọn | `rooms.id` |
 | Bookings | Check-in date range | Date range | No | Empty | Ngày hợp lệ | `bookings.start_date` |
 | Bookings | Cancellation reason | Textarea | Yes khi cancel | Empty | 5-500 ký tự | `bookings.cancellation_reason` |
-| Calendar | Property view | Select | No | All properties | All hoặc property thuộc Partner | `buildings.id` |
+| Calendar | Property view | Select | No | All properties | All hoặc property thuộc Partner | `properties.id` |
 | Calendar | Room filter | Select | No | All rooms | Thuộc property/Partner | `rooms.id` |
 | Calendar | View mode | Select/Tabs | No | Month | month/week/timeline | UI state |
 | Calendar | Block type | Select | Yes khi block | maintenance | maintenance/owner_use/off_market | `room_blocks.block_type` |
@@ -218,7 +218,7 @@ Tại thời điểm phân tích, thư mục canonical `docs/SRC/` chưa có fil
 
 ## Data Rules and Cross-Screen Dependencies
 
-1. Partner chỉ được xem và xử lý booking thuộc các phòng trong `buildings.user_id = Auth::id()`.
+1. Partner chỉ được xem và xử lý booking thuộc các phòng trong `properties.user_id = Auth::id()`.
 2. Booking status dùng quy ước: `0 = pending`, `1 = confirmed`, `2 = cancelled`, `3 = completed`.
 3. Stay status dùng quy ước: `pending`, `checked_in`, `checked_out`, `no_show`.
 4. Time-to-confirm = `bookings.confirmed_at - bookings.created_at`; chỉ tính booking có `confirmed_at`.
@@ -233,11 +233,11 @@ Tại thời điểm phân tích, thư mục canonical `docs/SRC/` chưa có fil
 
 | Screen Field/Action | Table | Column | Relationship | Downstream Usage |
 |---|---|---|---|---|
-| Property filter | buildings | id, name, user_id | buildings.user_id -> users.id | Dashboard/Bookings/Calendar filter |
-| Room filter | rooms | id, building_id, room_number/title | rooms.building_id -> buildings.id | Calendar events, booking assignment |
+| Property filter | properties | id, name, user_id | properties.user_id -> users.id | Dashboard/Bookings/Calendar filter |
+| Room filter | rooms | id, property_id, room_number/title | rooms.property_id -> properties.id | Calendar events, booking assignment |
 | Booking row | bookings | id, user_id, room_id, start_date, end_date, status, stay_status | bookings.room_id -> rooms.id | Bookings list, Calendar event |
 | Booking price | room_prices | id, price, unit, deposit_amount, minimum_stay | bookings.price_id -> room_prices.id | GMV/Net revenue, long-term detection |
-| Quick confirm | bookings | status, confirmed_at | booking belongs to room/building | Dashboard KPI, Calendar update |
+| Quick confirm | bookings | status, confirmed_at | booking belongs to room/property | Dashboard KPI, Calendar update |
 | Cancel booking | bookings | status, cancelled_at, cancellation_reason | booking belongs to Partner-owned room | Audit, customer communication |
 | Timeline | booking_timeline_events | booking_id, event_type, actor_id | timeline belongs to booking | Booking detail audit |
 | Room block | room_blocks | room_id, start_date, end_date, block_type | block belongs to room | Calendar availability, conflict check |
@@ -317,7 +317,7 @@ Không có legacy source path riêng được cung cấp trong yêu cầu này. 
 
 | Table | Index | Purpose |
 |---|---|---|
-| buildings | `(user_id)` | Lọc property theo Partner |
+| properties | `(user_id)` | Lọc property theo Partner |
 | bookings | `(room_id, start_date, end_date, status)` | Check conflict và tải calendar |
 | bookings | `(status, created_at)` | Pending list và time-to-confirm |
 | bookings | `(confirmed_at)` | KPI time-to-confirm |
@@ -388,8 +388,8 @@ flowchart TD
 
 ```mermaid
 erDiagram
-  USERS ||--o{ BUILDINGS : owns
-  BUILDINGS ||--o{ ROOMS : contains
+  USERS ||--o{ PROPERTIES : owns
+  PROPERTIES ||--o{ ROOMS : contains
   ROOMS ||--o{ BOOKINGS : receives
   ROOMS ||--o{ ROOM_BLOCKS : blocks
   ROOMS ||--o{ UTILITY_FEES : has
@@ -436,3 +436,4 @@ Các hạng mục sau không thuộc SRS này và chỉ nên mở lại sau khi 
 - RBAC nội bộ Partner.
 - Partner onboarding/KYC.
 - Maintenance/Stay Services/Amenities/Marketing.
+

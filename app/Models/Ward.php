@@ -48,13 +48,11 @@ final class Ward extends Model
     }
 
     /**
-     * Get the buildings for this ward.
-     *
      * @return HasMany
      */
-    public function buildings(): HasMany
+    public function properties(): HasMany
     {
-        return $this->hasMany(Building::class, "ward_id");
+        return $this->hasMany(Property::class, 'ward_id');
     }
 
     /**

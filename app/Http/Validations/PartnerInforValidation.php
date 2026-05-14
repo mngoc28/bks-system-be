@@ -81,7 +81,7 @@ final class PartnerInforValidation
                 'id.exist' => __('partner.validation.id.exists'),
             ],
             [
-                'id' => __('building.attributes,id'),
+                'id' => __('property.attributes.id'),
             ]
         );
     }

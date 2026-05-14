@@ -45,13 +45,11 @@ final class Room extends Model
     ];
 
     /**
-     * Get the building that owns this room.
-     *
      * @return BelongsTo
      */
-    public function building(): BelongsTo
+    public function property(): BelongsTo
     {
-        return $this->belongsTo(Building::class, 'building_id');
+        return $this->belongsTo(Property::class, 'property_id');
     }
 
     /**

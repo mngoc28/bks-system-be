@@ -49,13 +49,11 @@ final class Province extends Model
     }
 
     /**
-     * Get the buildings for this province.
-     *
      * @return HasMany
      */
-    public function buildings(): HasMany
+    public function properties(): HasMany
     {
-        return $this->hasMany(Building::class, "province_id");
+        return $this->hasMany(Property::class, 'province_id');
     }
 
     /**

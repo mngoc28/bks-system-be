@@ -6,46 +6,37 @@ namespace App\Http\Controllers;
 
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Validations\BuildingsValidation;
-use App\Services\BuildingsServices;
+use App\Http\Validations\PropertiesValidation;
+use App\Services\PropertiesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class BuildingsController extends Controller
+final class PropertiesController extends Controller
 {
-    /**
-     * Building services and validation instance
-     */
-    protected BuildingsServices $buildingServices;
-    protected BuildingsValidation $buildingsValidation;
+    protected PropertiesService $propertiesService;
+    protected PropertiesValidation $propertiesValidation;
 
-    /**
-     * Constructor
-     *
-     * @param BuildingsServices $buildingServices
-     * @param BuildingsValidation $buildingsValidation
-     */
     public function __construct(
-        BuildingsServices $buildingServices,
-        BuildingsValidation $buildingsValidation
+        PropertiesService $propertiesService,
+        PropertiesValidation $propertiesValidation
     ) {
-        $this->buildingServices = $buildingServices;
-        $this->buildingsValidation = $buildingsValidation;
+        $this->propertiesService     = $propertiesService;
+        $this->propertiesValidation = $propertiesValidation;
     }
 
     /**
-     * Get all buildings
+     * List/search properties (paginated).
      *
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $validator = $this->buildingsValidation->searchBuildingValidation($request);
+        $validator = $this->propertiesValidation->searchPropertyValidation($request);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingServices->getAllOrSearchBuildings($request);
+        $result = $this->propertiesService->getAllOrSearchProperties($request);
 
         if (!$result["success"]) {
             return $this->errorResponse($result["message"], null, HttpStatus::BAD_REQUEST);
@@ -55,20 +46,20 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Get building by ID
+     * Get property by ID
      *
      * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
-        $validator = $this->buildingsValidation->detailBuildingValidation($id);
+        $validator = $this->propertiesValidation->detailPropertyValidation($id);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingServices->getBuildingById($id);
+        $result = $this->propertiesService->getPropertyById($id);
 
         if (!$result["success"]) {
             $statusCode = $result["data"] === null
@@ -81,7 +72,7 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Create new building
+     * Create new property
      *
      * @param Request $request
      * @return JsonResponse
@@ -93,13 +84,13 @@ final class BuildingsController extends Controller
             $request->merge(['user_id' => auth()->id()]);
         }
 
-        $validator = $this->buildingsValidation->createBuildingValidation($request);
+        $validator = $this->propertiesValidation->createPropertyValidation($request);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingServices->createBuilding($request->all());
+        $result = $this->propertiesService->createProperty($request->all());
 
         if (!$result["success"]) {
             return $this->errorResponse($result["message"], null, HttpStatus::BAD_REQUEST);
@@ -109,7 +100,7 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Update building
+     * Update property
      *
      * @param Request $request
      * @param int $id
@@ -117,7 +108,7 @@ final class BuildingsController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $validator = $this->buildingsValidation->updateBuildingValidation($request, $id);
+        $validator = $this->propertiesValidation->updatePropertyValidation($request, $id);
 
         if ($validator->fails()) {
             return $this->validateError(
@@ -127,7 +118,7 @@ final class BuildingsController extends Controller
             );
         }
 
-        $result = $this->buildingServices->updateBuilding($id, $request->all());
+        $result = $this->propertiesService->updateProperty($id, $request->all());
 
         if (!$result["success"]) {
             $statusCode =
@@ -141,14 +132,14 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Delete building
+     * Delete property
      *
      * @param int $id
      * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
     {
-        $validator = $this->buildingsValidation->deleteBuildingValidation($id);
+        $validator = $this->propertiesValidation->deletePropertyValidation($id);
         if ($validator->fails()) {
             return $this->validateError(
                 $validator->errors(),
@@ -156,7 +147,7 @@ final class BuildingsController extends Controller
                 HttpStatus::VALIDATION_ERROR
             );
         }
-        $result = $this->buildingServices->deleteBuilding($id);
+        $result = $this->propertiesService->deleteProperty($id);
 
         if (!$result["success"]) {
             $statusCode =
@@ -170,15 +161,15 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Get bookings by building ID
+     * Get bookings by property ID
      *
      * @param int $id
      * @param Request $request
      * @return JsonResponse
      */
-    public function getBookingsByBuilding(int $id, Request $request): JsonResponse
+    public function getBookingsByProperty(int $id, Request $request): JsonResponse
     {
-        $validator = $this->buildingsValidation->getBookingsByBuildingValidation($id, $request);
+        $validator = $this->propertiesValidation->getBookingsByPropertyValidation($id, $request);
 
         if ($validator->fails()) {
             return $this->validateError(
@@ -188,7 +179,7 @@ final class BuildingsController extends Controller
             );
         }
 
-        $result = $this->buildingServices->getBookingsByBuilding($id, $request);
+        $result = $this->propertiesService->getBookingsByProperty($id, $request);
 
         if (!$result["success"]) {
             $statusCode =
@@ -202,13 +193,13 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Get all buildings types
+     * Get all property types
      *
      * @return JsonResponse
      */
-    public function getAllBuildingsTypes(): JsonResponse
+    public function getAllPropertyTypes(): JsonResponse
     {
-        $result = $this->buildingServices->getAllBuildingsTypes();
+        $result = $this->propertiesService->getAllPropertyTypes();
 
         if (!$result["success"]) {
             return $this->errorResponse(
@@ -222,13 +213,13 @@ final class BuildingsController extends Controller
     }
 
     /**
-     * Get all buildings without pagination
+     * Get all property names (no pagination)
      *
      * @return JsonResponse
      */
-    public function getAllBuildingNames(): JsonResponse
+    public function getAllPropertyNames(): JsonResponse
     {
-        $result = $this->buildingServices->getAllBuildingNames();
+        $result = $this->propertiesService->getAllPropertyNames();
 
         if (!$result["success"]) {
             return $this->errorResponse(

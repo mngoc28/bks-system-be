@@ -12,7 +12,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
  * Authorization rules for partner contract lifecycle endpoints (renewal
  * reminder, termination, expiring-soon listing).
  *
- * Ownership flows through `contract.booking.room.building.user_id`. Admin is
+ * Ownership flows through `contract.booking.room.property.user_id`. Admin is
  * bypassed via `before()` mirroring the existing BookingPolicy/RoomBlockPolicy
  * style.
  */
@@ -30,7 +30,7 @@ final class ContractPolicy
     }
 
     /**
-     * Partner can view a contract belonging to their building.
+     * Partner can view a contract belonging to their property.
      */
     public function view(User $user, Contract $contract): bool
     {
@@ -62,11 +62,11 @@ final class ContractPolicy
 
         $booking = $contract->relationLoaded('booking') ? $contract->booking : $contract->booking()->first();
         $room = $booking?->relationLoaded('room') ? $booking->room : $booking?->room()->first();
-        $building = $room?->relationLoaded('building') ? $room->building : $room?->building()->first();
-        if ($building === null) {
+        $property = $room?->relationLoaded('property') ? $room->property : $room?->property()->first();
+        if ($property === null) {
             return false;
         }
 
-        return (int) $building->user_id === (int) $user->id;
+        return (int) $property->user_id === (int) $user->id;
     }
 }

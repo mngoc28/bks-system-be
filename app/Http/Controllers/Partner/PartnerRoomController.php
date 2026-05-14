@@ -103,24 +103,25 @@ final class PartnerRoomController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        // Normalize: accept either 'name'/'buildingId' (frontend) or 'title'/'building_id' (backend)
-        $buildingId = $request->input('building_id') ?? $request->input('buildingId');
+        // Normalize: accept propertyId (camelCase) or property_id / legacy propertyId / property_id
+        $propertyId = $request->input('property_id')
+            ?? $request->input('propertyId');
         $title      = $request->input('title') ?? $request->input('name');
 
         // Simple validation for partner portal form
         $validator = \Illuminate\Support\Facades\Validator::make(
             array_merge($request->all(), [
-                'building_id' => $buildingId,
+                'property_id' => $propertyId,
                 'title'       => $title,
             ]),
             [
-                'building_id' => ['required', 'integer', 'exists:buildings,id'],
+                'property_id' => ['required', 'integer', 'exists:properties,id'],
                 'title'       => ['required', 'string', 'max:255'],
                 'area'        => ['nullable', 'numeric', 'min:0'],
             ],
             [
-                'building_id.required' => 'Vui lòng chọn bất động sản.',
-                'building_id.exists'   => 'Bất động sản không tồn tại.',
+                'property_id.required' => 'Vui lòng chọn bất động sản.',
+                'property_id.exists'   => 'Bất động sản không tồn tại.',
                 'title.required'       => 'Vui lòng nhập tên phòng.',
             ]
         );
@@ -131,7 +132,7 @@ final class PartnerRoomController extends Controller
 
         // Build request-compatible data merging defaults for required fields
         $request->merge([
-            'building_id' => (int) $buildingId,
+            'property_id' => (int) $propertyId,
             'title'       => $title,
             'room_number' => $title, // use title as room number if not provided
             'floor_number'=> $request->input('floor_number', 1),

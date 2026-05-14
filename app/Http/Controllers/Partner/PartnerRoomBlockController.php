@@ -130,7 +130,7 @@ final class PartnerRoomBlockController extends Controller
     private function resolvePartnerRoomIds(int $partnerId, ?int $propertyId, ?int $roomId): array
     {
         return Room::query()
-            ->whereHas('building', static function ($q) use ($partnerId, $propertyId): void {
+            ->whereHas('property', static function ($q) use ($partnerId, $propertyId): void {
                 $q->where('user_id', $partnerId);
                 if ($propertyId !== null) {
                     $q->where('id', $propertyId);

@@ -28,7 +28,7 @@ return [
         'bookings_per_month_fetch_failed'           => 'Lấy số lượng đặt phòng theo tháng thất bại',
         'revenue_per_month_fetched'                 => 'Lấy doanh thu theo tháng thành công',
         'revenue_per_month_fetch_failed'            => 'Lấy doanh thu theo tháng thất bại',
-        'all_buildings_bookings_count_fetched'      => 'Lấy số lượng đặt phòng của tất cả các tòa nhà thành công',
-        'all_buildings_bookings_count_fetch_failed' => 'Lấy số lượng đặt phòng của tất cả các tòa nhà thất bại',
+        'all_properties_bookings_count_fetched'      => 'Lấy số lượng đặt phòng của tất cả cơ sở thành công',
+        'all_properties_bookings_count_fetch_failed' => 'Lấy số lượng đặt phòng của tất cả cơ sở thất bại',
     ],
 ];

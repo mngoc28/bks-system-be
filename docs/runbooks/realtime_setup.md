@@ -1,4 +1,4 @@
-# Runbook — Realtime Setup (Pusher protocol)
+﻿# Runbook — Realtime Setup (Pusher protocol)
 
 Tài liệu này hướng dẫn cấu hình WebSocket cho Partner Portal 360 (Phase 2).
 Hệ thống dùng giao thức Pusher; có thể chạy với **Soketi** (self-host) ở
@@ -53,7 +53,7 @@ Test broadcast từ Tinker:
 ```bash
 php artisan tinker
 >>> $b = App\Models\Booking::first();
->>> broadcast(new App\Events\BookingConfirmed($b, $b->room->building->user_id, $b->room->building_id, 1));
+>>> broadcast(new App\Events\BookingConfirmed($b, $b->room->property->user_id, $b->room->property_id, 1));
 ```
 
 ---
@@ -109,7 +109,7 @@ Theo Pusher Cloud Free (sandbox tier, 2026):
 | Channel                         | Auth                              | Mục đích             |
 | ------------------------------- | --------------------------------- | -------------------- |
 | `private-partner.{partnerId}`   | `Auth::id() === $partnerId`       | Booking events scope partner |
-| `private-property.{propertyId}` | Owner of `Building::$propertyId`  | Calendar events theo property (Phase 3+) |
+| `private-property.{propertyId}` | Owner of `Property::$propertyId`  | Calendar events theo property (Phase 3+) |
 
 Endpoint auth: **`POST /api/v1/broadcasting/auth`** (middleware `jwt.auth`).
 
@@ -124,3 +124,4 @@ Endpoint auth: **`POST /api/v1/broadcasting/auth`** (middleware `jwt.auth`).
 | `/broadcasting/auth` trả 403                        | Channel callback trả false → user không sở hữu partner/property tương ứng. Đúng theo SRS AC #10.     |
 | Soketi container restart loop                       | Port 6001 đang bị chiếm. Đổi port mapping hoặc kill process khác.                                    |
 | Message size > 10KB                                 | Slim payload theo `broadcastWith()` — không gửi PII, không gửi nested relations.                     |
+

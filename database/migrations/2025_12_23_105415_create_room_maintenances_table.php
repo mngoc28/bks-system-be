@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('room_maintenances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('room_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('property_id')->constrained('buildings')->cascadeOnDelete();
+            $table->foreignId('property_id')->constrained('properties')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('maintenance_type', ['scheduled', 'emergency']);

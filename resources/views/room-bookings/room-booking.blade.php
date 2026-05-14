@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -196,8 +196,8 @@
 
             <!-- Room Info -->
             <div class="highlight-box">
-                <strong>{{ $data['room_title'] }} - {{ $data['building_name'] }}</strong><br>
-                Địa chỉ: {{ $data['building_address'] }}<br>
+                <strong>{{ $data['room_title'] }} - {{ $data['property_name'] }}</strong><br>
+                Địa chỉ: {{ $data['property_address'] }}<br>
                 Mã đặt phòng: <strong>{{ $data['booking_code'] }}</strong><br>
                 Từ ngày: <strong>{{ $data['start_time'] }}</strong><br>
                 Đến ngày: <strong>{{ $data['end_time'] }}</strong><br>
@@ -212,14 +212,13 @@
                 <div class="section-title">Đăng ký thông tin</div>
                 
                 <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                    @if(!empty($data['is_first_time']))
                     <p style="margin: 0 0 15px 0; color: #4b5563;">
                         Xem các đơn đặt phòng của bạn tại URL bên dưới.
                     </p>
                     <a href="{{ $data['bookings_url'] }}"
                         >{{ $data['bookings_url'] }}
                     </a>
-                
-                    @if(!empty($data['is_first_time']))
                     <br>
                     <p style="margin: 15px 0 5px 0;">
                         Nếu bạn chưa thiết lập mật khẩu, vui lòng thiết lập mật khẩu tại URL bên dưới.
@@ -228,10 +227,18 @@
                         {{ config('app.url_frontend') }}/set-password/{{ $data['token'] }}
                     </a>
                     @else
-                    <br>
-                    <p style="margin: 15px 0 5px 0;">Tài khoản của bạn đã tồn tại, vui lòng đăng nhập hệ thống để quản lý lịch sử đặt phòng:</p>
+                    <p style="margin: 0 0 15px 0; color: #4b5563;">
+                        Tài khoản của bạn đã tồn tại. Vui lòng đăng nhập hệ thống trước để xem và quản lý lịch sử đặt phòng:
+                    </p>
                     <a href="{{ config('app.url_frontend') }}/bks-stay/login">
                         {{ config('app.url_frontend') }}/bks-stay/login
+                    </a>
+                    <br>
+                    <p style="margin: 15px 0 5px 0; color: #4b5563;">
+                        Sau khi đăng nhập, xem các đơn đặt phòng của bạn tại URL bên dưới.
+                    </p>
+                    <a href="{{ $data['bookings_url'] }}"
+                        >{{ $data['bookings_url'] }}
                     </a>
                     @endif
                 </div>
@@ -338,3 +345,4 @@
     </div>
 </body>
 </html>
+

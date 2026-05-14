@@ -6,49 +6,39 @@ namespace App\Http\Controllers;
 
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Validations\BuildingImageValidation;
-use App\Services\BuildingImageService;
+use App\Http\Validations\PropertyImageValidation;
+use App\Services\PropertyImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class BuildingImageController extends Controller
+final class PropertyImageController extends Controller
 {
-    /**
-     * BuildingImage service and validation instance
-     */
-    protected BuildingImageService $buildingImageService;
-    protected BuildingImageValidation $buildingImageValidation;
+    protected PropertyImageService $propertyImageService;
+    protected PropertyImageValidation $propertyImageValidation;
 
-    /**
-     * Constructor
-     *
-     * @param BuildingImageService $buildingImageService
-     * @param BuildingImageValidation $buildingImageValidation
-     */
     public function __construct(
-        BuildingImageService $buildingImageService,
-        BuildingImageValidation $buildingImageValidation
+        PropertyImageService $propertyImageService,
+        PropertyImageValidation $propertyImageValidation
     ) {
-        $this->buildingImageService = $buildingImageService;
-        $this->buildingImageValidation = $buildingImageValidation;
+        $this->propertyImageService     = $propertyImageService;
+        $this->propertyImageValidation = $propertyImageValidation;
     }
 
     /**
-     * Get images by building ID
+     * Get images by property ID
      *
-     * @param Request $request
-     * @param int $buildingId
+     * @param int $propertyId
      * @return JsonResponse
      */
-    public function getByBuildingId(int $buildingId): JsonResponse
+    public function getByPropertyId(int $propertyId): JsonResponse
     {
-        $validator = $this->buildingImageValidation->getByBuildingIdValidation($buildingId);
+        $validator = $this->propertyImageValidation->getByPropertyIdValidation($propertyId);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingImageService->getByBuildingId($buildingId);
+        $result = $this->propertyImageService->getByPropertyId($propertyId);
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -58,43 +48,43 @@ final class BuildingImageController extends Controller
     }
 
     /**
-     * Show building image by ID
+     * Show property image by ID
      *
      * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
-        $validator = $this->buildingImageValidation->showValidation($id);
+        $validator = $this->propertyImageValidation->showValidation($id);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingImageService->show($id);
+        $result = $this->propertyImageService->show($id);
 
         if (!$result) {
-            return $this->errorResponse(__('building_image.messages.find_failed'), null, HttpStatus::NOT_FOUND);
+            return $this->errorResponse(__('property_image.messages.find_failed'), null, HttpStatus::NOT_FOUND);
         }
 
-        return $this->successResponse($result, __('building_image.messages.found_successfully'));
+        return $this->successResponse($result, __('property_image.messages.found_successfully'));
     }
 
     /**
-     * Store new building image
+     * Store new property image
      *
      * @param Request $request
      * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
     {
-        $validator = $this->buildingImageValidation->storeValidation($request);
+        $validator = $this->propertyImageValidation->storeValidation($request);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingImageService->store($request->all());
+        $result = $this->propertyImageService->store($request->all());
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -104,7 +94,7 @@ final class BuildingImageController extends Controller
     }
 
     /**
-     * Update building image
+     * Update property image
      *
      * @param Request $request
      * @param int $id
@@ -112,13 +102,13 @@ final class BuildingImageController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $validator = $this->buildingImageValidation->updateValidation($request, $id);
+        $validator = $this->propertyImageValidation->updateValidation($request, $id);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingImageService->update($id, $request->all());
+        $result = $this->propertyImageService->update($id, $request->all());
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -128,20 +118,20 @@ final class BuildingImageController extends Controller
     }
 
     /**
-     * Destroy building image
+     * Destroy property image
      *
      * @param int $id
      * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
     {
-        $validator = $this->buildingImageValidation->destroyValidation($id);
+        $validator = $this->propertyImageValidation->destroyValidation($id);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        $result = $this->buildingImageService->destroy($id);
+        $result = $this->propertyImageService->destroy($id);
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -151,25 +141,25 @@ final class BuildingImageController extends Controller
     }
 
     /**
-     * Sort building images
+     * Sort property images
      *
      * @param Request $request
-     * @param int $buildingId
+     * @param int $propertyId
      * @return JsonResponse
      */
-    public function sort(Request $request, int $buildingId): JsonResponse
+    public function sort(Request $request, int $propertyId): JsonResponse
     {
-        $validator = $this->buildingImageValidation->sortValidation($request, $buildingId);
+        $validator = $this->propertyImageValidation->sortValidation($request, $propertyId);
 
         if ($validator->fails()) {
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
-        $result = $this->buildingImageService->sort($request->all(), $buildingId);
+        $result = $this->propertyImageService->sort($request->all(), $propertyId);
 
         if (!$result) {
-            return $this->errorResponse(__('building_image.messages.sort_failed'), null, HttpStatus::BAD_REQUEST);
+            return $this->errorResponse(__('property_image.messages.sort_failed'), null, HttpStatus::BAD_REQUEST);
         }
 
-        return $this->successResponse($result, __('building_image.messages.sort_successfully'));
+        return $this->successResponse($result, __('property_image.messages.sort_successfully'));
     }
 }

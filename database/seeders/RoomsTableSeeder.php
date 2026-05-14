@@ -26,12 +26,12 @@ class RoomsTableSeeder extends Seeder
             'Phòng 2 phòng ngủ cao cấp 60m² với thiết kế sang trọng. Phòng ngủ master có giường King size, tủ quần áo walk-in, phòng tắm riêng with bồn tắm jacuzzi. Phòng ngủ phụ có giường đôi, tủ quần áo, bàn làm việc. Phòng khách lớn với sofa da cao cấp, bàn ăn 6 người, TV 75 inch Smart TV 4K, kệ rượu. Bếp hiện đại: tủ lạnh side-by-side, máy rửa bát, máy pha cà phê, lò nướng, bếp từ 5 lò. 2 phòng tắm đầy đủ tiện nghi. Ban công lớn với không gian thư giãn, view đẹp. Hệ thống smart home, điều hòa trung tâm, sàn gỗ cao cấp. Phù hợp cho gia đình lớn hoặc khách VIP.',
         ];
 
-        $buildings = DB::table('buildings')
-            ->join('property_types', 'buildings.property_type_id', '=', 'property_types.id')
-            ->select('buildings.id', 'property_types.slug')
+        $properties = DB::table('properties')
+            ->join('property_types', 'properties.property_type_id', '=', 'property_types.id')
+            ->select('properties.id', 'property_types.slug')
             ->get();
 
-        if ($buildings->isEmpty()) {
+        if ($properties->isEmpty()) {
             return;
         }
 
@@ -47,8 +47,8 @@ class RoomsTableSeeder extends Seeder
         ];
 
         foreach (range(1, 200) as $i) {
-            $building = $faker->randomElement($buildings->toArray());
-            $slug = $building->slug;
+            $property = $faker->randomElement($properties->toArray());
+            $slug = $property->slug;
 
             $possibleTitles = $typeRoomTitles[$slug] ?? ['Phòng Cao Cấp', 'Phòng Tiêu Chuẩn', 'Phòng Sang Trọng'];
             $title = $faker->randomElement($possibleTitles) . ' ' . $faker->numberBetween(101, 999);
@@ -64,7 +64,7 @@ class RoomsTableSeeder extends Seeder
             };
 
             DB::table('rooms')->insert([
-                'building_id' => $building->id,
+                'property_id' => $property->id,
                 'title' => $title,
                 'room_number' => 'R' . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'deposit' => $faker->numberBetween(500000, 10000000),

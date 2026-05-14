@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Events\RoomBlockChanged;
-use App\Models\Building;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomBlock;
 use App\Repositories\RoomBlockRepository\RoomBlockRepositoryInterface;
@@ -237,14 +237,14 @@ final class RoomBlockServiceTest extends TestCase
 
     private function makeRoom(int $roomId, int $partnerId): Room
     {
-        $building = new Building();
-        $building->id = 100;
-        $building->user_id = $partnerId;
+        $property = new Property();
+        $property->id = 100;
+        $property->user_id = $partnerId;
 
         $room = new Room();
         $room->id = $roomId;
-        $room->building_id = 100;
-        $room->setRelation('building', $building);
+        $room->property_id = 100;
+        $room->setRelation('property', $property);
 
         return $room;
     }
