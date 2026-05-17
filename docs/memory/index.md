@@ -1,4 +1,16 @@
-﻿# Repository Memory Index
+# Repository Memory Index
+
+## Chính sách hủy đặt phòng (BCP)
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-05-14 | QC testcase TC002 (BCP): `docs/test-cases/testcase_002.md` — 36+ TC API/FE, validation matrix, traceability BCP/F-BCP, smoke S-01–S-05 | `docs/test-cases/testcase_002.md`, `docs/SRC/srs_booking_cancellation_policy.md`, `docs/plans/plan_002.md` |
+| 2026-05-14 | Phase B5 BE (P002): policy tier resolve + seed % placeholder + metrics SLA/stale + route admin `booking-cancellation-metrics`; unit test matcher không DB | `app/Services/{CancellationPolicyResolver,CancellationPolicyResolution,BookingCancellationMetricsService}.php`, `app/Support/Bcp/CancellationPolicyTierMatcher.php`, `app/Models/CancellationPolicyTier.php`, `database/seeders/CancellationPolicyBaselineSeeder.php`, `app/Http/Controllers/BookingCancellationReportController.php`, `routes/api.php`, `tests/Unit/Support/Bcp/CancellationPolicyTierMatcherTest.php`, `docs/plans/plan_002.md`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| 2026-05-14 | Phase B3 FE (Partner BCP inbox): `bks-system-fe` route `/partner/cancellation-requests`, `partnerService` BCP endpoints, `CancellationRequests.tsx`, Echo `.cancellation_request.updated` qua `useBookingsRealtime` + `RealtimeNotifyProvider` | `bks-system-fe/src/pages/Partner/CancellationRequests.tsx`, `bks-system-fe/src/hooks/Partner/useBookingsRealtime.ts`, `bks-system-fe/src/services/partnerService.ts`, `docs/plans/plan_002.md` |
+| 2026-05-14 | Phase B3 BE (Partner inbox BCP): repository + service approve/reject + controller + policy + broadcast `CancellationRequestUpdated` + KPI/calendar; unit tests policy/timeline; api-doc `partner-cancellation-requests.js` | `api-doc/partner-cancellation-requests.js`, `app/Services/PartnerCancellationRequestService.php`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| 2026-05-14 | Implementation Plan P002: phase B1–B5 (schema, Stay cancel/cancel-request, Partner inbox, T6 sync, policy/B7), flag `BCP_CANCELLATION_V1`, handoff stack-task/testcase_002/review/report | `docs/plans/plan_002.md`, `docs/designs/design_002.md`, `docs/SRC/srs_booking_cancellation_policy.md` |
+| 2026-05-14 | System Design D002: kiến trúc API Stay+Partner, service layer, enum status 4, ConflictChecker, cooldown/env, bảng `cancellation_reason_codes`, cột `previous_booking_status` trên request | `docs/designs/design_002.md`, `docs/databases_docs/db_overview_etc_core_schema.md`, `docs/SRC/srs_booking_cancellation_policy.md` |
+| 2026-05-14 | SRS hủy/yêu cầu hủy theo bậc trạng thái; `pending_cancellation`; Partner duyệt; T6 sync local; T7 cooldown; B7 metric; DB đề xuất `booking_cancellation_requests` + policy tiers | `docs/leads/lead_260513_booking-cancellation-policy.md`, `docs/SRC/srs_booking_cancellation_policy.md`, `docs/databases_docs/db_overview_etc_core_schema.md`, `docs/SRC/srs_partner_portal_360.md` |
 
 ## Partner Portal 360
 

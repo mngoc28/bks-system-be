@@ -557,6 +557,12 @@ final class DashboardService
             $cancelledBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
                 'status' => 2 // Cancelled
             ]);
+            $completedBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
+                'status' => 3 // Completed
+            ]);
+            $pendingCancellationCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
+                'status' => 4 // Pending Cancellation
+            ]);
 
             return [
                 "success" => true,
@@ -569,6 +575,8 @@ final class DashboardService
                     "pendingBookingsCount" => (int) $pendingBookingsCount,
                     "confirmedBookingsCount" => (int) $confirmedBookingsCount,
                     "cancelledBookingsCount" => (int) $cancelledBookingsCount,
+                    "completedBookingsCount" => (int) $completedBookingsCount,
+                    "pendingCancellationCount" => (int) $pendingCancellationCount,
                     "todayCheckInCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
                         'start_date' => now()->format('Y-m-d'),
                         'status' => 1 // Confirmed
@@ -581,6 +589,7 @@ final class DashboardService
                         'status' => 1, // Confirmed
                         'stay_status' => 'checked_in'
                     ]),
+                    "totalBookingsCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId),
                 ],
                 "message" => __("dashboard.messages.stats_fetched_successfully"),
             ];

@@ -56,6 +56,8 @@ use App\Repositories\BookingTimelineRepository\BookingTimelineRepository;
 use App\Repositories\BookingTimelineRepository\BookingTimelineRepositoryInterface;
 use App\Repositories\RoomBlockRepository\RoomBlockRepository;
 use App\Repositories\RoomBlockRepository\RoomBlockRepositoryInterface;
+use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationRequestRepository;
+use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationRequestRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -170,6 +172,10 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             RoomBlockRepositoryInterface::class,
             RoomBlockRepository::class
+        );
+        $this->app->singleton(
+            PartnerCancellationRequestRepositoryInterface::class,
+            PartnerCancellationRequestRepository::class
         );
     }
 

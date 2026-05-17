@@ -15,7 +15,8 @@ use Illuminate\Support\Collection;
  * Quy tắc:
  *   - Hai khoảng `[a,b)` và `[c,d)` xung đột khi `a < d AND c < b`
  *     (end_date là exclusive — check-out trùng check-in là back-to-back, KHÔNG conflict).
- *   - Booking với status ∈ {CANCELLED, COMPLETED} bị loại trừ.
+ *   - Booking với status ∈ {CANCELLED, COMPLETED} bị loại trừ. Trạng thái
+ *     `PENDING_CANCELLATION` (4) vẫn giữ phòng — vẫn được tính conflict-active.
  *   - Room block luôn được tính (không có khái niệm "đã huỷ" cho room block;
  *     muốn bỏ thì xoá bản ghi).
  *

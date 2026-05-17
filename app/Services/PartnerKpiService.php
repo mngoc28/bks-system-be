@@ -233,7 +233,8 @@ class PartnerKpiService
      * Compute occupancy per day for the last 30 days, including today.
      *
      * Occupancy is based on distinct rooms with a confirmed/completed booking
-     * overlapping the date. Cancelled bookings are ignored.
+     * overlapping the date, plus bookings in **pending_cancellation** (still
+     * holding the room). Cancelled bookings are ignored.
      *
      * @return array<int, array{date: string, occupancyRate: float}>
      */
@@ -250,6 +251,7 @@ class PartnerKpiService
             ->whereIn('bookings.status', [
                 BookingStatus::CONFIRMED->value,
                 BookingStatus::COMPLETED->value,
+                BookingStatus::PENDING_CANCELLATION->value,
             ])
             ->where('bookings.start_date', '<=', $rangeEnd->toDateString())
             ->where('bookings.end_date', '>', $rangeStart->toDateString())

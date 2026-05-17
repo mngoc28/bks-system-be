@@ -51,6 +51,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.note',
             'partner.name as partner_name',
             'bookings.created_at',
+            'bookings.stay_status',
         );
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
@@ -387,7 +388,11 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
         /** @var \App\Models\Booking|null $booking */
         $booking = $this->model->with(['room', 'room.property'])
             ->where('user_id', $userId)
-            ->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+            ->whereIn('status', [
+                BookingStatus::PENDING->value,
+                BookingStatus::CONFIRMED->value,
+                BookingStatus::PENDING_CANCELLATION->value,
+            ])
             ->orderBy('start_date', 'asc')
             ->first();
 
@@ -472,6 +477,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.note',
             'partner.name as partner_name',
             'bookings.created_at',
+            'bookings.stay_status',
         );
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
@@ -485,12 +491,43 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             $query->where('bookings.status', $request->status);
         }
 
-        $query->orderBy('bookings.id', 'desc');
+        if ($request->filled('stay_status')) {
+            $query->where('bookings.stay_status', $request->stay_status);
+        }
 
-        $page    = $request->input('page', config('const.DEFAULT_PAGE'));
-        $perPage = $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('users.name', 'like', "%{$keyword}%")
+                    ->orWhere('users.phone', 'like', "%{$keyword}%")
+                    ->orWhere('rooms.room_number', 'like', "%{$keyword}%")
+                    ->orWhere('properties.name', 'like', "%{$keyword}%");
+            });
+        }
 
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        if ($request->filled('start_date')) {
+            $query->whereDate('bookings.start_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('bookings.end_date', '<=', $request->end_date);
+        }
+
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'desc');
+
+        $allowedSortFields = ['id', 'start_date', 'end_date', 'status', 'created_at'];
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'id';
+        }
+        if (!in_array(strtolower($sortDirection), ['asc', 'desc'])) {
+            $sortDirection = 'desc';
+        }
+
+        $query->orderBy('bookings.' . $sortField, $sortDirection);
+
+        $perPage = (int) $request->input('per_page', 10);
+        return $query->paginate($perPage);
     }
 
     /**

@@ -52,16 +52,18 @@ return new class extends Migration {
             $table->index('block_type', 'idx_rb_block_type');
         });
 
-        DB::statement(
-            'ALTER TABLE room_blocks
-                ADD CONSTRAINT chk_rb_dates
-                CHECK (end_date >= start_date)'
-        );
-        DB::statement(
-            "ALTER TABLE room_blocks
-                ADD CONSTRAINT chk_rb_block_type
-                CHECK (block_type IN ('maintenance','owner_use','off_market'))"
-        );
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement(
+                'ALTER TABLE room_blocks
+                    ADD CONSTRAINT chk_rb_dates
+                    CHECK (end_date >= start_date)'
+            );
+            DB::statement(
+                "ALTER TABLE room_blocks
+                    ADD CONSTRAINT chk_rb_block_type
+                    CHECK (block_type IN ('maintenance','owner_use','off_market'))"
+            );
+        }
     }
 
     /**

@@ -44,6 +44,12 @@ return [
             'string'   => 'Phone must be a valid string',
             'max'      => 'Phone must not exceed 20 characters',
         ],
+        'booking_code' => [
+            'required' => 'Booking code is required',
+            'string'   => 'Booking code is invalid',
+            'max'      => 'Booking code is invalid',
+            'regex'    => 'Booking code must look like RM-YYYY-XXXXXX (as in your confirmation email).',
+        ],
         'price_id' => [
             'required' => 'Price ID is required',
             'integer'  => 'Price ID must be an integer',
@@ -85,6 +91,8 @@ return [
         'booking_confirmed_or_cancelled' => 'Booking can only be confirmed or cancelled when pending!',
         'already_cancelled'      => 'This booking has already been cancelled!',
         'already_confirmed'      => 'This booking has already been confirmed!',
+        'confirm_blocked_pending_cancellation' => 'Cannot confirm while a guest cancellation request is '
+            . 'pending partner review.',
         'confirmed_successfully' => 'Booking confirmed successfully!',
         'bulk_confirm_completed' => 'Bulk confirm processed.',
         'bulk_cancel_completed'  => 'Bulk cancel processed.',
@@ -101,7 +109,41 @@ return [
         'unauthorized'           => 'You are not authorized to perform this action!',
         'unauthorized_staff_action' => 'Staff can only manage bookings for their assigned properties!',
         'user_booking_created_successfully' => 'Booking created successfully! Please check your email for details.',
+        'lookup_not_found'       => 'No booking matches the email and code entered.',
+        'lookup_retrieved'       => 'Booking information retrieved.',
         'create_user_failed'     => 'Failed to create user for booking!',
         'room_in_private'        => 'This is a private room and cannot be booked!',
+        'partner_cancel_blocked_pending_cancellation' => 'This booking has a pending guest cancellation request; '
+            . 'use the cancellation inbox flow instead of direct cancel.',
+    ],
+
+    'sync_local' => [
+        'success'                   => 'Local bookings merged successfully.',
+        'forbidden_role'            => 'Only guest (user) accounts can sync local bookings here.',
+        'fingerprint_mismatch'      => 'Fingerprint does not match room, dates, and account email.',
+        'email_mismatch'            => 'Each item email must match your logged-in email.',
+        'slot_fingerprint_conflict' => 'This stay already has different client metadata; cannot merge.',
+        'price_not_found'           => 'No valid price package found for one of the rooms.',
+        'create_failed'             => 'Could not create one of the bookings.',
+        'note_auto'                 => 'Imported from device (T6 sync-local).',
+    ],
+
+    'bcp' => [
+        'reasons_loaded'                => 'Cancellation reason codes loaded.',
+        'reason_text_required'          => 'Please enter details for the selected reason code.',
+        'stay_in_progress_no_cancel'    => 'Cancellation is not allowed after check-in, checkout, or no-show.',
+        'direct_cancel_invalid_status'  => 'Direct cancel is only allowed while the booking is pending '
+            . 'partner confirmation.',
+        'cancel_request_invalid_status' => 'A cancellation request can only be submitted for confirmed bookings.',
+        'cancel_request_already_pending'=> 'A cancellation request is already pending partner review.',
+        'cancel_request_submitted'      => 'Cancellation request submitted. The partner will review it.',
+        'cancel_request_cooldown'       => 'You recently submitted a cancellation request; please wait '
+            . 'before sending another.',
+        'idempotency_key_reuse'         => 'This idempotency key was already used; generate a new key.',
+        'partner_inbox_loaded'          => 'Cancellation requests loaded.',
+        'partner_request_approved'      => 'Cancellation request approved; booking is cancelled.',
+        'partner_request_rejected'    => 'Cancellation request rejected; booking status restored.',
+        'partner_request_not_pending' => 'This cancellation request is no longer pending.',
+        'partner_booking_not_pending_cancellation' => 'Booking is not in pending cancellation state.',
     ],
 ];

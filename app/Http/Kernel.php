@@ -75,5 +75,6 @@ class Kernel extends HttpKernel
         "jwt.auth"         => \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
         "jwt.refresh"      => \Tymon\JWTAuth\Http\Middleware\RefreshToken::class,
         "partner360"       => \App\Http\Middleware\EnsurePartner360Enabled::class,
+        "bcp.cancellation" => \App\Http\Middleware\EnsureBcpCancellationEnabled::class,
     ];
 }

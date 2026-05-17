@@ -25,6 +25,10 @@ final class BookingPolicy
     public function before(User $user, string $ability): ?bool
     {
         if ($user->role === 'admin') {
+            if (in_array($ability, ['guestCancel', 'guestCancelRequest'], true)) {
+                return null;
+            }
+
             return true;
         }
 
@@ -62,7 +66,11 @@ final class BookingPolicy
 
         return in_array(
             (int) $booking->status,
-            [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value],
+            [
+                BookingStatus::PENDING->value,
+                BookingStatus::CONFIRMED->value,
+                BookingStatus::PENDING_CANCELLATION->value,
+            ],
             true,
         );
     }
@@ -87,6 +95,24 @@ final class BookingPolicy
     public function update(User $user, Booking $booking): bool
     {
         return $this->isOwnerOf($user, $booking);
+    }
+
+    /**
+     * Stay guest: direct cancel (low tier — booking still pending partner confirm).
+     */
+    public function guestCancel(User $user, Booking $booking): bool
+    {
+        return $user->role === 'user'
+            && (int) $booking->user_id === (int) $user->id;
+    }
+
+    /**
+     * Stay guest: submit cancel-request (high tier — confirmed booking).
+     */
+    public function guestCancelRequest(User $user, Booking $booking): bool
+    {
+        return $user->role === 'user'
+            && (int) $booking->user_id === (int) $user->id;
     }
 
     /**

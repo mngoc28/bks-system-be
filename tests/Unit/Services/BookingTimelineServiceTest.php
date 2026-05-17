@@ -128,4 +128,47 @@ final class BookingTimelineServiceTest extends TestCase
 
         $this->assertNull($captured['metadata']);
     }
+
+    public function test_record_guest_cancel_request_approved_maps_pending_cancellation_to_cancelled(): void
+    {
+        $captured = [];
+        $this->repository->shouldReceive('append')
+            ->once()
+            ->andReturnUsing(function (array $payload) use (&$captured): BookingTimelineEvent {
+                $captured = $payload;
+                return new BookingTimelineEvent();
+            });
+
+        $this->service->recordGuestCancelRequestApproved(5, 9, ['request_id' => 12]);
+
+        $this->assertSame('guest_cancel_request_approved', $captured['event_type']);
+        $this->assertSame('pending_cancellation', $captured['from_status']);
+        $this->assertSame('cancelled', $captured['to_status']);
+        $this->assertSame(9, $captured['actor_id']);
+        $this->assertSame(12, $captured['metadata']['request_id']);
+    }
+
+    public function test_record_guest_cancel_request_rejected_restores_timeline_status(): void
+    {
+        $captured = [];
+        $this->repository->shouldReceive('append')
+            ->once()
+            ->andReturnUsing(function (array $payload) use (&$captured): BookingTimelineEvent {
+                $captured = $payload;
+                return new BookingTimelineEvent();
+            });
+
+        $this->service->recordGuestCancelRequestRejected(
+            3,
+            BookingTimelineService::STATUS_CONFIRMED,
+            'Partner rejected: schedule conflict',
+            2,
+            ['request_id' => 88],
+        );
+
+        $this->assertSame('guest_cancel_request_rejected', $captured['event_type']);
+        $this->assertSame('pending_cancellation', $captured['from_status']);
+        $this->assertSame('confirmed', $captured['to_status']);
+        $this->assertSame('Partner rejected: schedule conflict', $captured['note']);
+    }
 }

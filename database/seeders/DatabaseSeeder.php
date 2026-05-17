@@ -34,7 +34,8 @@ final class DatabaseSeeder extends Seeder
             ChatbotSeeder::class,
             RoomMaintenancesSeeder::class,
             StayPortalSeeder::class,
-            PartnerQaDataSeeder::class,
+            CancellationReasonCodesSeeder::class,
+            CancellationPolicyBaselineSeeder::class,
         ]);
     }
 }

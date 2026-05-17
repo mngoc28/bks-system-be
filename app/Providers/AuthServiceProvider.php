@@ -7,12 +7,14 @@ use App\Models\User;
 use App\Models\Room;
 use App\Models\Property;
 use App\Models\Booking;
+use App\Models\BookingCancellationRequest;
 use App\Models\Contract;
 use App\Models\RoomBlock;
 use App\Policies\ServicePolicy;
 use App\Policies\RoomPolicy;
 use App\Policies\PropertyPolicy;
 use App\Policies\BookingPolicy;
+use App\Policies\BookingCancellationRequestPolicy;
 use App\Policies\ContractPolicy;
 use App\Policies\RoomBlockPolicy;
 use App\Policies\UserPolicy;
@@ -28,6 +30,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         User::class => UserPolicy::class,
         Booking::class => BookingPolicy::class,
+        BookingCancellationRequest::class => BookingCancellationRequestPolicy::class,
         Contract::class => ContractPolicy::class,
         RoomBlock::class => RoomBlockPolicy::class,
         // Property::class => PropertyPolicy::class,

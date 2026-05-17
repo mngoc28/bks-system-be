@@ -1,4 +1,4 @@
-﻿# BKS System - Database Overview & Core Schema
+# BKS System - Database Overview & Core Schema
 
 ## Metadata tài liệu
 
@@ -21,6 +21,11 @@
 | 2026-05-12 | Cursor Agent (stack-task Phase 4) | Phase 4 KHÔNG thay đổi schema. Bổ sung runtime/API semantics: dashboard chart occupancy đọc `bookings/rooms/properties` theo interval `[start_date,end_date)` và status `CONFIRMED|COMPLETED`; dashboard chart GMV group theo `bookings.start_date`, loại `CANCELLED`, join `room_prices.price`; KPI cache keys gồm `partner:{id}:kpi:dashboard`, `partner:{id}:kpi:charts:occupancy`, `partner:{id}:kpi:charts:gmv`. Bulk action endpoint dùng existing `bookings` schema và mỗi item gọi single confirm/cancel để giữ lock/timeline/broadcast. |
 | 2026-05-12 | Cursor Agent (stack-task Phase 5) | Phase 5 KHÔNG thay đổi schema (các cột `contracts.renewal_reminder_at/terminated_at/termination_reason` đã ship ở Phase 1 + migration `2026_05_05_111229_add_contract_type_to_contracts_table.php` cho `contract_type`). Bổ sung runtime/API semantics: scheduler `partner:send-contract-renewal-reminders` chạy daily 06:00 Asia/Ho_Chi_Minh, query `contracts` với điều kiện `contract_type='LEASE_AGREEMENT'` + `renewal_reminder_at IS NULL` + `terminated_at IS NULL` + join `bookings.end_date BETWEEN today AND today+30d`; khi tag thì set `renewal_reminder_at = now()` và dispatch `ContractRenewalReminderQueued` (channels `private-partner.{user_id}` + `private-property.{property_id}`, alias `.contract.renewal_reminder`). Endpoint `GET /partner/contracts/expiring-soon` đọc `renewal_reminder_at IS NOT NULL AND terminated_at IS NULL`. Endpoint `POST /partner/contracts/:id/terminate` set `terminated_at=now()` + `termination_reason` (≥5 chars, idempotent). `ContractDetail` API trả thêm `bookings.room.utility_fees` (bảng đã có từ migration `2026_05_05_141930_create_utility_fees_table.php`). Không thêm cột/bảng mới. |
 | 2026-05-13 | Cursor Agent | Đồng bộ tài liệu schema: bảng lõi `properties` → `properties`, `rooms.property_id` → `rooms.property_id`; cập nhật ER diagram và quy tắc ownership Partner. |
+| 2026-05-13 | Cursor Agent | `bookings`: thêm cột `booking_code` VARCHAR(32) nullable UNIQUE (backfill theo `RM-{YYYY}-{id zero-pad}` từ `created_at` + `id`); dùng cho email/API công khai và tra cứu `POST /api/v1/bookings/lookup`. Migration: `2026_05_13_100000_add_booking_code_to_bookings_table.php`. |
+| 2026-05-14 | Cursor Agent | SRS `srs_booking_cancellation_policy.md` (từ lead `lead_260513_booking-cancellation-policy.md`): đề xuất mở rộng `bookings.status` thêm trạng thái logic **`pending_cancellation`** (ví dụ mã số **4**); cột tuỳ chọn `pending_cancellation_since`, `cancellation_policy_version`, `client_local_id`, `client_fingerprint` (T6 sync); bảng mới `booking_cancellation_requests`, `cancellation_policy_versions`, `cancellation_policy_tiers` (placeholder % phí/hoàn theo phiên bản chính sách + phân nhánh ngắn/dài hạn). Cập nhật ER diagram tổng quan. |
+| 2026-05-14 | Cursor Agent (stack-task Phase B1) | **BCP foundation:** migration files `2026_05_14_100001_create_cancellation_reason_codes_table.php`, `2026_05_14_100002_create_cancellation_policy_versions_table.php`, `2026_05_14_100003_create_cancellation_policy_tiers_table.php`, `2026_05_14_100004_add_bcp_columns_to_bookings_table.php`, `2026_05_14_100005_create_booking_cancellation_requests_table.php`. Seeders: `CancellationReasonCodesSeeder`, `CancellationPolicyBaselineSeeder` (version `2026-baseline-v1`). Runtime: `BookingStatus::PENDING_CANCELLATION=4`, `config/bcp.php`, middleware `EnsureBcpCancellationEnabled` (`bcp.cancellation`), `ConflictChecker` doc + tests (status 4 conflict-active), `PartnerKpiService::computeOccupancyChart` tính thêm status 4, `RoomsRepository`/`BookingRepository` availability coi 4 như giữ chỗ, `BookingService::handleConfirmBooking` chặn confirm khi status 4. |
+| 2026-05-14 | Cursor Agent (stack-task Phase B3 BE) | **Partner BCP inbox (runtime, không đổi schema):** API `GET/POST /api/v1/partner/cancellation-requests` (middleware `bcp.cancellation`), service approve/reject (transaction + `lockForUpdate`, khôi phục `previous_booking_status` khi reject, `BookingCancelled` sau commit khi approve), policy `BookingCancellationRequestPolicy`, broadcast `CancellationRequestUpdated` (alias `.cancellation_request.updated`, payload không PII) + listener `RecordCancellationRequestBroadcastMarker` (marker timeline `broadcast_dispatched`); guest `cancel-request` cũng dispatch event trạng thái `pending`. Contract snippet: `api-doc/partner-cancellation-requests.js`. |
+| 2026-05-14 | Cursor Agent (stack-task Phase B5) | **Policy tier + B7 metrics (không migration mới):** `CancellationPolicyBaselineSeeder` seed 6 dòng `cancellation_policy_tiers` (version `2026-baseline-v1`, % placeholder BA). Runtime: `CancellationPolicyResolver` + `CancellationPolicyTierMatcher` (tính `stay_kind`, giờ trước check-in, chọn tier); `GuestCancellationService::requestCancellation` ghi `policy_version_snapshot` + metadata timeline (`policy_tier_id`, % ước tính). `BookingCancellationMetricsService` (SLA p50/p90 giây trên request đã resolve; % pending “treo” theo `bcp.stale_request_hours`; raw duration hỗ trợ MySQL + SQLite). Admin: `GET /api/v1/admin/booking-cancellation-metrics`. Unit test thuần: `tests/Unit/Support/Bcp/CancellationPolicyTierMatcherTest.php`. |
 
 ## Nguyên tắc dùng chung
 
@@ -92,18 +97,23 @@
 | Column | Type | Key | Notes |
 |---|---|---|---|
 | id | bigint | PK | Booking |
+| booking_code | varchar(32) | Unique, nullable | Mã hiển thị công khai (RM-YYYY-XXXXXX), tra cứu + email |
 | user_id | bigint | FK -> users.id | Khách đặt |
 | room_id | bigint | FK -> rooms.id | Phòng được đặt |
 | price_id | bigint | FK -> room_prices.id | Gói giá áp dụng |
 | start_date | date | Index | Ngày nhận phòng |
 | end_date | date | Index | Ngày trả phòng |
-| status | tinyint | Index | 0 pending, 1 confirmed, 2 cancelled, 3 completed |
+| status | tinyint | Index | 0 pending, 1 confirmed, 2 cancelled, 3 completed, **4 pending_cancellation** (BCP — chờ Partner xử lý yêu cầu hủy khách) |
 | stay_status | enum | Index đề xuất | pending, checked_in, checked_out, no_show |
 | note | text | - | Ghi chú |
 | created_by | bigint | FK -> users.id | Người tạo |
 | updated_by | bigint | FK -> users.id | Người cập nhật |
 | created_at | timestamp | Index đề xuất | Dùng đo time-to-confirm |
 | updated_at | timestamp | - | Thời điểm cập nhật |
+| pending_cancellation_since | timestamp | Yes | idx | BCP: mốc vào trạng thái 4 |
+| cancellation_policy_version | string(32) | Yes | - | BCP: phiên bản chính sách |
+| client_local_id | string(64) | Yes | idx | BCP/T6: id client trước sync |
+| client_fingerprint | string(64) | Yes | idx | BCP/T6: fingerprint chống trùng |
 
 #### Delta đề xuất cho `srs_partner_portal_360.md`
 
@@ -116,6 +126,62 @@
 | source | string(50) | Yes | Index | web, partner_portal, future_ota |
 
 **Index cần đảm bảo:** `bookings(room_id, start_date, end_date, status)`, `bookings(status, created_at)`, `bookings(confirmed_at)`.
+
+### booking_cancellation_requests (BCP — shipped Phase B1)
+
+Mục đích: lưu **yêu cầu hủy** của khách ở bậc trạng thái cao; phục vụ SLA, idempotency và cooldown.
+
+| Column | Type | Nullable | Key | Reference | Notes |
+|---|---|---|---|---|---|
+| id | bigint | No | PK | - | |
+| booking_id | bigint | No | FK, Index | bookings.id | ON DELETE CASCADE (đề xuất) |
+| requester_user_id | bigint | No | FK, Index | users.id | Khách gửi yêu cầu |
+| reason_code | string(50) | No | Index | - | Danh mục lý do |
+| reason_text | text | Yes | - | - | Ghi chú bổ sung |
+| status | string(20) | No | (status, requested_at) | pending, approved, rejected, withdrawn |
+| idempotency_key | string(64) | Yes | (booking_id, idempotency_key) | Không UNIQUE DB khi NULL; enforce ở service B2 |
+| previous_booking_status | tinyint | No | - | - | Snapshot `bookings.status` trước khi chuyển sang `pending_cancellation`; dùng khi reject |
+| policy_version_snapshot | string(32) | Yes | - | - | Phiên bản chính sách phí ước tính tại thời điểm request |
+| requested_at | timestamp | No | (status, requested_at), (booking_id, status, requested_at) | Đo SLA |
+| resolved_at | timestamp | Yes | Index | - | |
+| resolved_by_user_id | bigint | Yes | FK | users.id | Partner xử lý |
+| partner_decision_note | text | Yes | - | - | |
+| created_at / updated_at | timestamp | Yes | - | - | Laravel timestamps |
+
+**Index:** `(booking_id, idempotency_key)`, `(booking_id, status, requested_at)`, `(status, requested_at)`, `resolved_at`.
+
+### cancellation_reason_codes (đề xuất design D002)
+
+Master danh mục lý do hủy (khách/Partner dùng chung mã).
+
+| Column | Type | Nullable | Key | Notes |
+|---|---|---|---|---|
+| code | varchar(50) | No | PK | Ví dụ `change_of_plans` |
+| label_vi | varchar(255) | No | - | Hiển thị UI |
+| requires_note | tinyint(1) | No | - | default 0 |
+| sort_order | int | No | - | default 0 |
+| is_active | tinyint(1) | No | Index | default 1 |
+
+### cancellation_policy_versions (đề xuất SRS)
+
+| Column | Type | Nullable | Key | Notes |
+|---|---|---|---|---|
+| version | string(32) | No | PK | Ví dụ `2026.05.14-v1` |
+| effective_from | date | No | Index | |
+| effective_to | date | Yes | Index | null = đang hiệu lực |
+| note | text | Yes | - | Mô tả nguồn benchmark / pháp lý |
+
+### cancellation_policy_tiers (đề xuất SRS)
+
+| Column | Type | Nullable | Key | Reference | Notes |
+|---|---|---|---|---|---|
+| id | bigint | No | PK | - | |
+| version | string(32) | No | FK, Index | cancellation_policy_versions.version | |
+| stay_kind | string(10) | No | Index | - | `short` hoặc `long` (theo ngưỡng đêm cấu hình) |
+| hours_before_checkin_min | int | No | - | - | Khoảng mốc thời gian (giờ trước check-in) |
+| hours_before_checkin_max | int | Yes | - | - | null = không giới hạn trên |
+| fee_percent | decimal(5,2) | Yes | - | - | **Placeholder** đến khi research OTA + VN |
+| refund_percent | decimal(5,2) | Yes | - | - | **Placeholder** |
 
 ### contracts
 
@@ -210,6 +276,8 @@ erDiagram
   BOOKINGS ||--o{ CONTRACTS : generates
   BOOKINGS ||--o{ BOOKING_TIMELINE_EVENTS : logs
   USERS ||--o{ BOOKING_TIMELINE_EVENTS : acts
+  BOOKINGS ||--o{ BOOKING_CANCELLATION_REQUESTS : cancellation_flow
+  CANCELLATION_POLICY_VERSIONS ||--o{ CANCELLATION_POLICY_TIERS : defines
 ```
 
 ## Quy tắc dữ liệu liên quan Partner Portal 360
@@ -223,4 +291,5 @@ erDiagram
 7. Khi confirm/move booking phải dùng pessimistic lock `SELECT ... FOR UPDATE` theo `room_id` để tránh race condition (theo `design_001.md`).
 8. Dashboard Phase 4 chart occupancy/GMV dùng live query từ bảng hiện có + cache 60s, chưa cần bảng snapshot theo ngày.
 8. Backfill `bookings.confirmed_at = updated_at` cho booking đang ở `status = 1` để có baseline KPI; ghi `metadata.backfilled = true` ở timeline để phân biệt với event thật.
+9. Trạng thái **`pending_cancellation`** (khi đã triển khai) tham gia conflict/availability như booking **chưa hủy hoàn toàn** cho đến khi Partner từ chối yêu cầu hoặc chấp nhận hủy; chi tiết rule nghiệp vụ xem `docs/SRC/srs_booking_cancellation_policy.md` và **`docs/designs/design_002.md`** (ConflictChecker không loại status 4 khỏi tập “đang giữ chỗ”).
 

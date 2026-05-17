@@ -36,7 +36,11 @@ use App\Http\Controllers\Partner\PartnerReportController;
 use App\Http\Controllers\Partner\PartnerStayServiceController;
 use App\Http\Controllers\Partner\PartnerRoomBlockController;
 use App\Http\Controllers\Partner\PartnerCalendarController;
+use App\Http\Controllers\Partner\PartnerCancellationRequestController;
 use App\Http\Controllers\Stay\StayController;
+use App\Http\Controllers\Stay\StayLocalBookingSyncController;
+use App\Http\Controllers\Stay\StayBookingCancellationController;
+use App\Http\Controllers\BookingCancellationReportController;
 use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
 use App\Http\Controllers\NotificationController;
@@ -90,7 +94,7 @@ Route::group([
          */
         Route::prefix('auth')->group(function () {
             Route::post('register', [AuthController::class, 'register']);
-            Route::post('login', [AuthController::class, 'login']);
+            Route::post('login', [AuthController::class, 'adminLogin']);
             Route::get('verify-email/{token}', [AuthController::class, 'verifyEmail']);
             Route::post('reset-token-verify-email', [AuthController::class, 'handleResetTokenVerify']);
             Route::post('send-mail-reset-password', [AuthController::class, 'sendMailResetPassword']);
@@ -330,6 +334,14 @@ Route::group([
             Route::get('/revenue-per-month', [DashboardController::class, 'revenuePerMonth']);
             Route::get('/properties-bookings-count', [DashboardController::class, 'getAllPropertiesBookingsCount']);
         });
+
+        /**
+         * BCP internal metrics (SLA p50/p90 + pending stale %) — Phase B5.
+         * Base URL: /api/v1/admin/booking-cancellation-metrics/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('booking-cancellation-metrics')->group(function () {
+            Route::get('/', [BookingCancellationReportController::class, 'summary']);
+        });
         /**
          * Provinces API - Public
          * Base Url /api/v1/admin/provinces/
@@ -395,7 +407,7 @@ Route::group([
      * Base Url /api/v1/partner/auth/
      */
     Route::prefix('partner/auth')->group(function () {
-        Route::post('login', [AuthController::class, 'login']);
+        Route::post('login', [AuthController::class, 'partnerLogin']);
         Route::post('register', [AuthController::class, 'register']);
         Route::post('send-mail-reset-password', [AuthController::class, 'sendMailResetPassword']);
         Route::post('reset-password/{token}', [AuthController::class, 'setPassword']);
@@ -561,6 +573,16 @@ Route::group([
          * Base Url /api/v1/partner/calendar
          */
         Route::middleware('partner360')->get('calendar', [PartnerCalendarController::class, 'index']);
+
+        /**
+         * Guest cancellation requests (BCP) — inbox + resolve
+         * Base Url /api/v1/partner/cancellation-requests/
+         */
+        Route::prefix('cancellation-requests')->middleware(['bcp.cancellation'])->group(function () {
+            Route::get('/', [PartnerCancellationRequestController::class, 'index']);
+            Route::post('{id}/approve', [PartnerCancellationRequestController::class, 'approve'])->whereNumber('id');
+            Route::post('{id}/reject', [PartnerCancellationRequestController::class, 'reject'])->whereNumber('id');
+        });
 
         /**
          * Bookings API
@@ -735,6 +757,8 @@ Route::group([
 
     // Bookings public APIs
     Route::prefix('bookings')->group(function () {
+        Route::post('lookup', [BookingController::class, 'publicLookupBooking'])
+            ->middleware('throttle:30,1');
         Route::post('{roomId}/user-create', [BookingController::class, 'userCreateBooking'])->whereNumber('roomId');
     });
     Route::post('set-password/{token}', [AuthController::class, 'setPassword']);
@@ -757,11 +781,35 @@ Route::group([
      * ============================================
      * Base URL: /api/v1/stay/
      */
+
+    // Public Auth APIs for Stay Portal
+    Route::prefix('stay/auth')->group(function () {
+        Route::post('login', [AuthController::class, 'stayLogin']);
+    });
+
+    // Authenticated APIs for Stay Portal (JWT End-User)
     Route::middleware(['jwt.auth'])->prefix('stay')->group(function () {
+        /**
+         * Stay portal auth — JWT end-user (không dùng /admin/auth/logout).
+         */
+        Route::post('auth/logout', [AuthController::class, 'logout']);
+
         Route::get('dashboard', [StayController::class, 'getDashboard']);
         Route::get('bookings', [StayController::class, 'getBookings']);
         Route::get('bookings/{id}', [StayController::class, 'show']);
+        Route::post('bookings/sync-local', [StayLocalBookingSyncController::class, 'sync'])
+            ->middleware('throttle:30,1');
         Route::post('bookings/{id}/extend', [StayController::class, 'extend']);
+
+        Route::middleware(['bcp.cancellation'])->group(function () {
+            Route::get('cancellation-reasons', [StayBookingCancellationController::class, 'cancellationReasons']);
+            Route::post('bookings/{id}/cancel', [StayBookingCancellationController::class, 'cancel'])
+                ->whereNumber('id')
+                ->middleware('throttle:30,1');
+            Route::post('bookings/{id}/cancel-request', [StayBookingCancellationController::class, 'cancelRequest'])
+                ->whereNumber('id')
+                ->middleware('throttle:10,1');
+        });
 
         Route::prefix('contracts')->group(function () {
             Route::get('/', [StayContractController::class, 'index']);

@@ -26,8 +26,32 @@ final class PartnerReportController extends Controller
     public function getKPIs(Request $request): JsonResponse
     {
         $partnerId = Auth::id();
-        $startDate = $request->query('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->query('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $range = $request->query('range', 'month');
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        if (!$startDate || !$endDate) {
+            switch ($range) {
+                case '7days':
+                    $startDate = now()->subDays(6)->format('Y-m-d');
+                    $endDate = now()->format('Y-m-d');
+                    break;
+                case '30days':
+                    $startDate = now()->subDays(29)->format('Y-m-d');
+                    $endDate = now()->format('Y-m-d');
+                    break;
+                case 'year':
+                    $startDate = now()->subYear()->format('Y-m-d');
+                    $endDate = now()->format('Y-m-d');
+                    break;
+                case 'month':
+                default:
+                    $startDate = now()->startOfMonth()->format('Y-m-d');
+                    $endDate = now()->endOfMonth()->format('Y-m-d');
+                    break;
+            }
+        }
 
         try {
             $kpis = $this->reportingService->getPartnerKPIs((int) $partnerId, $startDate, $endDate);
