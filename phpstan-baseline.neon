@@ -11,11 +11,6 @@ parameters:
 			path: app/Http/Controllers/BookingController.php
 
 		-
-			message: "#^Method App\\\\Http\\\\Validations\\\\BookingValidation\\:\\:userCreateBookingValidation\\(\\) invoked with 2 parameters, 1 required\\.$#"
-			count: 1
-			path: app/Http/Controllers/BookingController.php
-
-		-
 			message: "#^PHPDoc tag @param references unknown parameter\\: \\$bookingServices$#"
 			count: 1
 			path: app/Http/Controllers/BookingController.php

@@ -1,4 +1,4 @@
-﻿# Repository Decisions Log
+# Repository Decisions Log
 
 ## 2026-05-10 - Partner Portal 360 Scope
 
@@ -239,4 +239,75 @@
 | Decision | Chọn (B). Middleware `partner360` chỉ apply với endpoint Phase 3 (`/calendar`, `/room-blocks/*`, `/bookings/{id}/move`), Phase 4 (`/dashboard/charts/*`, `/bookings/bulk-*`), và Phase 5 (`/contracts/expiring-soon`, `/contracts/:id/renewal-reminder`, `/contracts/:id/terminate`). Phase 1-2 endpoints (CRUD booking, `/dashboard/{kpis,stats,pending-bookings,urgent-maintenances,revenue-analytics}`) KHÔNG bị flag chặn |
 | Rationale | Backwards-compatible cho rollback nhanh: tắt flag = ẩn UI Phase 3+, BE trả 403 với code rõ ràng cho FE handle; Phase 1-2 vẫn hoạt động bình thường. FE `lib/featureFlags.ts` mirror flag qua `VITE_PARTNER_REALTIME` để ẩn UI thay vì để partner chạm 403 |
 | Related artifact | `app/Http/Middleware/EnsurePartner360Enabled.php`, `routes/api.php`, `config/app.php`, `bks-system-fe/src/lib/featureFlags.ts` |
+
+## 2026-05-14 - B5: Unit test tier matcher không phụ thuộc DB
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-006 |
+| Context | `RefreshDatabase` + PHPUnit trên máy dev/CI dễ fail (credential `.env.testing`, hoặc full migrate trên SQLite lỗi CHECK `room_blocks`) |
+| Decision | Tách logic chọn tier + tính giờ/`stay_kind` vào `App\Support\Bcp\CancellationPolicyTierMatcher`; unit test `tests/Unit/Support/Bcp/CancellationPolicyTierMatcherTest.php` extends `PHPUnit\Framework\TestCase` (không bootstrap DB). `CancellationPolicyResolver` vẫn đọc DB nhưng chỉ map row → mảng rồi gọi matcher. |
+| Rationale | Đảm bảo quy tắc nghiệp vụ tier được kiểm thử ổn định trong CI; giảm phụ thuộc MySQL cho phần “pure rules” |
+| Related artifact | `app/Support/Bcp/CancellationPolicyTierMatcher.php`, `app/Services/CancellationPolicyResolver.php`, `tests/Unit/Support/Bcp/CancellationPolicyTierMatcherTest.php` |
+
+## 2026-05-14 - Luồng hủy khách: `cancel` vs `cancel-request` và trạng thái `pending_cancellation`
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-001 |
+| Context | Lead `lead_260513_booking-cancellation-policy.md` chốt T8: phân biệt thao tác theo **bậc trạng thái đơn**, không theo role read/cancel tách riêng |
+| Decision | **Bậc thấp** (Partner chưa xác nhận theo nghĩa nghiệp vụ đã chốt): khách dùng **`cancel`** trực tiếp. **Bậc cao** (đã confirmed trở đi): khách chỉ **`cancel-request`**; booking vào **`pending_cancellation`** cho đến khi Partner **approve/reject**. **Đang ở/check-in:** không cho hủy đặt. |
+| Rationale | Giảm ma sát trước confirm; bảo vệ cam kết sau confirm; đồng bộ metric SLA trên bảng yêu cầu |
+| Pending | Map enum “chờ thanh toán”; **% `cancellation_policy_tiers`:** đã seed placeholder qua `CancellationPolicyBaselineSeeder` (B5); vẫn cần điều chỉnh sau research OTA + pháp lý VN |
+| Related artifact | `docs/SRC/srs_booking_cancellation_policy.md`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+
+## 2026-05-14 - D002: Conflict semantics với `pending_cancellation` (status 4)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-002 |
+| Context | Booking ở trạng thái chờ Partner duyệt hủy vẫn chiếm lịch phòng trong thực tế vận hành |
+| Decision | `BookingStatus::PENDING_CANCELLATION` (**4**) **không** được `ConflictChecker` xếp vào nhóm loại trừ như `CANCELLED`/`COMPLETED`; coi như đặt chỗ còn hiệu lực cho đến khi approve (→ cancelled) hoặc reject (→ khôi phục status trước đó) |
+| Rationale | Tránh overbooking khi khách đã gửi yêu cầu hủy nhưng Partner chưa chấp nhận |
+| Related artifact | `docs/designs/design_002.md` §4.3, `app/Services/ConflictChecker.php` |
+
+## 2026-05-14 - D002: Khôi phục trạng thái khi Partner reject
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-003 |
+| Context | Sau `cancel-request`, booking = 4; Partner từ chối cần trả đơn về đúng trạng thái trước yêu cầu (có thể `PENDING` hoặc `CONFIRMED`) |
+| Decision | Lưu **`previous_booking_status`** (tinyint) trên row `booking_cancellation_requests` tại thời điểm tạo request; reject set `bookings.status = previous_booking_status`, xóa/cập nhật `pending_cancellation_since`, đóng request `rejected` |
+| Rationale | Không suy luận cứng `CONFIRMED` — mở rộng sau cho luồng “chờ thanh toán” vẫn an toàn |
+| Related artifact | `docs/designs/design_002.md` §4.1.4, `docs/databases_docs/db_overview_etc_core_schema.md` |
+
+## 2026-05-14 - D002: Cấu hình cooldown, SLA “treo”, ngưỡng đêm
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-004 |
+| Context | Lead yêu cầu N cấu hình được; SRS đề xuất 60 phút; metric B7 cần ngưỡng “treo” |
+| Decision | `.env` / config: `CANCEL_REQUEST_COOLDOWN_SECONDS` default **3600**; `BCP_STALE_REQUEST_HOURS` default **48** (request `pending` quá giờ = treo trong báo cáo); `BCP_LONG_STAY_MIN_NIGHTS` default **30** (khớp PP360) |
+| Rationale | Tách khỏi code magic number; prod điều chỉnh không deploy |
+| Related artifact | `docs/designs/design_002.md` Appendix C |
+
+## 2026-05-14 - P002: Thứ tự triển khai và nhánh feature BCP
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-P002-001 |
+| Context | Cần giảm conflict merge trên `routes/api.php`, `BookingService.php`, `ConflictChecker` |
+| Decision | Triển khai tuần tự **B1 → B2 → B3**; **B4** sau khi API Stay (B2.5+) ổn định; nhánh gợi ý `feature/bcp-cancellation` hoặc `feature/bcp-phase{N}`; mọi route mới sau B1 gắn flag `BCP_CANCELLATION_V1` |
+| Rationale | Schema phải có trước khi service dùng status 4; Partner inbox phụ thuộc guest tạo request; FE song song chỉ sau contract API |
+| Related artifact | `docs/plans/plan_002.md` Conflict Analysis, Downstream Handoffs |
+
+## 2026-05-14 - B3: Broadcast cancellation request (no PII)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260514-BCP-005 |
+| Context | Partner inbox realtime cần cập nhật khi request đổi trạng thái; tránh lộ dữ liệu khách trên socket |
+| Decision | Event `CancellationRequestUpdated` broadcast payload tối thiểu: `request_id`, `booking_id`, `property_id`, `partner_id`, `status` (string). **Không** gửi `reason_text`, email, tên khách. Chi tiết lý do guest chỉ trong REST inbox (`GET cancellation-requests`). |
+| Rationale | Khớp pattern Phase 2 `BookingCancelled` (`has_reason` thay vì full reason); đồng bộ checklist security |
+| Related artifact | `app/Events/CancellationRequestUpdated.php`, `docs/designs/design_002.md`, `api-doc/partner-cancellation-requests.js` |
 

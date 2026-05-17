@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Events\BookingCancelled;
+use App\Events\CancellationRequestUpdated;
 use App\Events\BookingConfirmed;
 use App\Events\BookingCreated;
 use App\Events\BookingNoShow;
 use App\Events\ContractRenewalReminderQueued;
 use App\Events\RoomBlockChanged;
 use App\Listeners\InvalidateCalendarCache;
+use App\Listeners\RecordCancellationRequestBroadcastMarker;
 use App\Listeners\InvalidatePartnerKpiCache;
 use App\Listeners\RecordBookingTimeline;
 use Illuminate\Auth\Events\Registered;
@@ -56,6 +58,10 @@ class EventServiceProvider extends ServiceProvider
         // Phase 5: scheduler-driven event — no broadcast listener side-effects;
         // FE Alert Center subscribes directly to the broadcast channel.
         ContractRenewalReminderQueued::class => [],
+
+        CancellationRequestUpdated::class => [
+            [RecordCancellationRequestBroadcastMarker::class, 'handle'],
+        ],
     ];
 
     public function boot(): void

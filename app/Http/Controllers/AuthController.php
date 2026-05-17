@@ -190,11 +190,11 @@ class AuthController extends Controller
     }
 
     /**
-     * Summary of login
+     * Summary of adminLogin
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function login(Request $request): JsonResponse
+    public function adminLogin(Request $request): JsonResponse
     {
         $vali = $this->authValidation->validateAuthLoginRequest($request);
         if ($vali->fails()) {
@@ -205,7 +205,74 @@ class AuthController extends Controller
             );
         }
 
-        $result = $this->authService->handleLogin($request);
+        // Only allow ADMIN to login via admin portal
+        $result = $this->authService->handleLogin($request, [\App\Enums\UserType::ADMIN]);
+
+        if ($result['status']) {
+            return $this->successResponse(
+                $result['data'],
+                $result['message']
+            );
+        }
+
+        return $this->errorResponse(
+            $result['message'],
+            null,
+            HttpStatus::UNAUTHORIZED
+        );
+    }
+
+    /**
+     * Authenticate stay guest portal end-user.
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function stayLogin(Request $request): JsonResponse
+    {
+        $vali = $this->authValidation->validateAuthLoginRequest($request);
+        if ($vali->fails()) {
+            return $this->validateError(
+                $vali->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        // Only allow USER (stay guest) to login via stay portal endpoint
+        $result = $this->authService->handleLogin($request, [\App\Enums\UserType::USER]);
+
+        if ($result['status']) {
+            return $this->successResponse(
+                $result['data'],
+                $result['message']
+            );
+        }
+
+        return $this->errorResponse(
+            $result['message'],
+            null,
+            HttpStatus::UNAUTHORIZED
+        );
+    }
+
+    /**
+     * Summary of partnerLogin
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function partnerLogin(Request $request): JsonResponse
+    {
+        $vali = $this->authValidation->validateAuthLoginRequest($request);
+        if ($vali->fails()) {
+            return $this->validateError(
+                $vali->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        // Allow PARTNER and ADMIN to login via partner portal
+        $result = $this->authService->handleLogin($request, [\App\Enums\UserType::PARTNER, \App\Enums\UserType::ADMIN]);
 
         if ($result['status']) {
             return $this->successResponse(

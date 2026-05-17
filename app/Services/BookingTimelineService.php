@@ -27,11 +27,18 @@ final class BookingTimelineService
     public const EVENT_NO_SHOW            = 'no_show';
     public const EVENT_CONFLICT_DETECTED  = 'conflict_detected';
     public const EVENT_BACKFILLED         = 'backfilled';
+    /** Guest submitted cancel-request (BCP); booking moves to pending_cancellation. */
+    public const EVENT_GUEST_CANCEL_REQUESTED = 'guest_cancel_requested';
+    /** Partner approved guest cancel-request (BCP). */
+    public const EVENT_GUEST_CANCEL_REQUEST_APPROVED = 'guest_cancel_request_approved';
+    /** Partner rejected guest cancel-request (BCP). */
+    public const EVENT_GUEST_CANCEL_REQUEST_REJECTED = 'guest_cancel_request_rejected';
 
     public const STATUS_PENDING   = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_COMPLETED = 'completed';
+    public const STATUS_PENDING_CANCELLATION = 'pending_cancellation';
 
     public function __construct(
         private readonly BookingTimelineRepositoryInterface $timelineRepository,
@@ -161,6 +168,73 @@ final class BookingTimelineService
             null,
             null,
             null,
+            $metadata,
+            $actorId,
+        );
+    }
+
+    /**
+     * Guest cancel-request accepted by server; booking enters pending_cancellation.
+     * Full state transition is implemented in GuestCancellationService (B2).
+     *
+     * @param array<string, mixed> $metadata
+     */
+    public function recordGuestCancelRequested(
+        int $bookingId,
+        string $fromTimelineStatus,
+        ?int $actorId = null,
+        array $metadata = [],
+    ): BookingTimelineEvent {
+        return $this->append(
+            $bookingId,
+            self::EVENT_GUEST_CANCEL_REQUESTED,
+            $fromTimelineStatus,
+            self::STATUS_PENDING_CANCELLATION,
+            null,
+            $metadata,
+            $actorId,
+        );
+    }
+
+    /**
+     * Partner approved a pending guest cancellation request; booking becomes cancelled.
+     *
+     * @param array<string, mixed> $metadata
+     */
+    public function recordGuestCancelRequestApproved(
+        int $bookingId,
+        ?int $actorId = null,
+        array $metadata = [],
+    ): BookingTimelineEvent {
+        return $this->append(
+            $bookingId,
+            self::EVENT_GUEST_CANCEL_REQUEST_APPROVED,
+            self::STATUS_PENDING_CANCELLATION,
+            self::STATUS_CANCELLED,
+            null,
+            $metadata,
+            $actorId,
+        );
+    }
+
+    /**
+     * Partner rejected a pending guest cancellation request; booking returns to prior status.
+     *
+     * @param array<string, mixed> $metadata
+     */
+    public function recordGuestCancelRequestRejected(
+        int $bookingId,
+        string $toTimelineStatus,
+        ?string $note = null,
+        ?int $actorId = null,
+        array $metadata = [],
+    ): BookingTimelineEvent {
+        return $this->append(
+            $bookingId,
+            self::EVENT_GUEST_CANCEL_REQUEST_REJECTED,
+            self::STATUS_PENDING_CANCELLATION,
+            $toTimelineStatus,
+            $note,
             $metadata,
             $actorId,
         );

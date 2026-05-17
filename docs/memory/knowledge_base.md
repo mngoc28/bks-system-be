@@ -1,4 +1,75 @@
-﻿# Repository Knowledge Base
+# Repository Knowledge Base
+
+## 2026-05-14 - System Design D002 (Booking cancellation policy)
+
+### Nguồn tham chiếu
+
+- `docs/designs/design_002.md`
+- `docs/SRC/srs_booking_cancellation_policy.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức kỹ thuật đã chốt (design)
+
+- **`BookingStatus::PENDING_CANCELLATION = 4`** trên DB; đồng bộ enum PHP.
+- **API Stay:** `POST stay/bookings/sync-local`, `POST stay/bookings/{id}/cancel`, `POST stay/bookings/{id}/cancel-request`, `GET stay/cancellation-reasons`.
+- **API Partner:** `GET partner/cancellation-requests`, `POST …/approve`, `POST …/reject` (note reject ≥ 5 ký tự).
+- **Cooldown:** env `CANCEL_REQUEST_COOLDOWN_SECONDS` mặc định **3600**; lỗi **429** + `retry_after_seconds`.
+- **Reject:** khôi phục `bookings.status` từ cột **`previous_booking_status`** trên `booking_cancellation_requests` (snapshot lúc tạo request).
+- **Conflict:** `ConflictChecker` **không** loại status 4 — đơn vẫn **giữ chỗ** cho đến khi approve hủy hoặc reject.
+- **Master lý do:** bảng `cancellation_reason_codes` (seed BA).
+- **Metric “treo”:** config `BCP_STALE_REQUEST_HOURS` mặc định **48**; đơn dài hạn ngưỡng đêm **`BCP_LONG_STAY_MIN_NIGHTS`** = **30**.
+
+### Implementation
+
+- **Phase B1–B2 (BE):** migration BCP, `GuestCancellationService`, Stay cancel/cancel-request, policy guest, Conflict/KPI/calendar semantics — theo `plan_002.md`.
+- **Phase B3 (BE, 2026-05-14):** Partner inbox + resolve: `GET/POST /api/v1/partner/cancellation-requests`, `PartnerCancellationRequestService` (approve → cancelled + `BookingCancelled`; reject → restore status + xóa cột pending BCP), `CancellationRequestUpdated` broadcast + marker timeline, `api-doc/partner-cancellation-requests.js`.
+- **Phase B3 (FE `bks-system-fe`, 2026-05-14):** trang inbox `/partner/cancellation-requests`, service API, Echo `.cancellation_request.updated` (invalidate + toast).
+- **Phase B5 (BE, 2026-05-14):** `CancellationPolicyResolver` + `CancellationPolicyTierMatcher`; seed tier % placeholder trong `CancellationPolicyBaselineSeeder`; `GuestCancellationService` ghi snapshot + metadata tier trên timeline; `BookingCancellationMetricsService` + `GET /api/v1/admin/booking-cancellation-metrics` (SLA p50/p90, % pending stale); test `CancellationPolicyTierMatcherTest` (không cần DB).
+- Kế hoạch chi tiết: `docs/plans/plan_002.md`. Handoff QC: **`docs/test-cases/testcase_002.md`** (TC002 BCP — kịch bản QC đầy đủ); tiếp theo `stack-review-branch` → `report-writer`.
+
+## 2026-05-14 - Implementation Plan P002 (BCP cancellation)
+
+### Nguồn tham chiếu
+
+- `docs/plans/plan_002.md`
+
+### Tóm tắt
+
+- **B1** migration + enum + ConflictChecker + config flag; **B2** Stay cancel/cancel-request; **B3** Partner inbox + broadcast; **B4** sync-local + FE; **B5** policy % + báo cáo SLA.
+- **Ước lượng:** ~90–110 giờ dev; flag `BCP_CANCELLATION_V1`.
+
+## 2026-05-14 - Chính sách yêu cầu hủy phòng (My Bookings & Stay)
+
+### Nguồn tham chiếu
+
+- `docs/leads/lead_260513_booking-cancellation-policy.md`
+- `docs/SRC/srs_booking_cancellation_policy.md`
+- `docs/SRC/srs_partner_portal_360.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức nghiệp vụ ổn định
+
+- Hai lộ thao tác theo **bậc trạng thái đơn**: **`cancel`** (bậc thấp / Partner chưa xác nhận theo nghĩa đã chốt) và **`cancel-request`** (bậc cao / đã confirmed trở đi) → **`pending_cancellation`** chờ **Partner duyệt**.
+- **Đang ở / đã check-in** không cho **hủy đặt** theo nghĩa business (tách với trả phòng sớm/no-show).
+- **Lý do hủy bắt buộc**; phí/hoàn tiền **tạm không** tách theo Partner/loại phòng; bảng mốc thời gian tách **đơn ngắn hạn vs dài hạn** (cấu trúc + % sau research OTA + pháp lý VN).
+- **Đồng bộ T6:** sau login Stay, merge `publicMyBookings` → server bằng **fingerprint**, không dùng local id làm PK server.
+- **Cooldown T7** giữa các lần **gửi lại** `cancel-request` trên cùng booking — tham số **N** chốt ở design (SRS đề xuất mặc định 60 phút cho dev).
+- **Metric B7:** SLA Partner (`resolved_at - requested_at`), % không treo `pending_c`, hotline tag — đo DB + benchmark OTA.
+
+### Kiến thức kỹ thuật ổn định
+
+- Đề xuất mở rộng `bookings.status` với mã **`pending_cancellation`** (ví dụ **4**) cạnh các mã hiện có 0–3; cột tuỳ chọn sync `client_local_id`, `client_fingerprint`, `cancellation_policy_version`.
+- Bảng mới đề xuất: `booking_cancellation_requests`, `cancellation_policy_versions`, `cancellation_policy_tiers` (đã merge mô tả vào `db_overview_etc_core_schema.md`).
+- **Ngưỡng đêm ngắn/dài** đề xuất căn chỉnh SRS Partner: **≥ 30 đêm = dài hạn**.
+
+### Câu hỏi còn mở (giao stack-plan / BA)
+
+- Map enum nội bộ “chờ thanh toán / chờ xác nhận” sang **cancel** vs **cancel-request** khi tách status DB.
+- Giá trị **%** trong `cancellation_policy_tiers`: đã seed placeholder (B5); vẫn cần research OTA + pháp lý VN để thay số production.
+
+### Đã chốt tại design D002 (tham chiếu `docs/designs/design_002.md`)
+
+- Cooldown mặc định **3600s** (`CANCEL_REQUEST_COOLDOWN_SECONDS`); SLA “treo” **48h** (`BCP_STALE_REQUEST_HOURS`); ngưỡng đêm dài hạn **30** (`BCP_LONG_STAY_MIN_NIGHTS`).
 
 ## 2026-05-10 - Partner Portal 360 SRS
 

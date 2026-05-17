@@ -25,35 +25,33 @@
  * @apiSuccess {String} success Response status (true)
  * @apiSuccess {String} message Success message
  * @apiSuccess {Object} data Booking data
- * @apiSuccess {Number} data.id Booking ID
- * @apiSuccess {String} data.booking_code Unique booking code
+ * @apiSuccess {Number} data.booking_id Booking ID
+ * @apiSuccess {String} data.booking_code Public booking code (e.g. RM-2026-000042), also sent by email
+ * @apiSuccess {Number} data.user_id Booker user id (created or matched by email)
+ * @apiSuccess {String} data.start_date Booking start date (YYYY-MM-DD)
+ * @apiSuccess {String} data.end_date Booking end date (YYYY-MM-DD)
  * @apiSuccess {Number} data.room_id Room ID
- * @apiSuccess {Number} data.user_id User ID (null for guest bookings)
- * @apiSuccess {String} data.start_date Booking start date
- * @apiSuccess {String} data.end_date Booking end date
- * @apiSuccess {Number} data.total_amount Total booking amount
- * @apiSuccess {Number} data.status Booking status (0: pending, 1: confirmed, 2: cancelled, 3: completed)
- * @apiSuccess {String} data.note Additional notes
- * @apiSuccess {String} data.created_at Creation timestamp
- * @apiSuccess {String} data.updated_at Update timestamp
+ * @apiSuccess {Number} data.status Booking status (0 pending, 1 confirmed, 2 cancelled, 3 completed)
+ * @apiSuccess {Number} data.total_amount Estimated total (room stay + attached services)
+ * @apiSuccess {String} data.room_title Room title for display
+ * @apiSuccess {String} data.property_address Property address for display
  *
  * @apiSuccessExample {json} Success-Response:
- * HTTP/1.1 200 OK
+ * HTTP/1.1 201 Created
  * {
- *   "success": true,
+ *   "status": "success",
  *   "message": "Đặt phòng thành công! Vui lòng kiểm tra email để xem chi tiết.",
  *   "data": {
- *     "id": 123,
- *     "booking_code": "BK20251229001",
- *     "room_id": 100,
- *     "user_id": null,
- *     "start_date": "2026-01-01",
- *     "end_date": "2026-01-30",
- *     "total_amount": 15000000,
+ *     "booking_id": 42,
+ *     "booking_code": "RM-2026-000042",
+ *     "user_id": 15,
  *     "status": 0,
- *     "note": "Khách vãng lai đặt phòng",
- *     "created_at": "2025-12-29T10:00:00.000000Z",
- *     "updated_at": "2025-12-29T10:00:00.000000Z"
+ *     "start_date": "2026-01-01",
+ *     "end_date": "2026-01-05",
+ *     "room_id": 100,
+ *     "total_amount": 15000000,
+ *     "room_title": "Deluxe City View",
+ *     "property_address": "1 Đường ABC, Quận 1"
  *   }
  * }
  *
@@ -112,6 +110,27 @@
  *   "message": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.",
  *   "data": null
  * }
+ */
+
+/**
+ * @api {post} /api/v1/bookings/lookup Public booking lookup
+ * @apiName PublicBookingLookup
+ * @apiGroup Bookings
+ * @apiVersion 1.0.0
+ *
+ * @apiDescription No authentication. Returns read-only booking summary when email and booking_code match. Rate limited (throttle).
+ *
+ * @apiParam (Body) {String} email Booker email (must match user on the booking)
+ * @apiParam (Body) {String} booking_code Code from confirmation email (format RM-YYYY-NNNNNN)
+ *
+ * @apiSampleRequest /api/v1/bookings/lookup
+ *
+ * @apiSuccess {String} status success
+ * @apiSuccess {String} message
+ * @apiSuccess {Object} data Same shape as user-create response payload (without user_id)
+ *
+ * @apiError (422) {Object} errors Validation errors
+ * @apiError (404) {String} message Generic not found (wrong pair or unknown code)
  */
 
 /**

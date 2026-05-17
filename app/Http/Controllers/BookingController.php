@@ -319,4 +319,35 @@ final class BookingController extends Controller
             $result['message']
         );
     }
+
+    /**
+     * Public lookup of a booking by email + booking code (rate limited).
+     */
+    public function publicLookupBooking(Request $request): JsonResponse
+    {
+        $validator = $this->bookingValidation->publicBookingLookupValidation($request);
+
+        if ($validator->fails()) {
+            return $this->validateError(
+                $validator->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        $result = $this->bookingService->handlePublicBookingLookup($request);
+
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::NOT_FOUND
+            );
+        }
+
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
 }

@@ -179,22 +179,43 @@ class BookingValidation
 
     /**
      * Summary of user create booking validation
+     *
      * @param \Illuminate\Http\Request $request
+     * @param int $roomId Room id from route (must exist)
      * @return \Illuminate\Validation\Validator
      */
-    public function userCreateBookingValidation(Request $request): \Illuminate\Validation\Validator
+    public function userCreateBookingValidation(Request $request, int $roomId): \Illuminate\Validation\Validator
     {
         $messages = $this->getCustomMessages();
+        $data = array_merge(['room_id' => $roomId], $request->all());
+
+        return Validator::make($data, [
+            'room_id'       => 'required|integer|exists:rooms,id',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255',
+            'phone'         => 'required|string|max:20',
+            'start_date'    => 'required|date',
+            'end_date'      => 'required|date|after:start_date',
+            'price_id'      => 'nullable|integer|min:1',
+            'note'          => 'nullable|string',
+            'service_ids'   => 'nullable|array',
+            'service_ids.*' => 'integer|exists:services,id',
+        ], $messages);
+    }
+
+    /**
+     * Public lookup: email + booking code (no auth).
+     *
+     * @param Request $request
+     * @return \Illuminate\Validation\Validator
+     */
+    public function publicBookingLookupValidation(Request $request): \Illuminate\Validation\Validator
+    {
+        $messages = $this->getCustomMessages();
+
         return Validator::make($request->all(), [
-            'name'      => 'required|string|max:255',
-            'email'     => 'required|email|max:255',
-            'phone'     => 'required|string|max:20',
-            'start_date'=> 'required|date',
-            'end_date'  => 'required|date|after:start_date',
-            'price_id'  => 'nullable|integer|min:1',
-            'note'      => 'nullable|string',
-            'services'  => 'nullable|array',
-            'services.*'=> 'integer|exists:services,id',
+            'email'         => 'required|email|max:255',
+            'booking_code'  => 'required|string|max:32|regex:/^RM-\d{4}-\d{1,9}$/i',
         ], $messages);
     }
 }

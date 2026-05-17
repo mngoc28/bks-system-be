@@ -264,6 +264,18 @@ final class BookingService
                 ];
             }
 
+            if (
+                (int) $booking->status === BookingStatus::PENDING_CANCELLATION->value
+                && in_array(Auth::user()->role ?? null, ['partner', 'admin'], true)
+            ) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.partner_cancel_blocked_pending_cancellation'),
+                    'code'    => 'PARTNER_CANCEL_BLOCKED_PENDING_CANCELLATION',
+                ];
+            }
+
             $role = Auth::user()->role ?? null;
             $reason = trim((string) $request->input('reason', ''));
             if ($role === 'partner' && $reason === '') {
@@ -382,11 +394,12 @@ final class BookingService
     private function mapStatusName(int $status): string
     {
         return match ($status) {
-            BookingStatus::PENDING->value   => BookingTimelineService::STATUS_PENDING,
-            BookingStatus::CONFIRMED->value => BookingTimelineService::STATUS_CONFIRMED,
-            BookingStatus::CANCELLED->value => BookingTimelineService::STATUS_CANCELLED,
-            BookingStatus::COMPLETED->value => BookingTimelineService::STATUS_COMPLETED,
-            default                         => 'unknown',
+            BookingStatus::PENDING->value                 => BookingTimelineService::STATUS_PENDING,
+            BookingStatus::CONFIRMED->value               => BookingTimelineService::STATUS_CONFIRMED,
+            BookingStatus::CANCELLED->value               => BookingTimelineService::STATUS_CANCELLED,
+            BookingStatus::COMPLETED->value               => BookingTimelineService::STATUS_COMPLETED,
+            BookingStatus::PENDING_CANCELLATION->value    => BookingTimelineService::STATUS_PENDING_CANCELLATION,
+            default                                       => 'unknown',
         };
     }
 
@@ -443,6 +456,14 @@ final class BookingService
                     'success' => false,
                     'data'    => null,
                     'message' => __('booking.messages.already_cancelled'),
+                ];
+            }
+
+            if ((int) $booking->status === BookingStatus::PENDING_CANCELLATION->value) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.confirm_blocked_pending_cancellation'),
                 ];
             }
 
@@ -842,6 +863,9 @@ final class BookingService
                 ]);
             }
 
+            $bookingCode = sprintf('RM-%04d-%06d', (int) date('Y'), (int) $booking->id);
+            $booking->update(['booking_code' => $bookingCode]);
+            $booking->refresh();
 
             // prepare room to send mail
             $room = $this->roomsRepository->getRoomInfoSendMail($roomId);
@@ -850,17 +874,34 @@ final class BookingService
             $startDate = Carbon::parse($request->input('start_date'));
             $endDate = Carbon::parse($request->input('end_date'));
             $totalDays = $startDate->diffInDays($endDate) + 1;
-            $totalAmount = ((float) ($price->cheapest_daily_price ?? 0)) * $totalDays;
+            $roomStayTotal = ((float) ($price->cheapest_daily_price ?? 0)) * $totalDays;
 
             // Format services for email template (from selected services in booking)
             $selectedServices = $booking->services()->select('name', 'price')->get();
-            $services = $selectedServices->map(fn($service) => [
+            $servicesTotal = (float) $selectedServices->sum(fn ($service) => (float) ($service->price ?? 0));
+            $services = $selectedServices->map(fn ($service) => [
                 'name'   => $service->name,
                 'amount' => (float) ($service->price ?? 0),
             ])->toArray();
 
+            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
+
+            $responseData = [
+                'booking_id'         => (int) $booking->id,
+                'booking_code'       => (string) $booking->booking_code,
+                'user_id'            => (int) $createUser->id,
+                'status'             => (int) $booking->status,
+                'start_date'         => $startDate->format('Y-m-d'),
+                'end_date'           => $endDate->format('Y-m-d'),
+                'room_id'            => (int) $booking->room_id,
+                'price_id'           => (int) $booking->price_id,
+                'total_amount'       => $grandTotal,
+                'room_title'         => (string) ($room->title ?? ''),
+                'property_address'   => (string) ($room->property_address ?? ''),
+            ];
+
             $emailInfo = [
-                'booking_code'      => sprintf('RM-%04d-%06d', date('Y'), $booking->id),
+                'booking_code'      => $bookingCode,
                 'room_title'        => $room->title,
                 'room_description'  => $room->description,
                 'room_deposit'      => $room->deposit ?? 0,
@@ -878,7 +919,7 @@ final class BookingService
                 'end_time'          => $endDate->format('d/m/Y'),
                 'total_days'        => $totalDays,
                 'estimate_deadline' => Carbon::now()->addDays(7)->format('d/m/Y'),
-                'total_amount'      => $totalAmount,
+                'total_amount'      => $grandTotal,
                 'goline_phone'      => '0243 795 7250',
                 'token'             => $token,
             ];
@@ -889,7 +930,7 @@ final class BookingService
 
             return [
                 'success' => true,
-                'data'    => null,
+                'data'    => $responseData,
                 'message' => __('booking.messages.user_booking_created_successfully'),
             ];
         } catch (Exception $e) {
@@ -905,6 +946,108 @@ final class BookingService
                 'message' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Public read-only lookup by booker email + booking code (sent by email).
+     *
+     * @param Request $request
+     * @return array{success: bool, data: array<string, mixed>|null, message: string}
+     */
+    public function handlePublicBookingLookup(Request $request): array
+    {
+        try {
+            $email = mb_strtolower(trim((string) $request->input('email')));
+            $rawCode = preg_replace('/\s+/', '', (string) $request->input('booking_code'));
+
+            /** @var Booking|null $booking */
+            $booking = Booking::query()
+                ->with(['user', 'room.property', 'services', 'price'])
+                ->whereRaw('LOWER(booking_code) = ?', [mb_strtolower($rawCode)])
+                ->first();
+
+            if ($booking === null || $booking->user === null) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.lookup_not_found'),
+                ];
+            }
+
+            if (mb_strtolower((string) $booking->user->email) !== $email) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.lookup_not_found'),
+                ];
+            }
+
+            $roomStayTotal = $this->computeRoomStayTotalForBooking($booking);
+            $servicesTotal = $this->computeServicesTotalForBooking($booking);
+
+            return [
+                'success' => true,
+                'data'    => $this->buildPublicBookingLookupPayload($booking, $roomStayTotal, $servicesTotal),
+                'message' => __('booking.messages.lookup_retrieved'),
+            ];
+        } catch (Throwable $e) {
+            Log::error('Public booking lookup failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => __('booking.messages.lookup_not_found'),
+            ];
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildPublicBookingLookupPayload(
+        Booking $booking,
+        float $roomStayTotal,
+        float $servicesTotal
+    ): array {
+        $booking->loadMissing(['room.property']);
+        $startDate = Carbon::parse($booking->start_date);
+        $endDate = Carbon::parse($booking->end_date);
+
+        return [
+            'booking_id'       => (int) $booking->id,
+            'booking_code'     => (string) ($booking->booking_code ?? ''),
+            'status'           => (int) $booking->status,
+            'start_date'       => $startDate->format('Y-m-d'),
+            'end_date'         => $endDate->format('Y-m-d'),
+            'room_id'          => (int) $booking->room_id,
+            'total_amount'     => round($roomStayTotal + $servicesTotal, 2),
+            'room_title'       => (string) ($booking->room?->title ?? ''),
+            'property_address' => (string) ($booking->room?->property?->address_detail ?? ''),
+        ];
+    }
+
+    private function computeRoomStayTotalForBooking(Booking $booking): float
+    {
+        $start = Carbon::parse($booking->start_date);
+        $end = Carbon::parse($booking->end_date);
+        $totalDays = $start->diffInDays($end) + 1;
+        $booking->loadMissing('price');
+        $daily = (float) ($booking->price?->price ?? 0);
+        if ($daily <= 0.0) {
+            $pkg = $this->pricePackageRepository->getDefaultPriceOfRoom((int) $booking->room_id);
+            $daily = (float) ($pkg->cheapest_daily_price ?? 0);
+        }
+
+        return $daily * $totalDays;
+    }
+
+    private function computeServicesTotalForBooking(Booking $booking): float
+    {
+        $booking->loadMissing('services');
+
+        return (float) $booking->services->sum(fn ($service) => (float) ($service->price ?? 0));
     }
 
     // =========================================================================
@@ -950,6 +1093,14 @@ final class BookingService
             $booking = $this->bookingRepository->find($id);
             if (!$booking) {
                 return ['success' => false, 'message' => 'Booking not found'];
+            }
+
+            if ($booking->status === BookingStatus::PENDING_CANCELLATION->value) {
+                return ['success' => false, 'message' => 'Không thể nhận phòng cho đơn đang chờ duyệt hủy'];
+            }
+
+            if ($booking->status !== BookingStatus::CONFIRMED->value) {
+                return ['success' => false, 'message' => 'Chỉ có thể nhận phòng cho đơn đã duyệt'];
             }
 
             DB::beginTransaction();

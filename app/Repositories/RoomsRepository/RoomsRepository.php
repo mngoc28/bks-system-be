@@ -43,7 +43,11 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         return $this->model
             ->where('status', RoomStatus::PUBLIC)
             ->whereDoesntHave('bookings', function ($query) use ($today) {
-                $query->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+                $query->whereIn('status', [
+                    BookingStatus::PENDING->value,
+                    BookingStatus::CONFIRMED->value,
+                    BookingStatus::PENDING_CANCELLATION->value,
+                ])
                     ->where('end_date', '>=', $today);
             })->count();
     }
@@ -234,10 +238,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('ROUND(CASE
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                         AND MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) IS NOT NULL
-                    THEN LEAST(
-                        MIN(CASE WHEN rp.unit = "day" THEN rp.price END),
-                        MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
-                    )
+                    THEN (CASE WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                            < MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+                        THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                        ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) END)
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
@@ -318,10 +322,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('ROUND(CASE
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                         AND MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) IS NOT NULL
-                    THEN LEAST(
-                        MIN(CASE WHEN rp.unit = "day" THEN rp.price END),
-                        MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
-                    )
+                    THEN (CASE WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                            < MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+                        THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                        ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) END)
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
@@ -439,10 +443,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             DB::raw('ROUND(CASE
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                         AND MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) IS NOT NULL
-                    THEN LEAST(
-                        MIN(CASE WHEN rp.unit = "day" THEN rp.price END),
-                        MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
-                    )
+                    THEN (CASE WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                            < MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+                        THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                        ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) END)
                     WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
@@ -609,7 +613,11 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->where('properties.user_id', $partnerId)
             ->where('rooms.status', RoomStatus::PUBLIC)
             ->whereDoesntHave('bookings', function ($query) use ($today) {
-                $query->whereIn('status', [BookingStatus::PENDING->value, BookingStatus::CONFIRMED->value])
+                $query->whereIn('status', [
+                    BookingStatus::PENDING->value,
+                    BookingStatus::CONFIRMED->value,
+                    BookingStatus::PENDING_CANCELLATION->value,
+                ])
                     ->where('end_date', '>=', $today);
             })->count();
     }

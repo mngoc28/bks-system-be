@@ -1,0 +1,5 @@
+### Browser Interaction Rules
+
+- NEVER use the `browser_subagent` tool.
+- ALWAYS use the direct Playwright MCP tools (e.g., `mcp_playwright_browser_navigate`, `mcp_playwright_browser_click`, `mcp_playwright_browser_type`, `mcp_playwright_browser_fill_form`, `mcp_playwright_browser_take_screenshot`) for any web browser operations.
+- DO NOT automatically open the browser or run any verification tools (including `browser_subagent`) after editing code unless explicitly requested by the user. Always let the user perform manual verification to save resources and time.

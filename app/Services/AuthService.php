@@ -239,9 +239,10 @@ class AuthService
     /**
      * Summary of handleLogin
      * @param mixed $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param array|null $allowedRoles
+     * @return array
      */
-    public function handleLogin($request): array
+    public function handleLogin($request, $allowedRoles = null): array
     {
         try {
             $credentials = $request->only(['email', 'password']);
@@ -265,12 +266,21 @@ class AuthService
                 ];
             }
 
+            // Role validation for specific portal
+            if ($allowedRoles && !in_array($user->role, $allowedRoles)) {
+                return [
+                    'status'  => false,
+                    'message' => __('auth.not_permission'),
+                    'data'    => null,
+                ];
+            }
+
             // Combined role check for portals
             if (!in_array($user->role, [UserType::ADMIN, UserType::PARTNER, UserType::USER])) {
                 Auth::guard('api')->logout();
                 return [
                     'status'  => false,
-                    'message' => __('auth.login_forbidden'),
+                    'message' => __('auth.not_permission'),
                     'data'    => null,
                 ];
             }

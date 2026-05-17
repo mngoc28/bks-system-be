@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Booking extends Model
 {
@@ -34,12 +35,16 @@ final class Booking extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'status'      => 'integer',
-        'stay_status' => 'string',
-        'start_date'  => 'date',
-        'end_date'    => 'date',
-        'created_at'  => 'datetime',
-        'updated_at'  => 'datetime',
+        'status'                      => 'integer',
+        'stay_status'                 => 'string',
+        'start_date'                  => 'date',
+        'end_date'                    => 'date',
+        'created_at'                  => 'datetime',
+        'updated_at'                  => 'datetime',
+        'pending_cancellation_since'  => 'datetime',
+        'cancellation_policy_version' => 'string',
+        'client_local_id'             => 'string',
+        'client_fingerprint'          => 'string',
     ];
 
     /**
@@ -112,9 +117,19 @@ final class Booking extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function timelineEvents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function timelineEvents(): HasMany
     {
         return $this->hasMany(BookingTimelineEvent::class, 'booking_id');
+    }
+
+    /**
+     * Guest-initiated cancellation requests (BCP).
+     *
+     * @return HasMany<BookingCancellationRequest>
+     */
+    public function cancellationRequests(): HasMany
+    {
+        return $this->hasMany(BookingCancellationRequest::class, 'booking_id');
     }
 
     /**

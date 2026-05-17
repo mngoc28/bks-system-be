@@ -1,4 +1,4 @@
-﻿# Partner Portal 360 - Software Requirements Specification (SRS)
+# Partner Portal 360 - Software Requirements Specification (SRS)
 
 ## Overview
 
@@ -170,11 +170,12 @@ Ràng buộc scope đã chốt: mỗi Partner là **single owner**, chưa có ph
 
 ### Liên kết với SRS/SRC hiện có
 
-Tại thời điểm phân tích, thư mục canonical `docs/SRC/` chưa có file `srs_*.md` liên quan trực tiếp đến booking/partner. Vì vậy SRS này dùng các tài liệu nguồn sau để đảm bảo flow thống nhất:
+Thư mục canonical `docs/SRC/` hiện có `srs_partner_portal_360.md` (Partner Portal) và **`srs_booking_cancellation_policy.md`** (chính sách hủy khách/Partner & đồng bộ My Bookings). SRS này dùng các tài liệu nguồn sau để đảm bảo flow thống nhất:
 
 | Artifact | Vai trò liên kết |
 |---|---|
 | `docs/leads/lead_260510_partner-portal-360.md` | Lead discovery đầu vào |
+| `docs/SRC/srs_booking_cancellation_policy.md` | Downstream booking: hủy/yêu cầu hủy theo bậc trạng thái; Partner duyệt `pending_cancellation`; metric SLA |
 | `business-script/bks_srs_overview.md` | Vai trò Partner và phạm vi PMS/OTA/Connected Stay |
 | `business-script/PRICING_RESTRUCTURE_PLAN.md` | Quy tắc ngắn hạn/dài hạn/homestay >= 30 ngày |
 | `business-script/E2E_BOOKING_PARTNER_USER_SCRIPT.md` | Luồng User đặt phòng -> Partner xác nhận -> check-in/out |

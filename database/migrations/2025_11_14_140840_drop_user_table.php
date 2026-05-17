@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::dropIfExists('users');
+        // No-op: The users table is created earlier in 2014_10_12_000000_create_users_table.php.
     }
 
     /**
@@ -23,17 +23,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 100);
-            $table->string('email', 150)->unique();
-            $table->string('password', 191);
-            $table->enum('role', ['admin', 'partner', 'user'])->default('user');
-            $table->string('phone', 20)->nullable();
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps();
-            $table->string('sub', 191)->nullable();
-        });
+        // No-op: The users table is dropped in 2014_10_12_000000_create_users_table.php.
     }
 };
