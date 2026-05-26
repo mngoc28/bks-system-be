@@ -33,6 +33,33 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     }
 
     /**
+     * Build a database-specific SQL expression for aggregated room prices.
+     *
+     * @return string
+     */
+    private function allPricesExpression(): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return <<<'SQL'
+COALESCE(
+    '[' || GROUP_CONCAT(DISTINCT
+        '{"unit":"' || rp.unit || '", "price":' || rp.price ||
+        ', "deposit_amount":' || COALESCE(rp.deposit_amount, 0) ||
+        ', "minimum_stay":' || COALESCE(rp.minimum_stay, 0) || '}'
+    ) || ']',
+    '[]'
+) as all_prices
+SQL;
+        }
+
+        return 'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+            '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+            '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+            '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+            ')), \']\'), \'[]\') as all_prices';
+    }
+
+    /**
      * Get count of empty rooms
      *
      * @return int
@@ -247,13 +274,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
                 DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
-                DB::raw(
-                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                    ')), \']\'), \'[]\') as all_prices'
-                ),
+                DB::raw($this->allPricesExpression()),
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
                     'WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
@@ -336,13 +357,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
                 DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
-                DB::raw(
-                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                    ')), \']\'), \'[]\') as all_prices'
-                ),
+                DB::raw($this->allPricesExpression()),
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
                     'WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
@@ -472,13 +487,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
-            DB::raw(
-                'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                ')), \']\'), \'[]\') as all_prices'
-            ),
+            DB::raw($this->allPricesExpression()),
             DB::raw(
                 'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
                 '\'{"type":"\', uf.fee_type, \'", "method":"\', uf.calc_method, ' .

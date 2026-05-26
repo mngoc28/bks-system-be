@@ -2,16 +2,15 @@
 
 namespace Tests\Feature\Admin;
 
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TouristSpotCrudTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
-    protected function signInAdmin()
+    protected function signInAdmin(): string
     {
-        $this->artisan('migrate:refresh');
         $this->seed();
 
         $response = $this->postJson('/api/v1/admin/auth/login', [

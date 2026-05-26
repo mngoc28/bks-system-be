@@ -7,17 +7,16 @@ use App\Models\PartnerInfo;
 use App\Enums\Status;
 use App\Mail\PartnerApprovedMail;
 use App\Mail\PartnerRejectedMail;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PartnerApprovalEmailTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
-    protected function signInAdmin()
+    protected function signInAdmin(): string
     {
-        $this->artisan('migrate:refresh');
         $this->seed();
 
         $response = $this->postJson('/api/v1/admin/auth/login', [
