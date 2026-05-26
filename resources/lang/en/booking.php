@@ -117,17 +117,6 @@ return [
             . 'use the cancellation inbox flow instead of direct cancel.',
     ],
 
-    'sync_local' => [
-        'success'                   => 'Local bookings merged successfully.',
-        'forbidden_role'            => 'Only guest (user) accounts can sync local bookings here.',
-        'fingerprint_mismatch'      => 'Fingerprint does not match room, dates, and account email.',
-        'email_mismatch'            => 'Each item email must match your logged-in email.',
-        'slot_fingerprint_conflict' => 'This stay already has different client metadata; cannot merge.',
-        'price_not_found'           => 'No valid price package found for one of the rooms.',
-        'create_failed'             => 'Could not create one of the bookings.',
-        'note_auto'                 => 'Imported from device (T6 sync-local).',
-    ],
-
     'bcp' => [
         'reasons_loaded'                => 'Cancellation reason codes loaded.',
         'reason_text_required'          => 'Please enter details for the selected reason code.',
@@ -145,5 +134,8 @@ return [
         'partner_request_rejected'    => 'Cancellation request rejected; booking status restored.',
         'partner_request_not_pending' => 'This cancellation request is no longer pending.',
         'partner_booking_not_pending_cancellation' => 'Booking is not in pending cancellation state.',
+        'withdraw_invalid_status'           => 'Cannot withdraw cancellation request in the current booking status.',
+        'no_pending_request_to_withdraw'    => 'No pending cancellation request found to withdraw.',
+        'cancel_request_withdrawn'          => 'Cancellation request withdrawn successfully. Your booking is retained.',
     ],
 ];

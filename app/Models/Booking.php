@@ -172,4 +172,14 @@ final class Booking extends Model
     {
         return Carbon::parse($value)->timezone('Asia/Ho_Chi_Minh')->format('Y-m-d H:i:s');
     }
+
+    /**
+     * Get reviews for this booking.
+     *
+     * @return HasMany
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'booking_id');
+    }
 }

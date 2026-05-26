@@ -24,6 +24,7 @@ use App\Events\BookingConfirmed;
 use App\Events\BookingCreated;
 use App\Events\BookingNoShow;
 use App\Jobs\SendBooking;
+use App\Jobs\SendBookingCancelled;
 use App\Jobs\VerifyMail;
 use App\Models\Booking;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -307,6 +308,7 @@ final class BookingService
 
             DB::commit();
 
+            // --- Broadcast realtime event ---
             $scope = $this->resolveBroadcastScope($bookingUpdate);
             if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
                 $actorId = Auth::id();
@@ -322,6 +324,38 @@ final class BookingService
                         );
                     },
                 );
+            }
+
+            // --- Send cancellation email to guest (after commit) ---
+            // Eager-load user + room.property because BaseRepository::find() does not load relations.
+            $bookingWithRelations = Booking::with(['user', 'room.property'])->find($id);
+            $guest     = $bookingWithRelations?->user;
+            $guestRoom = $bookingWithRelations?->room;
+            if ($guest && $guest->email) {
+                $startCarbon = Carbon::parse($bookingUpdate->start_date);
+                $endCarbon   = Carbon::parse($bookingUpdate->end_date);
+                $cancelledAt = Carbon::parse($bookingUpdate->cancelled_at)
+                    ->timezone('Asia/Ho_Chi_Minh')
+                    ->format('d/m/Y H:i:s');
+
+                $cancelEmailData = [
+                    'booking_code'        => (string) ($bookingUpdate->booking_code ?? ''),
+                    'booking_created_at'  => Carbon::parse($bookingUpdate->created_at)
+                        ->timezone('Asia/Ho_Chi_Minh')
+                        ->format('d/m/Y H:i:s'),
+                    'room_title'          => (string) ($guestRoom?->title ?? ''),
+                    'property_name'       => (string) ($guestRoom?->property?->name ?? ''),
+                    'property_address'    => (string) ($guestRoom?->property?->address_detail ?? ''),
+                    'start_date'          => $startCarbon->format('d/m/Y'),
+                    'end_date'            => $endCarbon->format('d/m/Y'),
+                    'cancelled_at'        => $cancelledAt,
+                    'cancellation_reason' => $reason,
+                    'bookings_url'        => config('app.url_frontend') . '/bks-stay/bookings/' . $bookingUpdate->id,
+                    'room_url'            => config('app.url_frontend') . '/rooms/' . $bookingUpdate->room_id,
+                    'goline_phone'        => '0243 795 7250',
+                ];
+
+                SendBookingCancelled::dispatch($guest->email, $guest->name ?? $guest->email, $cancelEmailData);
             }
 
             return [
@@ -901,29 +935,40 @@ final class BookingService
             ];
 
             $emailInfo = [
-                'booking_code'      => $bookingCode,
-                'room_title'        => $room->title,
-                'room_description'  => $room->description,
-                'room_deposit'      => $room->deposit ?? 0,
-                'amenities'         => $room->amenities ?? [],
-                'services'          => $services,
-                'room_url'          => config('app.url_frontend') . '/rooms/' . $roomId,
-                'bookings_url'      => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
-                'is_first_time'     => $user ? false : true,
-                'company_name'      => $room->company_name ?? '',
-                'company_phone'     => $room->company_phone ?? '',
-                'partner_address'   => $room->address ?? '',
-                'property_name'     => $room->property_name ?? '',
-                'property_address'  => $room->property_address ?? '',
-                'start_time'        => $startDate->format('d/m/Y'),
-                'end_time'          => $endDate->format('d/m/Y'),
-                'total_days'        => $totalDays,
-                'estimate_deadline' => Carbon::now()->addDays(7)->format('d/m/Y'),
-                'total_amount'      => $grandTotal,
-                'goline_phone'      => '0243 795 7250',
-                'token'             => $token,
+                'booking_code'       => $bookingCode,
+                'booking_created_at' => Carbon::parse($booking->created_at)
+                    ->timezone('Asia/Ho_Chi_Minh')
+                    ->format('d/m/Y H:i:s'),
+                'room_title'         => $room->title,
+                'room_description'   => $room->description,
+                'room_deposit'       => $room->deposit ?? 0,
+                'amenities'          => $room->amenities ?? [],
+                'services'           => $services,
+                'room_url'           => config('app.url_frontend') . '/rooms/' . $roomId,
+                'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
+                'is_first_time'      => $user ? false : true,
+                'company_name'       => $room->company_name ?? '',
+                'company_phone'      => $room->company_phone ?? '',
+                'partner_address'    => $room->address ?? '',
+                'property_name'      => $room->property_name ?? '',
+                'property_address'   => $room->property_address ?? '',
+                'start_time'         => $startDate->format('d/m/Y'),
+                'end_time'           => $endDate->format('d/m/Y'),
+                'total_days'         => $totalDays,
+                'estimate_deadline'  => Carbon::now()->addDays(7)->format('d/m/Y'),
+                'total_amount'       => $grandTotal,
+                'goline_phone'       => '0243 795 7250',
+                'token'              => $token,
             ];
             DB::commit();
+
+            // Realtime: broadcast booking mới đến partner sở hữu room (Phase 2).
+            $scope = $this->resolveBroadcastScope($booking);
+            if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
+                $this->safeDispatch('booking.created', static function () use ($booking, $scope): void {
+                    BookingCreated::dispatch($booking, $scope['partner_id'], $scope['property_id']);
+                });
+            }
 
             // Send mail AFTER commit success
             SendBooking::dispatch($createUser->email, $createUser->name, $emailInfo);

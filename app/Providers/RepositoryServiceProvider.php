@@ -58,6 +58,8 @@ use App\Repositories\RoomBlockRepository\RoomBlockRepository;
 use App\Repositories\RoomBlockRepository\RoomBlockRepositoryInterface;
 use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationRequestRepository;
 use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationRequestRepositoryInterface;
+use App\Repositories\ReviewRepository\ReviewRepository;
+use App\Repositories\ReviewRepository\ReviewRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -176,6 +178,10 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             PartnerCancellationRequestRepositoryInterface::class,
             PartnerCancellationRequestRepository::class
+        );
+        $this->app->singleton(
+            ReviewRepositoryInterface::class,
+            ReviewRepository::class
         );
     }
 

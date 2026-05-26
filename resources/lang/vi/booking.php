@@ -118,17 +118,6 @@ return [
             . 'Partner không thể hủy trực tiếp từ màn hình này.',
     ],
 
-    'sync_local' => [
-        'success'                   => 'Đã gộp đơn cục bộ thành công.',
-        'forbidden_role'            => 'Chỉ tài khoản khách (user) mới được đồng bộ đơn cục bộ tại đây.',
-        'fingerprint_mismatch'      => 'Fingerprint không khớp phòng, ngày và email tài khoản.',
-        'email_mismatch'            => 'Email trong từng phần tử phải trùng email đang đăng nhập.',
-        'slot_fingerprint_conflict' => 'Đơn lưu trú đã có metadata client khác; không thể gộp.',
-        'price_not_found'           => 'Không tìm thấy gói giá hợp lệ cho một trong các phòng.',
-        'create_failed'             => 'Không thể tạo một trong các đặt phòng.',
-        'note_auto'                 => 'Nhập từ thiết bị (T6 sync-local).',
-    ],
-
     'bcp' => [
         'reasons_loaded'                    => 'Đã tải danh mục lý do hủy.',
         'reason_text_required'              => 'Vui lòng nhập mô tả lý do cho mã lý do đã chọn.',
@@ -144,5 +133,9 @@ return [
         'partner_request_rejected'          => 'Đã từ chối yêu cầu hủy; trạng thái đơn được khôi phục.',
         'partner_request_not_pending'       => 'Yêu cầu hủy không còn ở trạng thái chờ xử lý.',
         'partner_booking_not_pending_cancellation' => 'Đơn không ở trạng thái chờ hủy (pending cancellation).',
+        'withdraw_invalid_status'           => 'Không thể rút yêu cầu hủy ở trạng thái đơn hiện tại.',
+        'no_pending_request_to_withdraw'    => 'Không tìm thấy yêu cầu hủy nào đang chờ xử lý để rút.',
+        'cancel_request_withdrawn'          => 'Đã rút yêu cầu hủy đặt phòng thành công. '
+            . 'Đặt phòng của bạn vẫn được giữ nguyên.',
     ],
 ];

@@ -11,6 +11,7 @@ use App\Repositories\RoomPriceRepository\RoomPriceRepository;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\PricePackage;
+use App\Services\RoomTouristSummaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,7 @@ final class RoomsService
     private RoomAmenityService $roomAmenityService;
     private RoomPriceService $roomPriceService;
     private UtilityFeeService $utilityFeeService;
+    private RoomTouristSummaryService $roomTouristSummaryService;
 
     /**
      * Constructor method.
@@ -50,7 +52,8 @@ final class RoomsService
         RoomServiceService $roomServiceService,
         RoomAmenityService $roomAmenityService,
         RoomPriceService $roomPriceService,
-        UtilityFeeService $utilityFeeService
+        UtilityFeeService $utilityFeeService,
+        RoomTouristSummaryService $roomTouristSummaryService
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->roomServiceRepository = $roomServiceRepository;
@@ -60,6 +63,7 @@ final class RoomsService
         $this->roomAmenityService = $roomAmenityService;
         $this->roomPriceService = $roomPriceService;
         $this->utilityFeeService = $utilityFeeService;
+        $this->roomTouristSummaryService = $roomTouristSummaryService;
     }
     /**
      * Get all rooms or search by criteria with pagination
@@ -336,6 +340,7 @@ final class RoomsService
     {
         try {
             $rooms = $this->roomsRepository->getLatestRooms($request);
+            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
 
             return [
                 "success" => true,
@@ -362,6 +367,7 @@ final class RoomsService
     {
         try {
             $rooms = $this->roomsRepository->getRoomList($request);
+            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
 
             return [
                 "success" => true,
@@ -379,6 +385,47 @@ final class RoomsService
     }
 
     /**
+     * Get suggested rooms grouped by province for homepage.
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function handleSuggestedRoomsByProvince(Request $request): array
+    {
+        try {
+            $rooms = $this->roomsRepository->getRoomList($request);
+            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+
+            $groupedRooms = collect($rooms)
+                ->groupBy(fn ($room) => $room->province_name ?? __('room.messages.retrieved_successfully'))
+                ->map(function ($provinceRooms, $provinceName) {
+                    $firstRoom = $provinceRooms->first();
+
+                    return [
+                        'province_id' => $firstRoom->province_id ?? null,
+                        'province_name' => $firstRoom->province_name ?? $provinceName,
+                        'province_name_en' => $firstRoom->province_name_en ?? null,
+                        'rooms' => $provinceRooms->values(),
+                    ];
+                })
+                ->values();
+
+            return [
+                'success' => true,
+                'data' => $groupedRooms,
+                'message' => __('room.messages.retrieved_successfully'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching suggested rooms by province: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => __('room.messages.retrieved_failed'),
+            ];
+        }
+    }
+
+    /**
      * Get public room detail by ID
      *
      * @param int $id
@@ -388,6 +435,7 @@ final class RoomsService
     {
         try {
             $room = $this->roomsRepository->getPublicRoomDetail((int)$id);
+            $room = $this->roomTouristSummaryService->enrichRoom($room);
 
             return [
                 "success" => true,

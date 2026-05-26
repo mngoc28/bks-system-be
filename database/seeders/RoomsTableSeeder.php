@@ -46,39 +46,48 @@ class RoomsTableSeeder extends Seeder
             'camping-glamping' => ['Lều Mông Cổ', 'Nhà Gỗ Glamping', 'Lều Bell Tent', 'Lều Tròn Safari'],
         ];
 
-        foreach (range(1, 200) as $i) {
-            $property = $faker->randomElement($properties->toArray());
+        $roomCount = 0;
+        $roomsData = [];
+
+        foreach ($properties as $property) {
+            $numRooms = rand(3, 6);
             $slug = $property->slug;
-
             $possibleTitles = $typeRoomTitles[$slug] ?? ['Phòng Cao Cấp', 'Phòng Tiêu Chuẩn', 'Phòng Sang Trọng'];
-            $title = $faker->randomElement($possibleTitles) . ' ' . $faker->numberBetween(101, 999);
-            
-            $description = $faker->randomElement($descriptions);
-            
-            $roomType = $faker->numberBetween(1, 3); // 1=Studio, 2=Double, 3=Mini apartment
-            $people = match ($roomType) {
-                1 => $faker->numberBetween(1, 2),
-                2 => $faker->numberBetween(2, 4),
-                3 => $faker->numberBetween(4, 8),
-                default => 2,
-            };
 
-            DB::table('rooms')->insert([
-                'property_id' => $property->id,
-                'title' => $title,
-                'room_number' => 'R' . str_pad($i, 3, '0', STR_PAD_LEFT),
-                'deposit' => $faker->numberBetween(500000, 10000000),
-                'area' => $faker->randomFloat(2, 10, 80),
-                'floor_number' => $faker->numberBetween(1, 10),
-                'people' => $people,
-                'room_type' => $roomType, 
-                'status' => $faker->boolean(80), 
-                'description' => $description,
-                'created_by' => 1,
-                'updated_by' => 1,
-                'created_at' => Carbon::now()->subDays(rand(1, 50)),
-                'updated_at' => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            for ($r = 0; $r < $numRooms; $r++) {
+                $roomCount++;
+                $title = $faker->randomElement($possibleTitles) . ' ' . $faker->numberBetween(101, 999);
+                $description = $faker->randomElement($descriptions);
+                
+                $roomType = $faker->numberBetween(1, 3); // 1=Studio, 2=Double, 3=Mini apartment
+                $people = match ($roomType) {
+                    1 => $faker->numberBetween(1, 2),
+                    2 => $faker->numberBetween(2, 4),
+                    3 => $faker->numberBetween(4, 8),
+                    default => 2,
+                };
+
+                $roomsData[] = [
+                    'property_id' => $property->id,
+                    'title' => $title,
+                    'room_number' => 'R' . str_pad($roomCount, 4, '0', STR_PAD_LEFT),
+                    'deposit' => $faker->numberBetween(500000, 10000000),
+                    'area' => $faker->randomFloat(2, 10, 80),
+                    'floor_number' => $faker->numberBetween(1, 10),
+                    'people' => $people,
+                    'room_type' => $roomType, 
+                    'status' => $faker->boolean(80), 
+                    'description' => $description,
+                    'created_by' => 1,
+                    'updated_by' => 1,
+                    'created_at' => Carbon::now()->subDays(rand(1, 50)),
+                    'updated_at' => Carbon::now()->subDays(rand(1, 40)),
+                ];
+            }
         }
+
+        collect($roomsData)->chunk(100)->each(function ($chunk) {
+            DB::table('rooms')->insert($chunk->toArray());
+        });
     }
 }

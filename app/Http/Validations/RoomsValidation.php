@@ -55,6 +55,38 @@ final class RoomsValidation
     }
 
     /**
+     * Validate suggested rooms by province request parameters.
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
+    public function suggestedRoomsByProvinceValidation(Request $request): \Illuminate\Contracts\Validation\Validator
+    {
+        return Validator::make(
+            $request->all(),
+            [
+                'province_ids' => ['nullable', 'array', 'max:20'],
+                'province_ids.*' => ['integer', 'exists:provinces,id'],
+                'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            ],
+            [
+                'province_ids.array' => __('room.validation.property_id.exists'),
+                'province_ids.max' => __('room.validation.property_id.exists'),
+                'province_ids.*.integer' => __('room.validation.property_id.integer'),
+                'province_ids.*.exists' => __('room.validation.property_id.exists'),
+                'limit.integer' => __('room.validation.title.string'),
+                'limit.min' => __('room.validation.title.string'),
+                'limit.max' => __('room.validation.title.string'),
+            ],
+            [
+                'province_ids' => __('property.attributes.province_id'),
+                'province_ids.*' => __('property.attributes.province_id'),
+                'limit' => __('room.attributes.title'),
+            ]
+        );
+    }
+
+    /**
      * Validate room ID parameter.
      *
      * @param int $id The room ID to validate.

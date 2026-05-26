@@ -152,11 +152,43 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
                     'WHERE pi.property_id = properties.id ' .
                     'ORDER BY pi.sort ASC, pi.id ASC LIMIT 1) as cover_image_url'
                 ),
+                DB::raw('(SELECT COUNT(*) FROM reviews JOIN rooms ON reviews.room_id = rooms.id ' .
+                    'WHERE rooms.property_id = properties.id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews JOIN rooms ON reviews.room_id = rooms.id ' .
+                    'WHERE rooms.property_id = properties.id) as reviews_avg_rating')
             ])
             ->leftJoin('users', 'properties.user_id', '=', 'users.id')
             ->leftJoin('provinces', 'properties.province_id', '=', 'provinces.id')
             ->leftJoin('wards', 'properties.ward_id', '=', 'wards.id')
             ->where('properties.user_id', $partnerId);
+
+        if ($request->boolean('with_rooms')) {
+            $query->with(['rooms' => function ($q) {
+                $q->with([
+                    'amenities:id,name',
+                    'services:id,name',
+                    'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+                    'utilityFees',
+                    'images' => function ($imgQuery) {
+                        $imgQuery->where('sort', 1)->select('id', 'room_id', 'image_url');
+                    }
+                ])
+                ->select(
+                    'rooms.id',
+                    'rooms.property_id',
+                    'rooms.room_number',
+                    'rooms.title',
+                    'rooms.room_type',
+                    'rooms.status',
+                    'rooms.area',
+                    'rooms.people',
+                    DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+                    DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                        'WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
+                )
+                ->orderBy('rooms.id', 'desc');
+            }]);
+        }
 
         if ($request->filled('name')) {
             $query->whereRaw('LOWER(properties.name) LIKE ?', ['%' . strtolower($request->name) . '%']);

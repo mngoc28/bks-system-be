@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -27,17 +28,19 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('bookings', function (Blueprint $table): void {
-            $table->dropIndex('idx_bookings_pending_cancellation_since');
-            $table->dropIndex('idx_bookings_client_local_id');
-            $table->dropIndex('idx_bookings_client_fingerprint');
+        if (DB::getDriverName() !== 'sqlite') {
+            Schema::table('bookings', function (Blueprint $table): void {
+                $table->dropIndex('idx_bookings_pending_cancellation_since');
+                $table->dropIndex('idx_bookings_client_local_id');
+                $table->dropIndex('idx_bookings_client_fingerprint');
 
-            $table->dropColumn([
-                'pending_cancellation_since',
-                'cancellation_policy_version',
-                'client_local_id',
-                'client_fingerprint',
-            ]);
-        });
+                $table->dropColumn([
+                    'pending_cancellation_since',
+                    'cancellation_policy_version',
+                    'client_local_id',
+                    'client_fingerprint',
+                ]);
+            });
+        }
     }
 };

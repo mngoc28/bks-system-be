@@ -33,6 +33,33 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     }
 
     /**
+     * Build a database-specific SQL expression for aggregated room prices.
+     *
+     * @return string
+     */
+    private function allPricesExpression(): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return <<<'SQL'
+COALESCE(
+    '[' || GROUP_CONCAT(DISTINCT
+        '{"unit":"' || rp.unit || '", "price":' || rp.price ||
+        ', "deposit_amount":' || COALESCE(rp.deposit_amount, 0) ||
+        ', "minimum_stay":' || COALESCE(rp.minimum_stay, 0) || '}'
+    ) || ']',
+    '[]'
+) as all_prices
+SQL;
+        }
+
+        return 'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+            '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+            '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+            '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+            ')), \']\'), \'[]\') as all_prices';
+    }
+
+    /**
      * Get count of empty rooms
      *
      * @return int
@@ -247,13 +274,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
                 DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
-                DB::raw(
-                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                    ')), \']\'), \'[]\') as all_prices'
-                ),
+                DB::raw($this->allPricesExpression()),
+                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
             )
             ->groupBy(
                 'rooms.id',
@@ -293,6 +317,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     public function getRoomList(Request $request): object | null
     {
         $limitPerProvince = $request->input('limit', config('const.DEFAULT_PER_PAGE'));
+        $provinceIds = $request->input('province_ids', []);
 
         // First get rooms with row numbers per province
         $roomsQuery = $this->model
@@ -312,6 +337,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.people',
                 'rooms.description',
                 'rooms.area',
+                'p.id as province_id',
                 'p.name as province_name',
                 'p.name_en as province_name_en',
                 'ri.image_url as room_image',
@@ -331,13 +357,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
                 DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
-                DB::raw(
-                    'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                    '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                    '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                    '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                    ')), \']\'), \'[]\') as all_prices'
-                ),
+                DB::raw($this->allPricesExpression()),
+                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
                 // Add row number for each province (ordered by updated_at DESC)
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
             )
@@ -357,6 +380,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'b.property_type_id',
                 'rooms.updated_at'
             );
+
+        if (!empty($provinceIds) && is_array($provinceIds)) {
+            $roomsQuery->whereIn('p.id', $provinceIds);
+        }
 
         if ($request->filled('partner_id')) {
             $roomsQuery->where('u.id', $request->partner_id);
@@ -417,6 +444,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 ->where('ri.sort', 1);
         })
         ->join('properties as b', 'rooms.property_id', '=', 'b.id')
+        ->join('users as u', 'b.user_id', '=', 'u.id')
+        ->leftJoin('partner_info as pi', 'pi.user_id', '=', 'u.id')
         ->join('provinces as p', 'b.province_id', '=', 'p.id')
         ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
         ->leftjoin('room_services as rs', 'rooms.id', '=', 'rs.room_id')
@@ -434,6 +463,13 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'p.name as province_name',
             'pt.name as property_type_name',
             'b.property_type_id',
+            'u.id as partner_id',
+            'u.name as partner_name',
+            'u.email as partner_email',
+            'pi.company_name as partner_company_name',
+            'pi.phone as partner_phone',
+            'pi.address as partner_address',
+            'pi.description as partner_description',
             DB::raw(
                 'CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
                     '\'{"id":\', s.id, \',"name":"\', REPLACE(s.name, \'"\', \'\\"\'), \'","price":\', s.price, \'}\'' .
@@ -451,19 +487,16 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
                     ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
                 END, 0) as cheapest_daily_price'),
-            DB::raw(
-                'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
-                '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
-                '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
-                '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
-                ')), \']\'), \'[]\') as all_prices'
-            ),
+            DB::raw($this->allPricesExpression()),
             DB::raw(
                 'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
                 '\'{"type":"\', uf.fee_type, \'", "method":"\', uf.calc_method, ' .
                 '\'", "price":\', uf.unit_price, \', "included":\', uf.is_included, \'}\'' .
                 ')), \']\'), \'[]\') as utility_fees'
             ),
+            DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+            DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                'WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
         )->groupBy(
             'rooms.id',
             'rooms.title',
@@ -476,7 +509,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.updated_at',
             'p.name',
             'pt.name',
-            'b.property_type_id'
+            'b.property_type_id',
+            'u.id',
+            'u.name',
+            'u.email',
+            'pi.company_name',
+            'pi.phone',
+            'pi.address',
+            'pi.description'
         )->where('rooms.id', $id)
             ->first();
     }
@@ -513,7 +553,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.room_type',
                 'rooms.status',
                 'rooms.area',
-                'rooms.people'
+                'rooms.people',
+                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
             )
             ->where('properties.user_id', $partnerId);
 
@@ -574,7 +617,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.description',
                 'rooms.created_at',
                 'rooms.updated_at',
-                'properties.name as property_name'
+                'properties.name as property_name',
+                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
             )
             ->where('rooms.id', $id)
             ->where('properties.user_id', $partnerId)

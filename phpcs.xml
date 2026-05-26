@@ -28,6 +28,8 @@
     <exclude-pattern>public/index.php</exclude-pattern>
     <exclude-pattern>app/Http/Controllers/Auth/*</exclude-pattern>
     <exclude-pattern>app/Services/CognitoTokenApiGuard.php</exclude-pattern>
+    <exclude-pattern>test-http.php</exclude-pattern>
+    <exclude-pattern>trigger_partner2.php</exclude-pattern>
 
     <rule ref="PSR12">
         <!-- 除外したい項目 -->

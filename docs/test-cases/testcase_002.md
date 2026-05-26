@@ -16,12 +16,12 @@
 
 ### In-scope (theo SRS + plan P002 đã triển khai)
 
-- **Stay (JWT):** `GET /api/v1/stay/cancellation-reasons`, `POST /api/v1/stay/bookings/{id}/cancel`, `POST /api/v1/stay/bookings/{id}/cancel-request`, `POST /api/v1/stay/bookings/sync-local`.
+- **Stay (JWT):** `GET /api/v1/stay/cancellation-reasons`, `POST /api/v1/stay/bookings/{id}/cancel`, `POST /api/v1/stay/bookings/{id}/cancel-request` (Note: `sync-local` has been decommissioned).
 - **Partner (JWT + role partner):** `GET /api/v1/partner/cancellation-requests`, `POST …/{id}/approve`, `POST …/{id}/reject`.
 - **Admin (JWT + role admin):** `GET /api/v1/admin/booking-cancellation-metrics`.
 - **Feature flag:** `BCP_CANCELLATION_V1` / middleware `bcp.cancellation` (kỳ vọng 403 khi tắt).
 - **Trạng thái:** `pending_cancellation` (status 4), bảng `booking_cancellation_requests`, timeline/metadata chính sách (tier), cooldown, idempotency.
-- **FE (tham chiếu UAT):** My Bookings (local + sync), Stay (CTA cancel vs cancel-request, countdown 429), Partner inbox + Echo (theo plan B3/B4 — kiểm thử hành vi người dùng, không bắt buộc map 1-1 từng component).
+- **FE (tham chiếu UAT):** Stay (CTA cancel vs cancel-request, countdown 429), Partner inbox + Echo (theo plan B3/B4).
 
 ### Out-of-scope
 
@@ -48,7 +48,7 @@
 | TD-02 | `reason_code` có `requires_note=true` + `reason_text` không rỗng. |
 | TD-03 | `reason_code` không tồn tại hoặc `is_active=0`. |
 | TD-04 | `idempotency_key` cố định (UUID) để lặp lại request `cancel-request`. |
-| TD-05 | Payload `sync-local` tối thiểu 1 item có `fingerprint`/`client_local_id` khớp nghiệp vụ design (tham chiếu api-doc sync-local). |
+| TD-05 | (Decommissioned/Removed) |
 
 ## Test Cases
 
@@ -70,8 +70,8 @@
 | TC002-014 | BCP-003 | Stay API | Sai lộ: cancel khi đã confirmed | Booking `confirmed` gọi `cancel`. | — | 409 `INVALID_STATE`. | Medium |
 | TC002-015 | Auth | Stay API | Không JWT | Gọi API không header auth. | — | 401. | High |
 | TC002-016 | Auth | Stay API | Booking người khác | JWT user A, `booking_id` của user B. | — | 403 `FORBIDDEN` / policy guest. | High |
-| TC002-017 | BCP-008, F-BCP-04 | Stay API | Sync-local sau login | 1) Login Stay.<br>2) `POST …/bookings/sync-local` với item fingerprint trùng booking đã có. | TD-05 | 200; trả `server_booking_id` map; không tạo duplicate business (kiểm DB). | High |
-| TC002-018 | BCP-008 | Stay API | Sync-local validation | Body rỗng / thiếu schema. | Invalid JSON | 422. | Medium |
+| TC002-017 | (Decommissioned/Removed) | | | | | | |
+| TC002-018 | (Decommissioned/Removed) | | | | | | |
 | TC002-019 | BCP-009, F-BCP-05 | Partner API | Inbox danh sách | `GET /partner/cancellation-requests` (filter optional). | JWT Partner | 200; có phân trang/filter theo query đã design. | High |
 | TC002-020 | BCP-009 | Partner API | Approve yêu cầu | Chọn request `pending` thuộc property Partner.<br>`POST …/{id}/approve` (note optional nếu có). | Request hợp lệ | 200; booking `cancelled`; request `approved`; có timeline/broadcast marker (kiểm DB hoặc log). | High |
 | TC002-021 | BCP-009, F-BCP-06 | Partner API | Reject + ghi chú | `POST …/{id}/reject` với `note` ≥ 5 ký tự. | Note hợp lệ | 200; booking khôi phục `previous_booking_status`; request `rejected`. | High |
@@ -84,7 +84,7 @@
 | TC002-028 | Auth | Admin API | User không phải admin | JWT Stay/Partner gọi metrics. | — | 403. | High |
 | TC002-029 | Auth | Admin API | Không JWT | — | — | 401. | High |
 | TC002-030 | Throttle | Stay API | Giới hạn cancel-request | Gửi > 10 request/phút (theo route throttle) từ cùng IP/user. | — | 429 Too Many Requests (Laravel throttle). | Low |
-| TC002-031 | FE B4 | My Bookings | Cảnh báo chỉ local | Mở My Bookings có đơn chưa có server id. | TD local | UI hiển thị cảnh báo phạm vi thiết bị; không nhầm với đã sync. | Medium |
+| TC002-031 | (Decommissioned/Removed) | | | | | | |
 | TC002-032 | FE B4 | Stay | CTA đúng bậc trạng thái | Mở chi tiết booking pending vs confirmed. | — | Pending: nút hủy trực tiếp; Confirmed: gửi yêu cầu hủy. | High |
 | TC002-033 | BCP-006 | Stay FE | Countdown 429 | Sau khi API trả 429 cooldown, UI hiển thị thời gian chờ (từ `retry_after_seconds` hoặc header). | — | Người dùng thấy số đếm / thông báo rõ. | Medium |
 | TC002-034 | Realtime B3 | Partner FE | Inbox cập nhật | Khi Stay tạo request mới, Partner đang mở inbox nhận toast/cập nhật danh sách (Echo). | 2 browser/profile | Danh sách refresh hoặc realtime không cần F5 thủ công. | Medium |
@@ -113,7 +113,7 @@
 | BCP-005 | TC002-004 — TC002-006, TC002-009 | Lý do |
 | BCP-006 | TC002-010, TC002-033 | Cooldown |
 | BCP-007 | TC002-011 | Idempotency |
-| BCP-008 | TC002-017, TC002-018 | sync-local |
+| BCP-008 | (Decommissioned/Removed) | |
 | BCP-009 | TC002-019 — TC002-024, TC002-034 | Partner resolve |
 | BCP-010 / BCP-011 | TC002-025 | Policy tier + snapshot |
 | B7 KPI | TC002-027 — TC002-029 | Admin metrics |
@@ -126,7 +126,7 @@
 2. **Phụ thuộc dữ liệu:** TC Partner cần request `pending` từ Stay trước; chuẩn bị script SQL hoặc factory để reset booking giữa các lần chạy.
 3. **Realtime:** TC002-034 cần cấu hình Echo/Pusher/Soketi giống môi trường staging.
 4. **Ràng buộc CI:** Một số TC cần DB thật; nếu môi trường không có MySQL, hoãn TC DB-heavy và ghi rõ trong báo cáo chạy.
-5. **Đối chiếu contract:** `api-doc/` snippets Stay cancel / Partner cancellation / sync-local (nếu có trong repo).
+5. **Đối chiếu contract:** `api-doc/` snippets Stay cancel / Partner cancellation (sync-local has been decommissioned).
 
 ## Smoke Regression (sau mỗi release BCP)
 

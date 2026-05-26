@@ -34,6 +34,7 @@ final class PartnerInfo extends Model
     protected $casts = [
         "created_at" => "datetime",
         "updated_at" => "datetime",
+        "approved_at" => "datetime",
     ];
 
     /**
@@ -84,5 +85,15 @@ final class PartnerInfo extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, "updated_by");
+    }
+
+    /**
+     * Get the user who approved this partner info.
+     *
+     * @return BelongsTo
+     */
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, "approved_by");
     }
 }

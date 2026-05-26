@@ -26,6 +26,7 @@
 | 2026-05-14 | Cursor Agent (stack-task Phase B1) | **BCP foundation:** migration files `2026_05_14_100001_create_cancellation_reason_codes_table.php`, `2026_05_14_100002_create_cancellation_policy_versions_table.php`, `2026_05_14_100003_create_cancellation_policy_tiers_table.php`, `2026_05_14_100004_add_bcp_columns_to_bookings_table.php`, `2026_05_14_100005_create_booking_cancellation_requests_table.php`. Seeders: `CancellationReasonCodesSeeder`, `CancellationPolicyBaselineSeeder` (version `2026-baseline-v1`). Runtime: `BookingStatus::PENDING_CANCELLATION=4`, `config/bcp.php`, middleware `EnsureBcpCancellationEnabled` (`bcp.cancellation`), `ConflictChecker` doc + tests (status 4 conflict-active), `PartnerKpiService::computeOccupancyChart` tính thêm status 4, `RoomsRepository`/`BookingRepository` availability coi 4 như giữ chỗ, `BookingService::handleConfirmBooking` chặn confirm khi status 4. |
 | 2026-05-14 | Cursor Agent (stack-task Phase B3 BE) | **Partner BCP inbox (runtime, không đổi schema):** API `GET/POST /api/v1/partner/cancellation-requests` (middleware `bcp.cancellation`), service approve/reject (transaction + `lockForUpdate`, khôi phục `previous_booking_status` khi reject, `BookingCancelled` sau commit khi approve), policy `BookingCancellationRequestPolicy`, broadcast `CancellationRequestUpdated` (alias `.cancellation_request.updated`, payload không PII) + listener `RecordCancellationRequestBroadcastMarker` (marker timeline `broadcast_dispatched`); guest `cancel-request` cũng dispatch event trạng thái `pending`. Contract snippet: `api-doc/partner-cancellation-requests.js`. |
 | 2026-05-14 | Cursor Agent (stack-task Phase B5) | **Policy tier + B7 metrics (không migration mới):** `CancellationPolicyBaselineSeeder` seed 6 dòng `cancellation_policy_tiers` (version `2026-baseline-v1`, % placeholder BA). Runtime: `CancellationPolicyResolver` + `CancellationPolicyTierMatcher` (tính `stay_kind`, giờ trước check-in, chọn tier); `GuestCancellationService::requestCancellation` ghi `policy_version_snapshot` + metadata timeline (`policy_tier_id`, % ước tính). `BookingCancellationMetricsService` (SLA p50/p90 giây trên request đã resolve; % pending “treo” theo `bcp.stale_request_hours`; raw duration hỗ trợ MySQL + SQLite). Admin: `GET /api/v1/admin/booking-cancellation-metrics`. Unit test thuần: `tests/Unit/Support/Bcp/CancellationPolicyTierMatcherTest.php`. |
+| 2026-05-21 | Cursor Agent (stack-task RTM) | Room-tourist mapping implemented: migration `2026_05_21_120001_create_tourist_spots_table.php`, migration `2026_05_21_120002_create_room_tourist_spot_maps_table.php`, model relations `Room::touristSpotMaps()`, `TouristSpot::roomTouristSpotMaps()`, `RoomTouristSpotMap`, public summary enrichment via `RoomTouristSummaryService` for home/search/detail, admin CRUD routes/controllers for `tourist-spots` and `room-tourist-spot-maps`. Travel time kept as estimated/managed value; no live routing schema added. |
 
 ## Nguyên tắc dùng chung
 
@@ -263,6 +264,40 @@ Mục đích: cho Partner chặn lịch phòng vì bảo trì, owner-use hoặc 
 - CHECK `block_type IN ('maintenance','owner_use','off_market')`.
 - Foreign key `created_by` ON DELETE SET NULL về `users.id`.
 
+### tourist_spots
+
+Mục đích: master danh mục các điểm du lịch / khu tham quan nổi bật để gắn với phòng và hiển thị trên home/search.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| id | bigint | PK | Điểm du lịch |
+| name | string(255) | Index | Tên hiển thị, ví dụ Bà Nà Hill |
+| slug | string(255) | Unique | Định danh nội bộ / SEO |
+| category | string(50) | Index đề xuất | attraction, beach, mountain, culture, entertainment, other |
+| region_label | string(255) | - | Khu vực / vùng liên quan |
+| is_featured | boolean | Index | Điểm nổi tiếng cần ưu tiên |
+| sort_order | integer | - | Thứ tự hiển thị |
+| is_active | boolean | Index | Bật / tắt hiển thị |
+
+### room_tourist_spot_maps
+
+Mục đích: lưu mapping giữa phòng và điểm du lịch, kèm thời gian di chuyển ước tính.
+
+| Column | Type | Key | Notes |
+|---|---|---|---|
+| id | bigint | PK | Mapping ID |
+| room_id | bigint | FK -> rooms.id | Phòng được gắn |
+| tourist_spot_id | bigint | FK -> tourist_spots.id | Điểm du lịch |
+| distance_km | decimal(8,2) | - | Khoảng cách ước tính, nullable |
+| travel_time_minutes | integer | Index | Thời gian di chuyển ước tính |
+| priority_order | integer | - | Thứ tự ưu tiên trên card |
+| is_primary | boolean | Index | Điểm chính của phòng |
+| source_type | string(30) | Index | manual, estimated, imported |
+| note | text | - | Ghi chú nghiệp vụ |
+| created_at / updated_at | timestamp | - | Laravel timestamps |
+
+**Index cần đảm bảo:** `room_tourist_spot_maps(room_id, tourist_spot_id)`, `room_tourist_spot_maps(room_id, is_primary, priority_order)`.
+
 ## Quan hệ nghiệp vụ chính
 
 ```mermaid
@@ -273,11 +308,13 @@ erDiagram
   ROOMS ||--o{ BOOKINGS : receives
   ROOMS ||--o{ ROOM_BLOCKS : blocks
   ROOMS ||--o{ UTILITY_FEES : has
+  ROOMS ||--o{ ROOM_TOURIST_SPOT_MAPS : maps
   BOOKINGS ||--o{ CONTRACTS : generates
   BOOKINGS ||--o{ BOOKING_TIMELINE_EVENTS : logs
   USERS ||--o{ BOOKING_TIMELINE_EVENTS : acts
   BOOKINGS ||--o{ BOOKING_CANCELLATION_REQUESTS : cancellation_flow
   CANCELLATION_POLICY_VERSIONS ||--o{ CANCELLATION_POLICY_TIERS : defines
+  TOURIST_SPOTS ||--o{ ROOM_TOURIST_SPOT_MAPS : targets
 ```
 
 ## Quy tắc dữ liệu liên quan Partner Portal 360
@@ -292,4 +329,5 @@ erDiagram
 8. Dashboard Phase 4 chart occupancy/GMV dùng live query từ bảng hiện có + cache 60s, chưa cần bảng snapshot theo ngày.
 8. Backfill `bookings.confirmed_at = updated_at` cho booking đang ở `status = 1` để có baseline KPI; ghi `metadata.backfilled = true` ở timeline để phân biệt với event thật.
 9. Trạng thái **`pending_cancellation`** (khi đã triển khai) tham gia conflict/availability như booking **chưa hủy hoàn toàn** cho đến khi Partner từ chối yêu cầu hoặc chấp nhận hủy; chi tiết rule nghiệp vụ xem `docs/SRC/srs_booking_cancellation_policy.md` và **`docs/designs/design_002.md`** (ConflictChecker không loại status 4 khỏi tập “đang giữ chỗ”).
+10. Với room-tourist mapping, `travel_time_minutes` là giá trị ước tính / quản trị; không mặc định suy ra từ routing live trong canonical schema này.
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
 
@@ -61,4 +61,3 @@ return [
     ],
     'limit_faq' => 10
 ];
-

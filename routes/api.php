@@ -37,13 +37,15 @@ use App\Http\Controllers\Partner\PartnerStayServiceController;
 use App\Http\Controllers\Partner\PartnerRoomBlockController;
 use App\Http\Controllers\Partner\PartnerCalendarController;
 use App\Http\Controllers\Partner\PartnerCancellationRequestController;
+use App\Http\Controllers\Admin\TouristSpotController;
+use App\Http\Controllers\Admin\RoomTouristSpotMapController;
 use App\Http\Controllers\Stay\StayController;
-use App\Http\Controllers\Stay\StayLocalBookingSyncController;
 use App\Http\Controllers\Stay\StayBookingCancellationController;
 use App\Http\Controllers\BookingCancellationReportController;
 use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -74,6 +76,11 @@ Route::group([
      * Trả về Pusher signed payload để client subscribe private/presence channel.
      */
     Route::middleware(['jwt.auth'])->post('broadcasting/auth', [BroadcastAuthController::class, 'authenticate']);
+
+    Route::middleware(['jwt.auth'])->get(
+        'documents/view',
+        [\App\Http\Controllers\Admin\PartnerApprovalController::class, 'viewPrivateDocument']
+    );
 
     /**
      * Check permission
@@ -106,6 +113,18 @@ Route::group([
          */
         Route::middleware('jwt.auth')->prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
+        });
+
+        /**
+         * Partner Approval API
+         * Base Url /api/v1/admin/partners/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('partners')->group(function () {
+            Route::get('pending-list', [\App\Http\Controllers\Admin\PartnerApprovalController::class, 'pendingList']);
+            Route::get('{id}/detail', [\App\Http\Controllers\Admin\PartnerApprovalController::class, 'detail'])
+                ->whereNumber('id');
+            Route::post('{id}/verify', [\App\Http\Controllers\Admin\PartnerApprovalController::class, 'verify'])
+                ->whereNumber('id');
         });
 
         /**
@@ -287,6 +306,30 @@ Route::group([
         });
 
         /**
+         * Tourist Spots API
+         * Base Url /api/v1/admin/tourist-spots/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('tourist-spots')->group(function () {
+            Route::get('/', [TouristSpotController::class, 'index']);
+            Route::get('{id}', [TouristSpotController::class, 'show'])->whereNumber('id');
+            Route::post('/', [TouristSpotController::class, 'store']);
+            Route::put('{id}', [TouristSpotController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [TouristSpotController::class, 'destroy'])->whereNumber('id');
+        });
+
+        /**
+         * Room tourist spot mapping API
+         * Base Url /api/v1/admin/room-tourist-spot-maps/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('room-tourist-spot-maps')->group(function () {
+            Route::get('/', [RoomTouristSpotMapController::class, 'index']);
+            Route::get('{id}', [RoomTouristSpotMapController::class, 'show'])->whereNumber('id');
+            Route::post('/', [RoomTouristSpotMapController::class, 'store']);
+            Route::put('{id}', [RoomTouristSpotMapController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [RoomTouristSpotMapController::class, 'destroy'])->whereNumber('id');
+        });
+
+        /**
          * Bookings API - Protected
          * Base Url /api/v1/admin/bookings/
          */
@@ -413,13 +456,16 @@ Route::group([
         Route::post('reset-password/{token}', [AuthController::class, 'setPassword']);
     });
 
-    Route::middleware(['jwt.auth', 'role:partner'])->prefix('partner')->group(function () {
+    Route::middleware(['jwt.auth', 'role:partner', 'partner.active'])->prefix('partner')->group(function () {
         /**
          * Auth API - Authenticated
          * Base Url /api/v1/partner/auth/
          */
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
+            Route::post('submit-onboarding', [AuthController::class, 'submitOnboarding']);
+            Route::post('resubmit-onboarding', [AuthController::class, 'resubmitOnboarding']);
+            Route::post('sign-contract', [AuthController::class, 'signContract']);
         });
 
         /**
@@ -437,9 +483,9 @@ Route::group([
          * Partner Profile Info
          * Base Url /api/v1/partner/
          */
-        Route::get('profile', [PartnerInforController::class, 'showSelf']);
+        Route::get('business-profile', [PartnerInforController::class, 'showSelf']);
         // update partner information
-        Route::put('profile', [PartnerInforController::class, 'updateSelf']);
+        Route::put('business-profile', [PartnerInforController::class, 'updateSelf']);
         // detail partner information
         Route::get('detail/{id}', [PartnerInforController::class, 'show']);
 
@@ -747,12 +793,14 @@ Route::group([
         Route::get('/wards/{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
         Route::get('/partners/random', [HomeController::class, 'getRandomPartners']);
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);
+        Route::get('/reviews', [ReviewController::class, 'getLandingPageReviews']);
     });
 
     // Rooms public APIs
     Route::prefix('rooms')->group(function () {
         Route::get('/search', [EURoomsController::class, 'roomList']);
         Route::get('{id}', [EURoomsController::class, 'publicRoomDetail'])->whereNumber('id');
+        Route::get('{id}/reviews', [ReviewController::class, 'getRoomReviews'])->whereNumber('id');
     });
 
     // Bookings public APIs
@@ -767,6 +815,7 @@ Route::group([
     Route::prefix('partners')->group(function () {
         Route::get('/{provinceId}', [PartnerController::class, 'getPartnersByProvinceId'])->whereNumber('provinceId');
         Route::get('/detail/{id}', [PartnerController::class, 'partnerDetail'])->whereNumber('id');
+        Route::get('/detail/{id}/reviews', [ReviewController::class, 'getPartnerReviews'])->whereNumber('id');
     });
 
     // News publics APIs
@@ -797,8 +846,6 @@ Route::group([
         Route::get('dashboard', [StayController::class, 'getDashboard']);
         Route::get('bookings', [StayController::class, 'getBookings']);
         Route::get('bookings/{id}', [StayController::class, 'show']);
-        Route::post('bookings/sync-local', [StayLocalBookingSyncController::class, 'sync'])
-            ->middleware('throttle:30,1');
         Route::post('bookings/{id}/extend', [StayController::class, 'extend']);
 
         Route::middleware(['bcp.cancellation'])->group(function () {
@@ -809,6 +856,12 @@ Route::group([
             Route::post('bookings/{id}/cancel-request', [StayBookingCancellationController::class, 'cancelRequest'])
                 ->whereNumber('id')
                 ->middleware('throttle:10,1');
+            Route::post(
+                'bookings/{id}/withdraw-cancel-request',
+                [StayBookingCancellationController::class, 'withdrawCancelRequest']
+            )
+                ->whereNumber('id')
+                ->middleware('throttle:15,1');
         });
 
         Route::prefix('contracts')->group(function () {
@@ -820,6 +873,11 @@ Route::group([
         Route::prefix('services')->group(function () {
             Route::get('{bookingId}', [StayServiceController::class, 'index'])->whereNumber('bookingId');
             Route::post('{bookingId}', [StayServiceController::class, 'order'])->whereNumber('bookingId');
+        });
+
+        Route::prefix('reviews')->group(function () {
+            Route::post('/', [ReviewController::class, 'store']);
+            Route::get('booking/{bookingId}', [ReviewController::class, 'getBookingReviews'])->whereNumber('bookingId');
         });
 
         Route::prefix('notifications')->group(function () {

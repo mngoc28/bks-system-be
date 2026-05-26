@@ -123,4 +123,24 @@ final class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    /**
+     * Get reviews written by this user.
+     *
+     * @return HasMany
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'user_id');
+    }
+
+    /**
+     * Get reviews received by this partner user.
+     *
+     * @return HasMany
+     */
+    public function partnerReviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'partner_id');
+    }
 }

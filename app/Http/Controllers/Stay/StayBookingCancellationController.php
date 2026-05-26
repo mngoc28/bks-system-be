@@ -89,6 +89,28 @@ final class StayBookingCancellationController extends Controller
         return $this->mapServiceResult($result);
     }
 
+    public function withdrawCancelRequest(int $id): JsonResponse
+    {
+        $userId = (int) Auth::id();
+        if ($userId < 1) {
+            return $this->errorResponse(__('booking.messages.unauthorized'), 'UNAUTHORIZED', HttpStatus::UNAUTHORIZED);
+        }
+
+        $booking = Booking::query()->find($id);
+        if ($booking === null) {
+            return $this->errorResponse(__('booking.messages.not_found'), 'NOT_FOUND', HttpStatus::NOT_FOUND);
+        }
+
+        $this->authorize('guestWithdrawCancelRequest', $booking);
+
+        $result = $this->guestCancellationService->withdrawCancellationRequest(
+            $userId,
+            $id,
+        );
+
+        return $this->mapServiceResult($result);
+    }
+
     /**
      * @param array{
      *     success: bool,

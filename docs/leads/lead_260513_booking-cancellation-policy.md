@@ -34,8 +34,8 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 | **Target Users** | Khách (Stay + public); **Partner** là bên quyết định hủy sau yêu cầu. |
 | **Business Value** | Rõ trách nhiệm duyệt; audit; giảm hiểu nhầm với đơn chưa xác nhận (cho phép hủy khi partner chưa xác nhận — xem B6). |
 | **Success Metrics** | **B7:** (1) Thời gian Partner xử lý yêu cầu hủy (SLA — đo từ DB). (2) % yêu cầu **không bị treo** (không kẹt `pending_cancellation` quá ngưỡng). (3) Xu hướng **giảm cuộc gọi hotline** liên quan hủy — benchmark **tham khảo ông lớn** (OTA) + dữ liệu nội bộ. |
-| **Technical Context** | **Nguồn chân lý:** ưu tiên **tích hợp ngoài**; DB + audit + metric. **T6:** Có **cơ chế đồng bộ** local → server sau login Stay (chi tiết mục dưới). **T7:** Rate limit dạng **chu kỳ** (cooldown) giữa các lần gửi lại — **tham số phút/giờ cấu hình được** (default do design đề xuất). **T8:** **Hủy trực tiếp** (`cancel`) ở **trạng thái bậc thấp (đầu)**; **`cancel-request`** ở **trạng thái cao hơn** (đã xác nhận partner trở đi). Idempotency: khuyến nghị giữ. |
-| **Key Features** | 1) Hai lộ API/UI: **cancel** vs **cancel-request** theo bậc trạng thái. 2) `pending_cancellation` + Partner duyệt. 3) Đồng bộ **publicMyBookings** sau login. 4) Cooldown gửi lại. 5) Metric B7 + bảng phí **theo thời gian** (ngắn/dài) sau **benchmark OTA**. |
+| **Technical Context** | **Nguồn chân lý:** ưu tiên **tích hợp ngoài**; DB + audit + metric. **T6:** [ĐÃ BÃI BỎ] Cơ chế đồng bộ local → server. **T7:** Rate limit dạng **chu kỳ** (cooldown) giữa các lần gửi lại — **tham số phút/giờ cấu hình được** (default do design đề xuất). **T8:** **Hủy trực tiếp** (`cancel`) ở **trạng thái bậc thấp (đầu)**; **`cancel-request`** ở **trạng thái cao hơn** (đã xác nhận partner trở đi). Idempotency: khuyến nghị giữ. |
+| **Key Features** | 1) Hai lộ API/UI: **cancel** vs **cancel-request** theo bậc trạng thái. 2) `pending_cancellation` + Partner duyệt. 3) [ĐÃ BÃI BỎ] Đồng bộ **publicMyBookings** sau login. 4) Cooldown gửi lại. 5) Metric B7 + bảng phí **theo thời gian** (ngắn/dài) sau **benchmark OTA**. |
 | **Out of Scope (giữ)** | Tự động hoàn tiền cổng thanh toán cho đến khi có nguồn tiền & hợp đồng đối soát rõ. |
 | **Assumptions** | “Trạng thái thứ nhất” = tập status chưa cần Partner xác nhận (định nghĩa chính xác trong analyze); “cao hơn” = đã confirm + các bậc sau (map enum). |
 | **Open Questions** | Chỉ còn **số học:** (1) Chu kỳ T7 cụ thể (vd. 30p / 60p / 24h). (2) Ngưỡng **đêm** phân loại ngắn vs dài hạn. (3) Bảng % phí sau khi research OTA + pháp lý VN. |
@@ -54,7 +54,7 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 8. **Audit:** **Có** — ghi actor, timestamp, (khuyến nghị) version policy / loại đơn dài-ngắn hạn áp dụng.
 9. **Rule thời gian:** Theo **đơn dài hạn vs ngắn hạn** (hai tập rule), không chỉ một global đơn giản theo property.
 10. **Tích hợp ngoài:** **Đề xuất** làm nguồn chân lý / đồng bộ nếu có thể (calendar/OTA/etc.) — fallback DB nội bộ.
-11. **T6 — Đồng bộ local:** Sau **đăng nhập Stay**, đẩy/ghép đơn từ `publicMyBookings` lên server theo **cơ chế đồng bộ** có kiểm tra trùng (xem mục **Cơ chế đồng bộ T6**).
+11. [ĐÃ BÃI BỎ] **T6 — Đồng bộ local:** Cơ chế đồng bộ đơn local lên server sau login đã bị xóa bỏ hoàn toàn.
 12. **T7 — Chu kỳ:** Giới hạn **gửi lại** cancel-request theo **chu kỳ làm mát** (cooldown) trên cùng booking — thời lượng **cấu hình** (số cụ thể chốt ở design).
 13. **T8 — Hai kiểu thao tác:** Trạng thái **bậc đầu / thấp** → **hủy trực tiếp** (`cancel`); trạng thái **cao hơn** (đã xác nhận…) → **`cancel-request`** + `pending_cancellation`.
 14. **B7 — Metric:** SLA Partner; % không treo; hotline — đo **DB** + benchmark **ông lớn** (OTA).
@@ -85,7 +85,7 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 | T3 | Trạng thái trung gian? | **`pending_cancellation`** (và phân nhánh sau khi partner xử lý — tên status cuối TBD). |
 | T4 | **Audit log**? | **Có** |
 | T5 | Rule **global** vs **property**? | Theo **đơn dài hạn và ngắn hạn** (hai khối rule thời gian), không mô tả “theo từng property” trong câu trả lời. |
-| T6 | Merge **My Bookings → server** khi login Stay? | **Cần cơ chế đồng bộ** (chi tiết mục **Cơ chế đồng bộ T6**): sau login, đẩy/ghép local → server, xử lý **trùng ID** / trùng nghiệp vụ (fingerprint đơn). |
+| T6 | [ĐÃ BÃI BỎ] Merge **My Bookings → server** khi login Stay? | Đã bãi bỏ toàn bộ cơ chế đồng bộ đơn local lên server. |
 | T7 | Rate limit / chống spam hủy? | **Chu kỳ làm mát** (cooldown): chỉ được **gửi lại** sau một **khoảng thời gian** cấu hình (vd. N phút / N giờ trên cùng booking) — **số N chốt trong design** (có thể `.env`). |
 | T8 | Tách quyền **read** vs **cancel** theo role? | Không tách theo “role” mà theo **bậc trạng thái đơn**: **trạng thái thứ nhất / thấp** → thao tác **`cancel`** (hủy trực tiếp trong phạm vi cho phép); **trạng thái cao hơn** → **`cancel-request`** (+ lý do, `pending_cancellation`). **Read:** chủ đơn / Partner (scope property) / Admin — chi tiết policy ở analyze. |
 
@@ -114,7 +114,7 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 
 | Kênh | Định hướng |
 |------|------------|
-| **My Bookings** | Local + sau **T6 sync**; trạng thái thấp → `cancel` (local hoặc API sau sync); cao → `cancel-request`; copy pháp lý rõ trước khi sync |
+| **My Bookings** | Hoạt động cục bộ độc lập trên trình duyệt của thiết bị (không đồng bộ lên server); trạng thái thấp → `cancel` cục bộ |
 | **Stay portal** | Trạng thái thấp → **`cancel`**; trạng thái cao → **`cancel-request`** + lý do + `pending_c` + **cooldown T7** |
 
 ---
@@ -125,7 +125,7 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 [Khách] → đang ở? → từ chối
         → trạng thái bậc thấp? → cancel (instant / theo rule)
         → trạng thái cao? → cancel-request + lý do → pending_c (kiểm tra T7 cooldown)
-[Đăng nhập Stay] → T6 sync-local → gắn server_booking_id / fingerprint
+[Đăng nhập Stay] → (Không đồng bộ local, hoạt động riêng biệt)
 [Partner] → duyệt (bậc cao) → cancelled | từ chối yêu cầu
 [Audit] + [Metric B7]
 [External] → nếu có: đồng bộ sau khi nội bộ chốt
@@ -153,13 +153,10 @@ Thiết kế cơ chế yêu cầu hủy phòng theo **thời gian** và **trạn
 
 ---
 
-## Cơ chế đồng bộ T6 (local → server sau login Stay)
+## Cơ chế đồng bộ T6 (local → server sau login Stay) — [ĐÃ BÃI BỎ]
 
-1. **Trigger:** Sau **đăng nhập thành công** Stay (hoặc màn hình “Đồng bộ đơn” một lần), client gửi payload từ `publicMyBookings` (chỉ các bản ghi chưa có `server_booking_id` / flag `synced`).
-2. **API đề xuất:** `POST /api/v1/stay/bookings/sync-local` (tên tạm) — body: mảng đơn local + **client_fingerprint** (hash email+roomId+start+end) để idempotent.
-3. **Server:** Với từng bản ghi — tìm đơn đã tồn tại theo fingerprint / `user_id` + khoảng ngày; nếu **trùng** → trả về `server_booking_id` hiện có, **không** tạo đơn mới; nếu **không trùng** → tạo đơn “import” ở trạng thái phù hợp (theo rule nghiệp vụ) hoặc từ chối nếu thiếu dữ liệu.
-4. **Trùng ID:** Local id kiểu `booking-{timestamp}` **không** dùng làm khóa chính server; map qua bảng `local_client_id` + `server_booking_id` (hoặc cột trên booking) sau sync.
-5. **FE:** Cập nhật `localStorage` với `server_booking_id` + xóa/ghi đè entry sau sync thành công; hiển thị trạng thái “Đã đồng bộ”.
+> [!IMPORTANT]
+> Cơ chế này đã được bãi bỏ toàn bộ khỏi dự án. Luồng đặt phòng của khách luôn được lưu trực tiếp trên server từ đầu, không cần đồng bộ offline-to-online.
 
 ---
 
@@ -239,7 +236,7 @@ Các mục T6/T7/T8/B7/bảng phí đã được **chốt hướng** ở Round 3
 
 ## Next Steps
 
-- [ ] Chạy **stack-analyze** / design: enum **bậc thấp vs cao**, API **`cancel`** vs **`cancel-request`**, **sync-local**, schema **cancellation_requests** + audit, **T7** default N, **ngưỡng đêm** ngắn/dài.
+- [ ] Chạy **stack-analyze** / design: enum **bậc thấp vs cao**, API **`cancel`** vs **`cancel-request`**, schema **cancellation_requests** + audit, **T7** default N, **ngưỡng đêm** ngắn/dài. (Đã hoàn thành và bãi bỏ sync-local).
 - [ ] Research OTA → điền **bảng %** + `policy_version`.
 - [ ] FE: Stay History + My Bookings (sync UI + CTA theo trạng thái + cooldown client-side mirror).
 
@@ -248,5 +245,5 @@ Các mục T6/T7/T8/B7/bảng phí đã được **chốt hướng** ở Round 3
 ## Appendix — Discovery Session Log
 
 - **Round 1:** Khởi tạo lead + bảng câu hỏi.
-- **Round 2:** Stakeholder trả lời B1–B5, B6 (một phần), T1–T5, T3–T4; bổ sung chính sách “đã ở không hủy”, “partner xem xét chờ TT/xác nhận”, “dài hạn/ngắn hạn”, “pending_cancellation”, “audit”, “cancel-request”.
-- **Round 3:** T6 đồng bộ bắt buộc; T7 chu kỳ cooldown (N cấu hình); T8 `cancel` vs `cancel-request` theo bậc trạng thái; B7 3 metric + DB + benchmark OTA; bảng phí theo thời gian + tham khảo OTA.
+- **Round 2:** Stakeholder trả lời B1–B5, B6 (một phần), T1–T5, T3–T4; bổ sung chính sách “đã ở không hủy”, “partner xem xét chờ TT/xác nhận”, “dài hạn/ngắn hạn”, `pending_cancellation`, `audit`, `cancel-request`.
+- **Round 3:** T6 đã bãi bỏ (cơ chế đồng bộ bị hủy); T7 chu kỳ cooldown (N cấu hình); T8 `cancel` vs `cancel-request` theo bậc trạng thái; B7 3 metric + DB + benchmark OTA; bảng phí theo thời gian + tham khảo OTA.

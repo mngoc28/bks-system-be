@@ -84,8 +84,19 @@ final class PartnerInfoTableSeeder extends Seeder
             'Chuyên cung cấp các dịch vụ bất động sản toàn diện, từ tư vấn, mua bán, cho thuê đến quản lý tài sản. Đội ngũ chuyên nghiệp, dịch vụ tận tâm.',
         ];
 
+        $majorProvinceIds = DB::table('provinces')
+            ->whereIn('name', ['Hà Nội', 'Hồ Chí Minh', 'Đà Nẵng'])
+            ->pluck('id')
+            ->toArray();
+
         foreach ($partnerUserIds as $userId) {
-            $provinceId    = $faker->randomElement($provinceIds);
+            // 75% chance of placing the partner in a major city (Hanoi, HCMC, Da Nang)
+            if (rand(1, 100) <= 75 && !empty($majorProvinceIds)) {
+                $provinceId = $faker->randomElement($majorProvinceIds);
+            } else {
+                $provinceId = $faker->randomElement($provinceIds);
+            }
+
             $provinceWards = DB::table('wards')
                 ->where('province_id', $provinceId)
                 ->pluck('id')

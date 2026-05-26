@@ -1,5 +1,45 @@
 # Repository Decisions Log
 
+## 2026-05-21 - Room-tourist mapping implementation
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260521-RTM-004 |
+| Context | Stack-task implementation for room-tourist mapping is now wired into backend code |
+| Decision | Keep public tourist summary embedded on existing home/search/detail room payloads and expose admin CRUD under `/api/v1/admin/tourist-spots` and `/api/v1/admin/room-tourist-spot-maps` |
+| Rationale | Reuses current room endpoints, minimizes FE changes, and keeps management UI separate from public flow |
+| Status | Implemented in code; runtime test execution pending |
+
+## 2026-05-21 - Room-tourist mapping plan
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260521-RTM-003 |
+| Context | Need an implementation sequence for room-tourist mapping after design completion |
+| Decision | Execute in 4 phases with summary DTO freeze at public API phase, version-based cache invalidation, and downstream QA/review/report handoffs explicitly defined |
+| Rationale | Reduces contract churn for FE/QA and keeps admin/public concerns separated |
+| Related artifact | `docs/plans/plan_004.md` |
+
+## 2026-05-21 - Room-tourist mapping design
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260521-RTM-002 |
+| Context | Design phase for room-tourist mapping needs a concrete implementation path |
+| Decision | Use a shared public tourist-summary DTO for home/search/detail, admin service/repository CRUD for master data, and cache versioning with short TTLs for read-heavy public responses |
+| Rationale | Keeps FE simple, reduces N+1, and allows content updates without live routing dependency |
+| Related artifact | `docs/designs/design_004.md` |
+
+## 2026-05-21 - Room-tourist mapping analysis
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260521-RTM-001 |
+| Context | User wants room cards to show relation to tourist spots (e.g. Bà Nà Hill) on home and search results |
+| Decision | Scope uses maintained / estimated travel time and new master-mapping schema: `tourist_spots` + `room_tourist_spot_maps`; FE should render at most one primary spot plus a small number of secondary spots |
+| Rationale | Fits existing room/area data without forcing live routing; keeps UI readable and API payload reusable across screens |
+| Out of scope | Full map engine, route directions, and redesign of homepage |
+
 ## 2026-05-10 - Partner Portal 360 Scope
 
 | Field | Decision |
@@ -129,6 +169,15 @@
 | Decision | Bỏ `final` cho `PartnerKpiService`, đổi `computeAvgConfirmSeconds` từ private sang protected. Document rõ trong class docblock rằng class có thể override để testable nhưng public methods vẫn stable |
 | Rationale | Trade-off: testability quan trọng hơn strict immutability ở scope phase 1. Không có production subclass; rủi ro thấp |
 | Related artifact | `app/Services/PartnerKpiService.php`, `tests/Unit/Services/PartnerKpiServiceTest.php` |
+
+## 2026-05-21 - Landing Page Prominence Docs
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260521-LP-001 |
+| Context | Tài liệu landing page prominence trước đó nằm trong repo FE và cần đưa lại về repo BE theo yêu cầu người dùng |
+| Decision | Chuyển lead/SRS/design/plan về `bks-system-be/docs/{leads,SRC,designs,plans}`; rename design thành `design_003.md` và plan thành `plan_003.md` để tránh đụng file sẵn có |
+| Rationale | Giữ tài liệu cùng repo với backend feature work, đồng thời tuân thủ convention đặt tên hiện có của BE docs |
 
 ## 2026-05-10 - Listener Phase 2 không thay timeline inline Phase 1
 
@@ -310,4 +359,15 @@
 | Decision | Event `CancellationRequestUpdated` broadcast payload tối thiểu: `request_id`, `booking_id`, `property_id`, `partner_id`, `status` (string). **Không** gửi `reason_text`, email, tên khách. Chi tiết lý do guest chỉ trong REST inbox (`GET cancellation-requests`). |
 | Rationale | Khớp pattern Phase 2 `BookingCancelled` (`has_reason` thay vì full reason); đồng bộ checklist security |
 | Related artifact | `app/Events/CancellationRequestUpdated.php`, `docs/designs/design_002.md`, `api-doc/partner-cancellation-requests.js` |
+
+## 2026-05-25 - Stay review: mở sau lưu trú và gộp room + partner trong một lần gửi
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260525-REV-001 |
+| Context | `BookingDetail` của BKS Stay cần một luồng đánh giá ngắn gọn sau lưu trú, tránh bắt user đi qua nhiều màn hoặc gửi review rời rạc cho phòng và đối tác |
+| Decision | Chỉ hiển thị khối đánh giá khi booking **đã hoàn thành** (`status = 3`) hoặc `stay_status = checked_out`. FE dùng **một form duy nhất** để gửi đồng thời **đánh giá phòng** và **đánh giá đối tác/chủ nhà** qua `POST stay/reviews`. Nếu booking đã có review, UI chuyển sang **read-only list** và không hiển thị form nhập mới trong cùng màn `BookingDetail`. |
+| Rationale | Giảm friction sau lưu trú, gắn review với booking có thật, và tránh duplicate UX giữa room review với partner review. Cách hiển thị read-only khi đã có review cũng giúp giảm rủi ro gửi lặp từ cùng booking trong FE hiện tại. |
+| Pending | Chưa có luồng FE để **edit/delete** review; nếu sau này mở rộng moderation hoặc cho phép cập nhật review, cần chốt contract riêng. |
+| Related artifact | `bks-system-fe/src/pages/EndUser/BksStay/BookingDetail.tsx`, `bks-system-fe/src/hooks/useReviewQuery.ts`, `bks-system-fe/src/api/reviewApi.ts` |
 
