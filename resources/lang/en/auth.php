@@ -32,6 +32,8 @@ return [
     'login_failed'                     => 'Login failed.',
     'login_forbidden'                  => 'This account is not allowed to log in to the system.',
     'subject_mail_login_information'   => 'Login information',
+    'subject_mail_partner_approved'    => 'Partner account approved',
+    'subject_mail_partner_rejected'    => 'Partner account rejected',
 
     // Logout
     'logout_success'                   => 'Logout successful.',

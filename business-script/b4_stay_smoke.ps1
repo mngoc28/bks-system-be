@@ -1,5 +1,5 @@
 <#!
-  B4.7 — Smoke thủ công / semi-auto: BKS Stay JWT → (tuỳ chọn) sync-local → cancel-request.
+  B4.7 — Smoke thủ công / semi-auto: BKS Stay JWT → cancel-request.
 
   Yêu cầu: BE chạy local, DB đã migrate + seed (StayPortalSeeder: user@gmail.com).
   Bật BCP: BCP_CANCELLATION_V1=1 (middleware bcp.cancellation cho reasons + cancel-request).
@@ -7,7 +7,6 @@
   Chạy mẫu (PowerShell):
     cd bks-system-be\business-script
     .\b4_stay_smoke.ps1
-    .\b4_stay_smoke.ps1 -SkipSync
     .\b4_stay_smoke.ps1 -BookingId 42
 
   Biến môi trường (tuỳ chọn):
@@ -20,8 +19,7 @@ param(
     [string] $ApiBase = $(if ($env:BKS_API_BASE) { $env:BKS_API_BASE } else { "http://127.0.0.1:8000" }),
     [string] $Email = $(if ($env:BKS_STAY_EMAIL) { $env:BKS_STAY_EMAIL } else { "user@gmail.com" }),
     [string] $Password = $(if ($env:BKS_STAY_PASS) { $env:BKS_STAY_PASS } else { "123456a!" }),
-    [int] $BookingId = 0,
-    [switch] $SkipSync
+    [int] $BookingId = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,7 +40,7 @@ function Invoke-BksJson {
     return Invoke-RestMethod @params
 }
 
-Write-Host "[1/4] POST admin/auth/login ..." -ForegroundColor Cyan
+Write-Host "[1/3] POST admin/auth/login ..." -ForegroundColor Cyan
 $login = Invoke-BksJson -Method POST -Url "$v1/admin/auth/login" -Body @{ email = $Email; password = $Password }
 if (-not $login.data.token) {
     throw "Login failed: $($login | ConvertTo-Json -Compress)"
@@ -50,23 +48,7 @@ if (-not $login.data.token) {
 $token = [string] $login.data.token
 $auth = @{ Authorization = "Bearer $token" }
 
-if (-not $SkipSync) {
-    Write-Host "[2/4] POST stay/bookings/sync-local (items rỗng — kiểm tra 422 validation) ..." -ForegroundColor Cyan
-    try {
-        Invoke-BksJson -Method POST -Url "$v1/stay/bookings/sync-local" -Headers $auth -Body @{ items = @() } | Out-Null
-    } catch {
-        $code = $_.Exception.Response.StatusCode.value__
-        if ($code -eq 422) {
-            Write-Host "  OK: nhận 422 khi items rỗng (mong đợi)." -ForegroundColor Green
-        } else {
-            Write-Warning "  sync-local trả $code — kiểm tra BCP/JWT."
-        }
-    }
-} else {
-    Write-Host "[2/4] Bỏ qua sync-local (-SkipSync)." -ForegroundColor Yellow
-}
-
-Write-Host "[3/4] GET stay/cancellation-reasons ..." -ForegroundColor Cyan
+Write-Host "[2/3] GET stay/cancellation-reasons ..." -ForegroundColor Cyan
 $reasons = Invoke-BksJson -Method GET -Url "$v1/stay/cancellation-reasons" -Headers $auth
 if ($reasons.status -ne "success" -or -not $reasons.data) {
     throw "Không đọc được lý do hủy. Kiểm tra BCP_CANCELLATION_V1 và route stay."
@@ -76,7 +58,7 @@ Write-Host "  Dùng reason_code: $reasonCode" -ForegroundColor Gray
 
 $bid = $BookingId
 if ($bid -lt 1) {
-    Write-Host "[4a] GET stay/bookings — tìm đơn status=1 (confirmed) ..." -ForegroundColor Cyan
+    Write-Host "[3a] GET stay/bookings — tìm đơn status=1 (confirmed) ..." -ForegroundColor Cyan
     $list = Invoke-BksJson -Method GET -Url "$v1/stay/bookings?page=1&per_page=20" -Headers $auth
     $rows = @()
     if ($list.data.data) { $rows = $list.data.data }
@@ -88,7 +70,7 @@ if ($bid -lt 1) {
     }
     $bid = [int] $confirmed.id
 }
-Write-Host "[4b] POST stay/bookings/$bid/cancel-request ..." -ForegroundColor Cyan
+Write-Host "[3b] POST stay/bookings/$bid/cancel-request ..." -ForegroundColor Cyan
 $idempotency = [guid]::NewGuid().ToString("N")
 $body = @{
     reason_code       = $reasonCode

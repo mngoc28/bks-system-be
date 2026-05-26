@@ -151,17 +151,32 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
         return $this->model
             ->join('provinces as p', 'partner_info.province_id', '=', 'p.id')
             ->join('wards as w', 'partner_info.ward_id', '=', 'w.id')
-            ->inRandomOrder()
-            ->limit($limit)
             ->select(
                 'partner_info.id',
+                'partner_info.company_name',
                 'partner_info.phone',
                 'partner_info.address',
                 'partner_info.website',
                 'partner_info.image_1',
                 'p.name as province_name',
-                'w.name as ward_name'
+                'w.name as ward_name',
+                DB::raw('(SELECT COUNT(*) FROM reviews ' .
+                    'WHERE reviews.partner_id = partner_info.user_id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.partner_id = partner_info.user_id) as reviews_avg_rating')
             )
+            // 1. Ưu tiên các tỉnh thành lớn (Hà Nội, TP.HCM, Đà Nẵng) lên trước
+            ->orderByRaw(
+                "CASE WHEN p.name LIKE '%Hà Nội%' OR p.name LIKE '%Hồ Chí Minh%' OR p.name LIKE '%Đà Nẵng%' " .
+                "THEN 1 ELSE 0 END DESC"
+            )
+            // 2. Ưu tiên điểm đánh giá cao nhất (5 sao) và lượt đánh giá
+            ->orderByRaw(
+                'COALESCE((SELECT AVG(rating) FROM reviews ' .
+                'WHERE reviews.partner_id = partner_info.user_id), 0) DESC'
+            )
+            ->orderByDesc('reviews_count')
+            ->limit($limit)
             ->get()
             ->toArray();
     }
@@ -187,9 +202,14 @@ class PartnerInforRepository extends BaseRepository implements PartnerInforRepos
                 'partner_info.address',
                 'partner_info.website',
                 'partner_info.description',
+                'partner_info.image_1',
                 'u.email as user_email',
                 'p.name as province_name',
-                'w.name as ward_name'
+                'w.name as ward_name',
+                DB::raw('(SELECT COUNT(*) FROM reviews ' .
+                    'WHERE reviews.partner_id = partner_info.user_id) as reviews_count'),
+                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
+                    'WHERE reviews.partner_id = partner_info.user_id) as reviews_avg_rating')
             )
             ->get()
             ->toArray();

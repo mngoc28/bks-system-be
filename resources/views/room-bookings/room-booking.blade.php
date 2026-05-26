@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -199,6 +199,7 @@
                 <strong>{{ $data['room_title'] }} - {{ $data['property_name'] }}</strong><br>
                 Địa chỉ: {{ $data['property_address'] }}<br>
                 Mã đặt phòng: <strong>{{ $data['booking_code'] }}</strong><br>
+                Ngày giờ đặt phòng: <strong>{{ $data['booking_created_at'] }}</strong><br>
                 Từ ngày: <strong>{{ $data['start_time'] }}</strong><br>
                 Đến ngày: <strong>{{ $data['end_time'] }}</strong><br>
                 Xem chi tiết phòng tại:
@@ -345,4 +346,3 @@
     </div>
 </body>
 </html>
-

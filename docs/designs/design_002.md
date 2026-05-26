@@ -118,10 +118,10 @@ flowchart LR
 | Component | Responsibility | Dependencies | Technology |
 |-----------|----------------|--------------|------------|
 | `StayBookingCancellationController` (tên gợi ý) | Nhận `POST …/cancel`, `POST …/cancel-request` | Service + Policy | Laravel |
-| `StayLocalBookingSyncController` | `POST …/bookings/sync-local` | Sync service + validation | Laravel |
+| `StayLocalBookingSyncController` [DECOMMISSIONED] | (Removed) `POST …/bookings/sync-local` | Sync service + validation | Laravel |
 | `PartnerCancellationRequestController` | List + approve/reject | Partner auth + ownership | Laravel |
 | `GuestCancellationService` | Rule bậc thấp/cao, cooldown, idempotency, ghi policy snapshot | Booking, Request repo, Timeline | PHP |
-| `LocalBookingSyncService` | Fingerprint dedupe, map `server_booking_id` | Booking create/find | PHP |
+| `LocalBookingSyncService` [DECOMMISSIONED] | (Removed) Fingerprint dedupe, map `server_booking_id` | Booking create/find | PHP |
 | `PartnerCancellationRequestService` | Approve → terminal cancel; Reject → restore `previous_booking_status` | Policy, Timeline, (optional) broadcast | PHP |
 | `CancellationPolicyResolver` | Chọn `policy_version` + tier theo `stay_kind` + hours-before-check-in | DB tiers | PHP |
 | FE Stay | CTA theo trạng thái + form lý do + hiển thị cooldown | API contract | React |
@@ -153,7 +153,7 @@ flowchart LR
 
 | Method | Endpoint | Description | Auth | Request (tóm tắt) | Response (tóm tắt) |
 |--------|----------|-------------|------|-------------------|----------------------|
-| POST | `bookings/sync-local` | T6: merge đơn local | JWT user | `{ "items": [ { "local_id", "fingerprint", "room_id", "start_date", "end_date", … } ] }` | `{ "mapped": [ { "local_id", "server_booking_id", "action": "linked|created" } ] }` |
+| POST | `bookings/sync-local` [DECOMMISSIONED] | (Removed) T6: merge đơn local | JWT user | — | — |
 | POST | `bookings/{id}/cancel` | Khách **hủy trực tiếp** (bậc thấp) | JWT, owner booking | `{ "reason_code", "reason_text?", "idempotency_key?" }` | Booking resource `status=cancelled` |
 | POST | `bookings/{id}/cancel-request` | Khách **yêu cầu hủy** (bậc cao) | JWT, owner | `{ "reason_code", "reason_text?", "idempotency_key" }` | `{ "booking_status": "pending_cancellation", "request_id" }` |
 | GET | `cancellation-reasons` | Danh mục mã lý do (cache FE) | JWT hoặc public read-only | — | `[ { "code", "label", "requires_note" } ]` |
@@ -367,13 +367,12 @@ erDiagram
 
 **Dependencies:** Phase 2.
 
-### Phase 4: T6 sync-local + FE My Bookings / Stay wiring (3–5 ngày)
+### Phase 4: FE My Bookings / Stay wiring (sync-local Decommissioned)
 
-**Goal:** BCP-008 + hiển thị CTA đúng bậc.
+**Goal:** Hiển thị CTA đúng bậc.
 
-- [ ] `LocalBookingSyncService`
-- [ ] FE: merge localStorage, gọi sync sau login
-- [ ] E2E nhỏ: sync + cancel
+- [ ] FE: gọi API cancel / cancel-request tương ứng
+- [ ] FE: hiển thị trạng thái đang xử lý yêu cầu hủy
 
 **Dependencies:** Phase 2 (Stay cancel).
 

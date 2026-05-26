@@ -94,7 +94,18 @@ class BookingsTableSeeder extends Seeder
             'Đặt phòng cho nhóm lớn, cần nhiều phòng gần nhau, có thể liên thông',
         ];
 
-        foreach (range(1, 100) as $i) {
+        $roomPricesGrouped = DB::table('room_prices')
+            ->select('id', 'room_id')
+            ->get()
+            ->groupBy('room_id')
+            ->map(function ($items) {
+                return $items->pluck('id')->toArray();
+            })
+            ->toArray();
+
+        $bookingsData = [];
+
+        foreach (range(1, 600) as $i) {
             $start = $faker->dateTimeBetween('-1 month', '+1 month');
             $end   = (clone $start)->modify('+' . rand(5, 30) . ' days');
 
@@ -112,12 +123,7 @@ class BookingsTableSeeder extends Seeder
             }
 
             $roomId = $faker->randomElement($roomIds);
-
-            // Get price_ids for this room only
-            $roomPriceIds = DB::table('room_prices')
-                ->where('room_id', $roomId)
-                ->pluck('id')
-                ->toArray();
+            $roomPriceIds = $roomPricesGrouped[$roomId] ?? [];
 
             // Skip this booking if room has no prices
             if (empty($roomPriceIds)) {
@@ -129,7 +135,7 @@ class BookingsTableSeeder extends Seeder
             // Status: 0=pending, 1=confirmed, 2=cancelled, 3=completed
             $status = $faker->randomElement([0, 1, 2, 3]);
 
-            DB::table('bookings')->insert([
+            $bookingsData[] = [
                 'user_id'    => $faker->randomElement($userIds),
                 'room_id'    => $roomId,
                 'price_id'   => $priceId,
@@ -141,7 +147,11 @@ class BookingsTableSeeder extends Seeder
                 'updated_by' => $faker->randomElement($adminPartnerIds),
                 'created_at' => Carbon::now()->subDays(rand(2, 40)),
                 'updated_at' => Carbon::now()->subDays(rand(2, 40)),
-            ]);
+            ];
         }
+
+        collect($bookingsData)->chunk(100)->each(function ($chunk) {
+            DB::table('bookings')->insert($chunk->toArray());
+        });
     }
 }

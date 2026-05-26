@@ -135,6 +135,15 @@ final class BookingPolicyTest extends TestCase
         $this->assertFalse($this->policy->guestCancelRequest($this->makeUser(id: 9, role: 'user'), $booking));
     }
 
+    public function test_guest_withdraw_cancel_request_authorized_only_for_booking_owner_with_role_user(): void
+    {
+        $guest = $this->makeUser(id: 5, role: 'user');
+        $booking = $this->makeBookingForUser(userId: 5, status: BookingStatus::PENDING_CANCELLATION);
+
+        $this->assertTrue($this->policy->guestWithdrawCancelRequest($guest, $booking));
+        $this->assertFalse($this->policy->guestWithdrawCancelRequest($this->makeUser(id: 9, role: 'user'), $booking));
+    }
+
     /**
      * Construct a User model instance without booting Eloquent connections.
      */

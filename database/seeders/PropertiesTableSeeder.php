@@ -79,78 +79,98 @@ class PropertiesTableSeeder extends Seeder
         ];
 
         $addressData = [
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 1 Nguyễn Huy Tưởng, Phường Thanh Xuân Trung, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 45 Lê Văn Lương, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 75 Hoàng Đạo Thúy, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 90 Nguyễn Xiển, Phường Hạ Đình, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 125 Khuất Duy Tiến, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 200 Lê Trọng Tấn, Phường Khương Mai, Quận Thanh Xuân, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 30 Phạm Văn Đồng, Phường Mai Dịch, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 60 Trần Duy Hưng, Phường Trung Hòa, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 105 Hoàng Quốc Việt, Phường Nghĩa Đô, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 135 Cầu Giấy, Phường Quan Hoa, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 190 Dịch Vọng, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 250 Xuân Thủy, Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội'],
-            ['area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 15 Nguyễn Chí Thanh, Phường Láng Thượng, Quận Đống Đa, Hà Nội'],
-            ['area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 120 Đường Láng, Phường Láng Thượng, Quận Đống Đa, Hà Nội'],
-            ['area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 180 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội'],
-            ['area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 220 Tây Sơn, Phường Trung Liệt, Quận Đống Đa, Hà Nội'],
-            ['area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 280 Khâm Thiên, Phường Khâm Thiên, Quận Đống Đa, Hà Nội'],
-            ['area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 25 Võ Chí Công, Phường Xuân La, Quận Tây Hồ, Hà Nội'],
-            ['area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 68 Lạc Long Quân, Phường Bưởi, Quận Tây Hồ, Hà Nội'],
-            ['area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 120 Âu Cơ, Phường Nhật Tân, Quận Tây Hồ, Hà Nội'],
-            ['area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 150 Phố Huế, Phường Ngô Thì Nhậm, Quận Hai Bà Trưng, Hà Nội'],
-            ['area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 165 Bà Triệu, Phường Lê Đại Hành, Quận Hai Bà Trưng, Hà Nội'],
-            ['area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 210 Giải Phóng, Phường Đồng Tâm, Quận Hai Bà Trưng, Hà Nội'],
-            ['area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 320 Minh Khai, Phường Minh Khai, Quận Hai Bà Trưng, Hà Nội'],
-            ['area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 195 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội'],
-            ['area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 45 Nguyễn Đình Thi, Phường Giảng Võ, Quận Ba Đình, Hà Nội'],
-            ['area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 88 Đội Cấn, Phường Đội Cấn, Quận Ba Đình, Hà Nội'],
-            ['area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 225 Trần Phú, Phường Mộ Lao, Quận Hà Đông, Hà Nội'],
-            ['area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 240 Lê Trọng Tấn, Phường Dương Nội, Quận Hà Đông, Hà Nội'],
-            ['area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 350 Quang Trung, Phường Quang Trung, Quận Hà Đông, Hà Nội'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 1 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 15 Đồng Khởi, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 30 Lê Lợi, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 45 Nguyễn Du, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 60 Pasteur, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 75 Nguyễn Trung Trực, Phường Bến Thành, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 135 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 210 Trần Hưng Đạo, Phường Cô Giang, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 270 Võ Văn Kiệt, Phường Cầu Kho, Quận 1, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 90 Võ Văn Tần, Phường 6, Quận 3, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 105 Nguyễn Thị Minh Khai, Phường 6, Quận 3, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 120 Nguyễn Đình Chiểu, Phường 6, Quận 3, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 180 Võ Thị Sáu, Phường 8, Quận 3, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 225 Cách Mạng Tháng 8, Phường 10, Quận 3, TP.Hồ Chí Minh'],
-            ['area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 150 Điện Biên Phủ, Phường 25, Quận Bình Thạnh, TP.Hồ Chí Minh'],
-            ['area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 280 Xô Viết Nghệ Tĩnh, Phường 21, Quận Bình Thạnh, TP.Hồ Chí Minh'],
-            ['area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 350 Nguyễn Xí, Phường 13, Quận Bình Thạnh, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 255 Nguyễn Văn Linh, Phường Tân Thuận Đông, Quận 7, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 88 Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 120 Huỳnh Tấn Phát, Phường Tân Thuận Tây, Quận 7, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 68 Nguyễn Duy Trinh, Phường Bình Trưng Đông, Quận 2, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 120 Nguyễn Thị Định, Phường An Phú, Quận 2, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 200 Mai Chí Thọ, Phường Bình An, Quận 2, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 240 Lê Văn Việt, Phường Hiệp Phú, Quận 9, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 155 Đỗ Xuân Hợp, Phường Phước Long A, Quận 9, TP.Hồ Chí Minh'],
-            ['area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 320 Nguyễn Duy Trinh, Phường Tăng Nhơn Phú A, Quận 9, TP.Hồ Chí Minh'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 1 Trần Phú, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 15 Lê Duẩn, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 45 Hoàng Diệu, Phường Nam Dương, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 75 Nguyễn Hữu Thọ, Phường Hòa Thuận Nam, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 90 Đống Đa, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 105 Lý Tự Trọng, Phường Hải Châu I, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 135 Lê Đình Lý, Phường Hòa Cường Nam, Quận Hải Châu, Đà Nẵng'],
-            ['area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 30 Nguyễn Văn Linh, Phường Vĩnh Trung, Quận Thanh Khê, Đà Nẵng'],
-            ['area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 60 Điện Biên Phủ, Phường Thanh Khê Tây, Quận Thanh Khê, Đà Nẵng'],
-            ['area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 155 Tôn Đức Thắng, Phường Thanh Khê Đông, Quận Thanh Khê, Đà Nẵng'],
-            ['area' => 'Quận Ngũ Hành Sơn, Đà Nẵng', 'address' => 'Số 120 Nguyễn Chí Thanh, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng'],
-            ['area' => 'Quận Ngũ Hành Sơn, Đà Nẵng', 'address' => 'Số 200 Hoàng Sa, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng'],
-            ['area' => 'Quận Sơn Trà, Đà Nẵng', 'address' => 'Số 88 Võ Nguyên Giáp, Phường Mỹ An, Quận Sơn Trà, Đà Nẵng'],
-            ['area' => 'Quận Sơn Trà, Đà Nẵng', 'address' => 'Số 150 Phạm Văn Đồng, Phường Phước Mỹ, Quận Sơn Trà, Đà Nẵng'],
-            ['area' => 'Quận Liên Chiểu, Đà Nẵng', 'address' => 'Số 250 Nguyễn Lương Bằng, Phường Hòa Hiệp Bắc, Quận Liên Chiểu, Đà Nẵng'],
-            ['area' => 'Quận Liên Chiểu, Đà Nẵng', 'address' => 'Số 320 Tôn Đức Thắng, Phường Hòa Minh, Quận Liên Chiểu, Đà Nẵng'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 1 Nguyễn Huy Tưởng, Phường Thanh Xuân Trung, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 45 Lê Văn Lương, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 75 Hoàng Đạo Thúy, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 90 Nguyễn Xiển, Phường Hạ Đình, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 125 Khuất Duy Tiến, Phường Nhân Chính, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Thanh Xuân, Hà Nội', 'address' => 'Số 200 Lê Trọng Tấn, Phường Khương Mai, Quận Thanh Xuân, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 30 Phạm Văn Đồng, Phường Mai Dịch, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 60 Trần Duy Hưng, Phường Trung Hòa, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 105 Hoàng Quốc Việt, Phường Nghĩa Đô, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 135 Cầu Giấy, Phường Quan Hoa, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 190 Dịch Vọng, Phường Dịch Vọng, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Cầu Giấy, Hà Nội', 'address' => 'Số 250 Xuân Thủy, Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 15 Nguyễn Chí Thanh, Phường Láng Thượng, Quận Đống Đa, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 120 Đường Láng, Phường Láng Thượng, Quận Đống Đa, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 180 Láng Hạ, Phường Láng Hạ, Quận Đống Đa, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 220 Tây Sơn, Phường Trung Liệt, Quận Đống Đa, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Đống Đa, Hà Nội', 'address' => 'Số 280 Khâm Thiên, Phường Khâm Thiên, Quận Đống Đa, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 25 Võ Chí Công, Phường Xuân La, Quận Tây Hồ, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 68 Lạc Long Quân, Phường Bưởi, Quận Tây Hồ, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Tây Hồ, Hà Nội', 'address' => 'Số 120 Âu Cơ, Phường Nhật Tân, Quận Tây Hồ, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 150 Phố Huế, Phường Ngô Thì Nhậm, Quận Hai Bà Trưng, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 165 Bà Triệu, Phường Lê Đại Hành, Quận Hai Bà Trưng, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 210 Giải Phóng, Phường Đồng Tâm, Quận Hai Bà Trưng, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hai Bà Trưng, Hà Nội', 'address' => 'Số 320 Minh Khai, Phường Minh Khai, Quận Hai Bà Trưng, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 195 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 45 Nguyễn Đình Thi, Phường Giảng Võ, Quận Ba Đình, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Ba Đình, Hà Nội', 'address' => 'Số 88 Đội Cấn, Phường Đội Cấn, Quận Ba Đình, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 225 Trần Phú, Phường Mộ Lao, Quận Hà Đông, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 240 Lê Trọng Tấn, Phường Dương Nội, Quận Hà Đông, Hà Nội'],
+            ['province' => 'Hà Nội', 'area' => 'Quận Hà Đông, Hà Nội', 'address' => 'Số 350 Quang Trung, Phường Quang Trung, Quận Hà Đông, Hà Nội'],
+
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 1 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 15 Đồng Khởi, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 30 Lê Lợi, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 45 Nguyễn Du, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 60 Pasteur, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 75 Nguyễn Trung Trực, Phường Bến Thành, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 135 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 210 Trần Hưng Đạo, Phường Cô Giang, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 1, TP.Hồ Chí Minh', 'address' => 'Số 270 Võ Văn Kiệt, Phường Cầu Kho, Quận 1, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 90 Võ Văn Tần, Phường 6, Quận 3, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 105 Nguyễn Thị Minh Khai, Phường 6, Quận 3, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 120 Nguyễn Đình Chiểu, Phường 6, Quận 3, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 180 Võ Thị Sáu, Phường 8, Quận 3, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 3, TP.Hồ Chí Minh', 'address' => 'Số 225 Cách Mạng Tháng 8, Phường 10, Quận 3, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 150 Điện Biên Phủ, Phường 25, Quận Bình Thạnh, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 280 Xô Viết Nghệ Tĩnh, Phường 21, Quận Bình Thạnh, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận Bình Thạnh, TP.Hồ Chí Minh', 'address' => 'Số 350 Nguyễn Xí, Phường 13, Quận Bình Thạnh, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 255 Nguyễn Văn Linh, Phường Tân Thuận Đông, Quận 7, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 88 Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 7, TP.Hồ Chí Minh', 'address' => 'Số 120 Huỳnh Tấn Phát, Phường Tân Thuận Tây, Quận 7, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 68 Nguyễn Duy Trinh, Phường Bình Trưng Đông, Quận 2, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 120 Nguyễn Thị Định, Phường An Phú, Quận 2, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 2, TP.Hồ Chí Minh', 'address' => 'Số 200 Mai Chí Thọ, Phường Bình An, Quận 2, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 240 Lê Văn Việt, Phường Hiệp Phú, Quận 9, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 155 Đỗ Xuân Hợp, Phường Phước Long A, Quận 9, TP.Hồ Chí Minh'],
+            ['province' => 'Hồ Chí Minh', 'area' => 'Quận 9, TP.Hồ Chí Minh', 'address' => 'Số 320 Nguyễn Duy Trinh, Phường Tăng Nhơn Phú A, Quận 9, TP.Hồ Chí Minh'],
+
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 1 Trần Phú, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 15 Lê Duẩn, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 45 Hoàng Diệu, Phường Nam Dương, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 75 Nguyễn Hữu Thọ, Phường Hòa Thuận Nam, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 90 Đống Đa, Phường Thạch Thang, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 105 Lý Tự Trọng, Phường Hải Châu I, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Hải Châu, Đà Nẵng', 'address' => 'Số 135 Lê Đình Lý, Phường Hòa Cường Nam, Quận Hải Châu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 30 Nguyễn Văn Linh, Phường Vĩnh Trung, Quận Thanh Khê, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 60 Điện Biên Phủ, Phường Thanh Khê Tây, Quận Thanh Khê, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Thanh Khê, Đà Nẵng', 'address' => 'Số 155 Tôn Đức Thắng, Phường Thanh Khê Đông, Quận Thanh Khê, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Ngũ Hành Sơn, Đà Nẵng', 'address' => 'Số 120 Nguyễn Chí Thanh, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Ngũ Hành Sơn, Đà Nẵng', 'address' => 'Số 200 Hoàng Sa, Phường Mỹ An, Quận Ngũ Hành Sơn, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Sơn Trà, Đà Nẵng', 'address' => 'Số 88 Võ Nguyên Giáp, Phường Mỹ An, Quận Sơn Trà, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Sơn Trà, Đà Nẵng', 'address' => 'Số 150 Phạm Văn Đồng, Phường Phước Mỹ, Quận Sơn Trà, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Liên Chiểu, Đà Nẵng', 'address' => 'Số 250 Nguyễn Lương Bằng, Phường Hòa Hiệp Bắc, Quận Liên Chiểu, Đà Nẵng'],
+            ['province' => 'Đà Nẵng', 'area' => 'Quận Liên Chiểu, Đà Nẵng', 'address' => 'Số 320 Tôn Đức Thắng, Phường Hòa Minh, Quận Liên Chiểu, Đà Nẵng'],
+
+            ['province' => 'Quảng Ninh', 'area' => 'Thành phố Hạ Long, Quảng Ninh', 'address' => 'Số 88 Hạ Long, Phường Bãi Cháy, Thành phố Hạ Long, Quảng Ninh'],
+            ['province' => 'Quảng Ninh', 'area' => 'Thành phố Hạ Long, Quảng Ninh', 'address' => 'Số 120 Hoàng Quốc Việt, Phường Hùng Thắng, Thành phố Hạ Long, Quảng Ninh'],
+
+            ['province' => 'Lâm Đồng', 'area' => 'Thành phố Đà Lạt, Lâm Đồng', 'address' => 'Số 10 Trần Hưng Đạo, Phường 10, Thành phố Đà Lạt, Lâm Đồng'],
+            ['province' => 'Lâm Đồng', 'area' => 'Thành phố Đà Lạt, Lâm Đồng', 'address' => 'Số 33 Phan Đình Phùng, Phường 2, Thành phố Đà Lạt, Lâm Đồng'],
+
+            ['province' => 'Khánh Hòa', 'area' => 'Thành phố Nha Trang, Khánh Hòa', 'address' => 'Số 78 Trần Phú, Phường Lộc Thọ, Thành phố Nha Trang, Khánh Hòa'],
+            ['province' => 'Khánh Hòa', 'area' => 'Thành phố Nha Trang, Khánh Hòa', 'address' => 'Số 99 Phạm Văn Đồng, Phường Vĩnh Hòa, Thành phố Nha Trang, Khánh Hòa'],
+
+            ['province' => 'Huế', 'area' => 'Thành phố Huế, Huế', 'address' => 'Số 12 Lê Lợi, Phường Vĩnh Ninh, Thành phố Huế, Huế'],
+            ['province' => 'Huế', 'area' => 'Thành phố Huế, Huế', 'address' => 'Số 45 Lê Duẩn, Phường Phú Thuận, Thành phố Huế, Huế'],
+
+            ['province' => 'Lào Cai', 'area' => 'Thị xã Sa Pa, Lào Cai', 'address' => 'Số 10 Fansipan, Phường Sa Pa, Thị xã Sa Pa, Lào Cai'],
+            ['province' => 'Lào Cai', 'area' => 'Thị xã Sa Pa, Lào Cai', 'address' => 'Số 25 Mường Hoa, Phường Sa Pa, Thị xã Sa Pa, Lào Cai'],
+
+            ['province' => 'Ninh Bình', 'area' => 'Tràng An, Ninh Bình', 'address' => 'Khu du lịch sinh thái Tràng An, Xã Trường Yên, Huyện Hoa Lư, Ninh Bình'],
+            ['province' => 'Ninh Bình', 'area' => 'Huyện Hoa Lư, Ninh Bình', 'address' => 'Số 15 đường Tràng An, Xã Ninh Xuân, Huyện Hoa Lư, Ninh Bình'],
         ];
 
         $descriptions = [
@@ -185,7 +205,8 @@ class PropertiesTableSeeder extends Seeder
             'Tòa nhà căn hộ dịch vụ ngắn hạn 26 tầng. Thiết kế hiện đại, mỗi căn hộ được trang bị đầy đủ nội thất, thiết bị điện tử. Dịch vụ đầy đủ: dọn phòng, giặt ủi, đưa đón, đặt tour, đặt nhà hàng. Hệ thống đặt phòng online, check-in nhanh chóng. Gần các điểm du lịch, trung tâm mua sắm, nhà hàng, phù hợp cho khách du lịch và công tác ngắn hạn.',
         ];
 
-        $provinceIds = DB::table('provinces')->pluck('id')->toArray();
+        $provinces = DB::table('provinces')->get(['id', 'name'])->keyBy('name');
+        $provinceIds = $provinces->pluck('id')->toArray();
         $wardIds = DB::table('wards')->pluck('id')->toArray();
 
         if (empty($provinceIds)) {
@@ -221,7 +242,9 @@ class PropertiesTableSeeder extends Seeder
             ],
         ];
 
-        foreach (range(1, 50) as $i) {
+        $wardsByProvince = [];
+
+        foreach (range(1, 300) as $i) {
             $type = $faker->randomElement($propertyTypes->toArray());
             $slug = $type->slug;
             
@@ -229,17 +252,31 @@ class PropertiesTableSeeder extends Seeder
             $possibleNames = $typeNames[$slug] ?? [
                 'Tòa nhà ' . $faker->company, 'Cơ sở ' . $faker->lastName, 'Vùng ' . $faker->city, 'Khu vực ' . $faker->streetName
             ];
-            $name = $faker->randomElement($possibleNames);
+            $name = $faker->randomElement($possibleNames) . ' ' . $faker->randomElement(['A', 'B', 'C', 'Premium', 'Luxury', 'Plaza', 'Center', 'Garden', 'Grand', 'View', 'Park', 'Corner', 'Elite', 'Signature']);
             
             $location = $faker->randomElement($addressData);
             $description = $faker->randomElement($descriptions);
+            
+            $provinceName = $location['province'];
+            $provinceId = $provinces->has($provinceName) ? $provinces->get($provinceName)->id : $faker->randomElement($provinceIds);
+
+            if (!isset($wardsByProvince[$provinceId])) {
+                $wardsByProvince[$provinceId] = DB::table('wards')
+                    ->where('province_id', $provinceId)
+                    ->pluck('id')
+                    ->toArray();
+            }
+            $provinceWards = $wardsByProvince[$provinceId];
+            $wardId = !empty($provinceWards) ? $faker->randomElement($provinceWards) : $faker->randomElement($wardIds);
+            
+            $address = preg_replace('/^Số \d+/', 'Số ' . rand(1, 499), $location['address']);
 
             DB::table('properties')->insert([
                 'user_id'           => $faker->randomElement($adminPartnerIds),
-                'province_id'       => $faker->randomElement($provinceIds),
-                'ward_id'           => $faker->randomElement($wardIds),
+                'province_id'       => $provinceId,
+                'ward_id'           => $wardId,
                 'name'              => $name,
-                'address_detail'    => $location['address'],
+                'address_detail'    => $address,
                 'number_of_floors'  => $faker->numberBetween(1, 35),
                 'number_of_units'   => $faker->numberBetween(10, 500),
                 'year_built'        => $faker->numberBetween(1990, 2024),

@@ -72,6 +72,40 @@ class HomeController extends Controller
     }
 
     /**
+     * Get suggested rooms grouped by province for homepage.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getRoomsByProvince(Request $request): JsonResponse
+    {
+        $validator = $this->roomsValidation->suggestedRoomsByProvinceValidation($request);
+
+        if ($validator->fails()) {
+            return $this->validateError(
+                $validator->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        $result = $this->roomsService->handleSuggestedRoomsByProvince($request);
+
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
+
+    /**
      * Get all provinces for homepage
      * @return JsonResponse
      */

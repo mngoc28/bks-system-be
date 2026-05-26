@@ -403,6 +403,117 @@ final class GuestCancellationService
     }
 
     /**
+     * Stay guest: withdraw a pending cancellation request, restoring the booking to CONFIRMED.
+     *
+     * @return array{
+     *     success: bool,
+     *     data: mixed,
+     *     message: string,
+     *     code?: string,
+     *     http_status?: int
+     * }
+     */
+    public function withdrawCancellationRequest(int $userId, int $bookingId): array
+    {
+        try {
+            return DB::transaction(function () use ($userId, $bookingId): array {
+                /** @var Booking|null $booking */
+                $booking = Booking::query()
+                    ->whereKey($bookingId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($booking === null) {
+                    return $this->fail(__('booking.messages.not_found'), 'NOT_FOUND', 404);
+                }
+
+                if ((int) $booking->user_id !== $userId) {
+                    return $this->fail(__('booking.messages.unauthorized'), 'FORBIDDEN', 403);
+                }
+
+                if ((int) $booking->status !== BookingStatus::PENDING_CANCELLATION->value) {
+                    return $this->fail(__('booking.bcp.withdraw_invalid_status'), 'INVALID_STATE', 409);
+                }
+
+                if ($this->stayBlocked($booking)) {
+                    return $this->fail(__('booking.bcp.stay_in_progress_no_cancel'), 'STAY_NOT_CANCELLABLE', 409);
+                }
+
+                /** @var BookingCancellationRequest|null $requestRow */
+                $requestRow = BookingCancellationRequest::query()
+                    ->where('booking_id', $bookingId)
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($requestRow === null) {
+                    return $this->fail(__('booking.bcp.no_pending_request_to_withdraw'), 'NO_PENDING_REQUEST', 404);
+                }
+
+                $now = Carbon::now();
+
+                $requestRow->update([
+                    'status' => 'withdrawn',
+                    'resolved_at' => $now,
+                    'resolved_by_user_id' => $userId,
+                    'partner_decision_note' => 'Withdrawn by guest',
+                ]);
+
+                $this->bookingRepository->update($bookingId, [
+                    'status' => BookingStatus::CONFIRMED->value,
+                    'pending_cancellation_since' => null,
+                ]);
+
+                $fresh = $this->bookingRepository->find($bookingId);
+
+                $this->timelineService->recordGuestCancelRequestWithdrawn(
+                    $bookingId,
+                    $userId,
+                    [
+                        'request_id' => (int) $requestRow->id,
+                        'withdrawn_via' => 'stay_guest',
+                    ]
+                );
+
+                if ($fresh instanceof Booking) {
+                    $scope = $this->resolveBroadcastScope($fresh);
+                    DB::afterCommit(function () use ($requestRow, $fresh, $scope): void {
+                        if ($scope['partner_id'] === null || $scope['property_id'] === null) {
+                            return;
+                        }
+                        try {
+                            event(new CancellationRequestUpdated(
+                                (int) $requestRow->id,
+                                (int) $fresh->id,
+                                (int) $scope['property_id'],
+                                (int) $scope['partner_id'],
+                                'withdrawn',
+                            ));
+                        } catch (Throwable $e) {
+                            Log::warning('CancellationRequestUpdated dispatch failed (guest withdraw cancel-request)', [
+                                'request_id' => $requestRow->id,
+                                'error'      => $e->getMessage(),
+                            ]);
+                        }
+                    });
+                }
+
+                return [
+                    'success' => true,
+                    'data'    => $fresh,
+                    'message' => __('booking.bcp.cancel_request_withdrawn'),
+                ];
+            });
+        } catch (Throwable $e) {
+            Log::error('GuestCancellationService::withdrawCancellationRequest failed', [
+                'booking_id' => $bookingId,
+                'error'      => $e->getMessage(),
+            ]);
+
+            return $this->fail(__('booking.messages.update_failed'), 'INTERNAL', 500);
+        }
+    }
+
+    /**
      * @return list<string>
      */
     private function blockedStayStatuses(): array

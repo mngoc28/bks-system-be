@@ -344,7 +344,7 @@ class AuthController extends Controller
             );
         }
 
-        $result = $this->authService->handleSetPassword($request, $token);
+        $result = $this->authService->handleSetPassword($request->input('password'), $token);
 
         if ($result['status']) {
             return $this->successResponse(
@@ -359,5 +359,71 @@ class AuthController extends Controller
             null,
             HttpStatus::BAD_REQUEST
         );
+    }
+
+    /**
+     * Submit partner onboarding details and files.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function submitOnboarding(Request $request): JsonResponse
+    {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
+            return $this->errorResponse(__('auth.unauthorized'), null, HttpStatus::UNAUTHORIZED);
+        }
+
+        $result = $this->authService->submitOnboarding($request, $user);
+
+        if ($result['status']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+    }
+
+    /**
+     * Sign the onboarding E-Contract.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function signContract(Request $request): JsonResponse
+    {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
+            return $this->errorResponse(__('auth.unauthorized'), null, HttpStatus::UNAUTHORIZED);
+        }
+
+        $result = $this->authService->signContract($request, $user);
+
+        if ($result['status']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+    }
+
+    /**
+     * Resubmit partner onboarding details after rejection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function resubmitOnboarding(Request $request): JsonResponse
+    {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
+            return $this->errorResponse(__('auth.unauthorized'), null, HttpStatus::UNAUTHORIZED);
+        }
+
+        $result = $this->authService->resubmitOnboarding($request, $user);
+
+        if ($result['status']) {
+            return $this->successResponse($result['data'], $result['message']);
+        }
+
+        return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
     }
 }

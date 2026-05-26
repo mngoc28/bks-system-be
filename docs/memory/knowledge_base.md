@@ -1,5 +1,142 @@
 # Repository Knowledge Base
 
+## 2026-05-25 - Cơ chế đánh giá kỳ nghỉ BKS Stay
+
+### Nguồn tham chiếu
+
+- `bks-system-fe/src/pages/EndUser/BksStay/BookingDetail.tsx`
+- `bks-system-fe/src/hooks/useReviewQuery.ts`
+- `bks-system-fe/src/api/reviewApi.ts`
+
+### Kiến thức nghiệp vụ đã chốt
+
+- Khối **đánh giá kỳ nghỉ** chỉ hiển thị khi booking đã ở trạng thái **hoàn thành** (`status = 3`) hoặc `stay_status = checked_out`.
+- Một booking Stay có thể thu thập **hai loại đánh giá** trong cùng một lần gửi:
+  - **Đánh giá phòng nghỉ**
+  - **Đánh giá đối tác / chủ nhà**
+- FE mặc định rating ban đầu cho cả hai phần là **5 sao**; **comment là tùy chọn**.
+- Nếu booking đã có review trước đó, trang chi tiết booking hiển thị **danh sách review đã gửi ở chế độ read-only** thay vì mở lại form nhập mới.
+- Hiện tại FE chưa có luồng **sửa / xóa** review; scope đang là **gửi mới** và **xem lại** review đã tồn tại.
+
+### Kiến thức kỹ thuật đã chốt
+
+- API gửi đánh giá dùng endpoint **`POST stay/reviews`** với payload:
+  - `booking_id`
+  - `room_rating`, `room_comment`
+  - `partner_rating`, `partner_comment`
+- API đọc review theo booking dùng **`GET stay/reviews/booking/{bookingId}`** để render lại trong `BookingDetail`.
+- Dữ liệu review còn được tái sử dụng ở các bề mặt khác:
+  - **Landing page:** `GET home/reviews`
+  - **Room detail public:** `GET rooms/{id}/reviews`
+  - **Partner detail public:** `GET partners/detail/{partnerId}/reviews`
+- Sau khi submit thành công, FE invalidate tối thiểu:
+  - `["bookingReviews", booking_id]`
+  - `["landingReviews"]`
+
+### Ghi chú vận hành / UX
+
+- Cơ chế hiện tại gắn review trực tiếp với **booking đã lưu trú xong**, giúp đảm bảo review đến từ trải nghiệm có thật.
+- Vì form và lịch sử review nằm chung trong `BookingDetail`, user không cần đi sang một route riêng để đánh giá.
+
+## 2026-05-21 - Room-tourist mapping test cases
+
+### Nguồn tham chiếu
+
+- `docs/test-cases/testcase_004.md`
+- `docs/SRC/srs_room_tourist_spot_mapping.md`
+- `docs/plans/plan_004.md`
+
+### Kiến thức kiểm thử đã chốt
+
+- **Phạm vi kiểm thử public API**: xác nhận `tourist_summary` (name, travel_time_label, has_tourist_mapping) cho room card public, fallback an toàn khi thiếu mapping và mảng `tourist_spots` ở room detail.
+- **Phạm vi kiểm thử admin CRUD & validation**: CRUD spot master và mapping, validation unique slug, category enum, travel time dương, distance không âm và duy nhất 1 primary mapping/phòng.
+- **Kiểm thử cache & transaction**: cache invalidation sau khi thay đổi dữ liệu, transaction rollback khi ghi mapping lỗi, không để xảy ra N+1 query.
+
+## 2026-05-21 - Room-tourist mapping implementation
+
+### Nguồn tham chiếu
+
+- `docs/plans/plan_004.md`
+- `docs/designs/design_004.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức triển khai đã chốt
+
+- Migration thực tế đã tạo `tourist_spots` và `room_tourist_spot_maps`.
+- `RoomsService` đã enrich public home/search/detail bằng `RoomTouristSummaryService`.
+- Admin CRUD routes/controllers cho tourist spot và room-tourist map đã được wiring vào `routes/api.php`.
+- Validation cho primary mapping, travel time và distance đã có request validators riêng.
+
+### Trạng thái
+
+- Code đã compile sạch trên các file backend vừa chạm.
+- Runtime PHPUnit / feature execution vẫn cần chạy ở bước task tiếp theo nếu muốn đóng toàn bộ verification.
+
+## 2026-05-21 - Room-tourist mapping plan
+
+### Nguồn tham chiếu
+
+- `docs/plans/plan_004.md`
+- `docs/designs/design_004.md`
+- `docs/SRC/srs_room_tourist_spot_mapping.md`
+
+### Kiến thức triển khai đã chốt
+
+- Thực thi theo 4 phase: schema foundation, public summary API, admin CRUD, verification.
+- Public summary DTO phải được khóa ở Phase B2 trước khi FE/QA downstream bám vào.
+- Cache invalidation dùng version-based approach để giữ public response ổn định.
+- Admin CRUD phải đi qua service/repository layer, có transaction và validation rule cho primary spot / travel time / distance.
+
+### Handoff tiếp theo
+
+- Sau plan: `stack-task` có thể bắt đầu từ Phase A mà không cần đọc thêm scope ngoài plan.
+- QA cần testcase requirement-centric cho public summary, fallback, admin CRUD và cache invalidation.
+
+## 2026-05-21 - Room-tourist mapping design
+
+### Nguồn tham chiếu
+
+- `docs/designs/design_004.md`
+- `docs/SRC/srs_room_tourist_spot_mapping.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức kỹ thuật đã chốt
+
+- Public home/search/room detail dùng chung một tourist summary DTO để tránh lệch payload.
+- Admin CRUD cho `tourist_spots` và `room_tourist_spot_maps` đi qua service/repository layer, không thao tác DB trực tiếp từ controller.
+- Cache ngắn hạn cho active tourist spots và room tourist summary, invalidation bằng version bump sau CRUD.
+- Không tích hợp live routing trong design này; travel time tiếp tục là giá trị ước tính / quản trị.
+
+### Kế hoạch kỹ thuật
+
+- Phase 1: schema + model + repository.
+- Phase 2: public summary API.
+- Phase 3: admin CRUD + cache invalidation + validation.
+
+## 2026-05-21 - Room-tourist mapping SRS
+
+### Nguồn tham chiếu
+
+- `docs/leads/lead_260521_room-tourist-mapping.md`
+- `docs/SRC/srs_room_tourist_spot_mapping.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức nghiệp vụ đã chốt
+
+- Room public card trên home / search cần hiển thị tên điểm du lịch + thời gian di chuyển ước tính nếu có mapping.
+- Scope ưu tiên gắn phòng nổi bật với các điểm đến nổi tiếng; không redesign homepage và không đổi route.
+- Travel time trong scope này là giá trị ước tính / quản trị, không phải live routing.
+
+### Kiến thức kỹ thuật đã chốt
+
+- Schema canonical thêm `tourist_spots` và `room_tourist_spot_maps` để lưu master data + mapping.
+- FE / API nên dùng cùng một payload room summary cho homepage và search results để tránh logic phân mảnh.
+- Fallback khi thiếu mapping: ẩn nhãn du lịch hoặc quay về nhãn tỉnh / thành.
+
+### Quyết định / trạng thái
+
+- Bước tiếp theo sau analyze: `stack-design` để chốt API contract, chiến lược seed/admin data và cách ưu tiên điểm du lịch.
+
 ## 2026-05-14 - System Design D002 (Booking cancellation policy)
 
 ### Nguồn tham chiếu
@@ -11,7 +148,7 @@
 ### Kiến thức kỹ thuật đã chốt (design)
 
 - **`BookingStatus::PENDING_CANCELLATION = 4`** trên DB; đồng bộ enum PHP.
-- **API Stay:** `POST stay/bookings/sync-local`, `POST stay/bookings/{id}/cancel`, `POST stay/bookings/{id}/cancel-request`, `GET stay/cancellation-reasons`.
+- **API Stay:** `POST stay/bookings/{id}/cancel`, `POST stay/bookings/{id}/cancel-request`, `GET stay/cancellation-reasons` (Note: `POST stay/bookings/sync-local` has been decommissioned and removed).
 - **API Partner:** `GET partner/cancellation-requests`, `POST …/approve`, `POST …/reject` (note reject ≥ 5 ký tự).
 - **Cooldown:** env `CANCEL_REQUEST_COOLDOWN_SECONDS` mặc định **3600**; lỗi **429** + `retry_after_seconds`.
 - **Reject:** khôi phục `bookings.status` từ cột **`previous_booking_status`** trên `booking_cancellation_requests` (snapshot lúc tạo request).
@@ -26,6 +163,7 @@
 - **Phase B3 (FE `bks-system-fe`, 2026-05-14):** trang inbox `/partner/cancellation-requests`, service API, Echo `.cancellation_request.updated` (invalidate + toast).
 - **Phase B5 (BE, 2026-05-14):** `CancellationPolicyResolver` + `CancellationPolicyTierMatcher`; seed tier % placeholder trong `CancellationPolicyBaselineSeeder`; `GuestCancellationService` ghi snapshot + metadata tier trên timeline; `BookingCancellationMetricsService` + `GET /api/v1/admin/booking-cancellation-metrics` (SLA p50/p90, % pending stale); test `CancellationPolicyTierMatcherTest` (không cần DB).
 - Kế hoạch chi tiết: `docs/plans/plan_002.md`. Handoff QC: **`docs/test-cases/testcase_002.md`** (TC002 BCP — kịch bản QC đầy đủ); tiếp theo `stack-review-branch` → `report-writer`.
+- Landing page prominence docs now live under BE docs with renamed `design_003.md` and `plan_003.md`.
 
 ## 2026-05-14 - Implementation Plan P002 (BCP cancellation)
 
@@ -35,7 +173,7 @@
 
 ### Tóm tắt
 
-- **B1** migration + enum + ConflictChecker + config flag; **B2** Stay cancel/cancel-request; **B3** Partner inbox + broadcast; **B4** sync-local + FE; **B5** policy % + báo cáo SLA.
+- **B1** migration + enum + ConflictChecker + config flag; **B2** Stay cancel/cancel-request; **B3** Partner inbox + broadcast; **B4** FE Stay/My Bookings wiring (Note: `sync-local` has been decommissioned and removed); **B5** policy % + báo cáo SLA.
 - **Ước lượng:** ~90–110 giờ dev; flag `BCP_CANCELLATION_V1`.
 
 ## 2026-05-14 - Chính sách yêu cầu hủy phòng (My Bookings & Stay)
@@ -52,13 +190,13 @@
 - Hai lộ thao tác theo **bậc trạng thái đơn**: **`cancel`** (bậc thấp / Partner chưa xác nhận theo nghĩa đã chốt) và **`cancel-request`** (bậc cao / đã confirmed trở đi) → **`pending_cancellation`** chờ **Partner duyệt**.
 - **Đang ở / đã check-in** không cho **hủy đặt** theo nghĩa business (tách với trả phòng sớm/no-show).
 - **Lý do hủy bắt buộc**; phí/hoàn tiền **tạm không** tách theo Partner/loại phòng; bảng mốc thời gian tách **đơn ngắn hạn vs dài hạn** (cấu trúc + % sau research OTA + pháp lý VN).
-- **Đồng bộ T6:** sau login Stay, merge `publicMyBookings` → server bằng **fingerprint**, không dùng local id làm PK server.
+- **Đồng bộ T6:** Đã hủy bỏ/Không sử dụng (Decommissioned). Việc lưu trữ cục bộ và đồng bộ khi login là dư thừa vì đơn đặt phòng đã có sẵn trên server ngay khi tạo.
 - **Cooldown T7** giữa các lần **gửi lại** `cancel-request` trên cùng booking — tham số **N** chốt ở design (SRS đề xuất mặc định 60 phút cho dev).
 - **Metric B7:** SLA Partner (`resolved_at - requested_at`), % không treo `pending_c`, hotline tag — đo DB + benchmark OTA.
 
 ### Kiến thức kỹ thuật ổn định
 
-- Đề xuất mở rộng `bookings.status` với mã **`pending_cancellation`** (ví dụ **4**) cạnh các mã hiện có 0–3; cột tuỳ chọn sync `client_local_id`, `client_fingerprint`, `cancellation_policy_version`.
+- Đề xuất mở rộng `bookings.status` với mã **`pending_cancellation`** (ví dụ **4**) cạnh các mã hiện có 0–3; cột `cancellation_policy_version` (các cột `client_local_id`, `client_fingerprint` đã được loại bỏ/không dùng).
 - Bảng mới đề xuất: `booking_cancellation_requests`, `cancellation_policy_versions`, `cancellation_policy_tiers` (đã merge mô tả vào `db_overview_etc_core_schema.md`).
 - **Ngưỡng đêm ngắn/dài** đề xuất căn chỉnh SRS Partner: **≥ 30 đêm = dài hạn**.
 

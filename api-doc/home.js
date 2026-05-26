@@ -74,6 +74,63 @@
  */
 
 /**
+ * @api {get} /api/v1/home/rooms/by-province Get Suggested Rooms By Province
+ * @apiName GetSuggestedRoomsByProvince
+ * @apiGroup Home
+ * @apiVersion 1.0.0
+ *
+ * @apiDescription Public endpoint - No authentication required. Returns suggested rooms grouped by province for homepage spot highlights.
+ *
+ * @apiParam (Query) {Number[]} [province_ids] Province IDs to prioritize and return. If omitted, returns grouped rooms for all provinces.
+ * @apiParam (Query) {Number} [limit] Number of rooms per province to return (optional, default: 10, max: 50)
+ *
+ * @apiSampleRequest /api/v1/home/rooms/by-province
+ *
+ * @apiSuccess {String} success Response status (true)
+ * @apiSuccess {String} message Success message
+ * @apiSuccess {Array} data Grouped rooms by province
+ * @apiSuccess {Number} data[].province_id Province ID
+ * @apiSuccess {String} data[].province_name Province name in Vietnamese
+ * @apiSuccess {String} data[].province_name_en Province slug / English key
+ * @apiSuccess {Array} data[].rooms Rooms in this province group
+ * @apiSuccess {Number} data[].rooms[].id Room ID
+ * @apiSuccess {String} data[].rooms[].title Room title
+ * @apiSuccess {String} data[].rooms[].province_name Province name (Vietnamese)
+ * @apiSuccess {String} data[].rooms[].province_name_en Province slug / English key
+ * @apiSuccess {String} data[].rooms[].room_image Main room image URL (from joined row)
+ * @apiSuccess {Number} data[].rooms[].cheapest_daily_price Cheapest effective daily price
+ * @apiSuccess {Number} data[].rooms[].cheapest_monthly_price Cheapest monthly package price
+ *
+ * @apiSuccessExample {json} Success-Response:
+ * HTTP/1.1 200 OK
+ * {
+ *   "success": true,
+ *   "message": "Latest rooms retrieved successfully",
+ *   "data": [
+ *     {
+ *       "province_id": 1,
+ *       "province_name": "Hà Nội",
+ *       "province_name_en": "ha_noi",
+ *       "rooms": [
+ *         {
+ *           "id": 1,
+ *           "title": "Phòng Deluxe 101",
+ *           "province_name": "Hà Nội",
+ *           "province_name_en": "ha_noi",
+ *           "room_image": "https://res.cloudinary.com/example/image/upload/v1234567890/rooms/room1.jpg",
+ *           "cheapest_daily_price": 1500000,
+ *           "cheapest_monthly_price": 30000000
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
+ *
+ * @apiError (400) {String} success Response status (false)
+ * @apiError (400) {String} message Invalid province_ids or limit parameter
+ */
+
+/**
  * @api {get} /api/v1/home/provinces Get All Provinces
  * @apiName GetAllProvinces
  * @apiGroup Home

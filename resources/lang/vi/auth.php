@@ -32,6 +32,8 @@ return [
     'login_failed'                     => 'Đăng nhập thất bại.',
     'login_forbidden'                  => 'Tài khoản này không được phép đăng nhập vào hệ thống.',
     'subject_mail_login_information'   => 'Thông tin đăng nhập',
+    'subject_mail_partner_approved'    => 'Thông báo phê duyệt hồ sơ đối tác',
+    'subject_mail_partner_rejected'    => 'Thông báo từ chối hồ sơ đối tác',
 
     // Logout
     'logout_success'                   => 'Đăng xuất thành công.',

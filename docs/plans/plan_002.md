@@ -15,7 +15,7 @@
 
 ## Executive Summary
 
-Kế hoạch triển khai **BCP (Booking Cancellation Policy)** theo `design_002.md`, chia **5 phase** tương ứng design: (1) schema + enum + ConflictChecker + master lý do; (2) API Stay `cancel` / `cancel-request` + cooldown + idempotency; (3) Partner inbox approve/reject + broadcast; (4) T6 `sync-local` + FE Stay/My Bookings; (5) policy tiers điền % + báo cáo SLA/B7.
+Kế hoạch triển khai **BCP (Booking Cancellation Policy)** theo `design_002.md`, chia **5 phase** tương ứng design: (1) schema + enum + ConflictChecker + master lý do; (2) API Stay `cancel` / `cancel-request` + cooldown + idempotency; (3) Partner inbox approve/reject + broadcast; (4) FE Stay/My Bookings wiring (giao diện hủy/yêu cầu hủy khách, bỏ qua `sync-local` do lưu trữ cục bộ dư thừa); (5) policy tiers điền % + báo cáo SLA/B7.
 
 **Ước lượng tổng:** ~**90–110 giờ** dev BE/FE (~**12–15** ngày người), chưa gồm QC độc lập và review merge.
 
@@ -30,7 +30,7 @@ Kế hoạch triển khai **BCP (Booking Cancellation Policy)** theo `design_002
 | B1 | Foundation — DB + enum + Conflict | 12 | 22 | None | — |
 | B2 | Stay — Guest cancel / cancel-request | 14 | 32 | B1 | — |
 | B3 | Partner — inbox + resolve + realtime | 12 | 28 | B2 | Một phần FE B4 sau B2.4 (mock API contract) |
-| B4 | T6 sync-local + FE Stay / My Bookings | 10 | 24 | B2 (API ổn định) | BE B3 song song sau B2.6 |
+| B4 | FE Stay / My Bookings wiring (sync-local Decommissioned) | 6 | 12 | B2 (API ổn định) | BE B3 song song sau B2.6 |
 | B5 | Policy % + báo cáo B7 | 6 | 12 | B1 (bảng tiers), B3 (có dữ liệu resolve) | Song song tài liệu admin seed | **✅ ship BE 2026-05-14** (resolver, seed tier, metrics admin) |
 
 ## Dependency Graph
@@ -270,20 +270,20 @@ Phase B5 — Policy & B7
 
 ---
 
-## Phase B4: T6 `sync-local` + FE khách
+## Phase B4: FE khách (sync-local Decommissioned)
 
-**Goal:** SRS **BCP-008** + CTA đúng bậc.
+**Goal:** CTA đúng bậc cho Khách (Hủy trực tiếp vs Gửi yêu cầu hủy).
 
-**Duration Estimate:** ~3 ngày (~24 giờ)
+**Duration Estimate:** ~1.5 ngày (~12 giờ)
 
-**Dependencies:** B2 API; B1 cột fingerprint.
+**Dependencies:** B2 API.
 
 ### Tasks (tóm tắt)
 
-- **B4.1–B4.2:** `LocalBookingSyncService` + `POST /api/v1/stay/bookings/sync-local` (`StayLocalBookingSyncController`, `StaySyncLocalBookingsRequest`); transaction; dedupe fingerprint + khớp slot (đơn server chưa có fingerprint); `api-doc/stay-sync-local.js`; test `StayLocalBookingSyncTest` (CI cần DB).
-- **B4.3 (phần đầu):** FE: `flushPendingLocalBookingsToServer` sau login BKS Stay + khi vào My Bookings (đã đăng nhập); lưu queue `publicMyBookings` từ `BookingSuccess` (fingerprint SHA-256 thống nhất BE); BE `user-create` trả thêm `price_id`.
-- **B4.4–B4.6:** FE: `BookingDetail` — `GET cancellation-reasons`, `POST cancel` (pending) vs `cancel-request` (confirmed) + ghi chú khi `pending_cancellation` (4); countdown từ `retry_after_seconds` (429); `MyBookings` — banner đơn local chưa sync + badge chờ hủy + hiển thị `#server_booking_id`; helper `parseStayCancellationError`, `getPendingLocalBookingsCount`.
-- **B4.7:** `business-script/b4_stay_smoke.ps1` — smoke PowerShell: login Stay → (tuỳ chọn) `sync-local` (kiểm tra 422 khi `items` rỗng) → `cancellation-reasons` → `cancel-request` trên booking **confirmed** (tự tìm trang 1 hoặc `-BookingId`).
+- **B4.1–B4.2 (Decommissioned/Removed):** `LocalBookingSyncService` và route `POST stay/bookings/sync-local` cùng controller, service, documentation, tests liên quan đã được gỡ bỏ hoàn toàn khỏi dự án.
+- **B4.3 (Decommissioned/Removed):** Logic lưu trữ cục bộ (`localStorage`) và các hàm helper đồng bộ (`flushPendingLocalBookingsToServer`) đã bị gỡ bỏ khỏi frontend.
+- **B4.4–B4.6:** FE: `BookingDetail` — `GET cancellation-reasons`, `POST cancel` (pending) vs `cancel-request` (confirmed) + ghi chú khi `pending_cancellation` (4); countdown từ `retry_after_seconds` (429); `MyBookings` — hiển thị trạng thái đang xử lý yêu cầu hủy.
+- **B4.7 (Updated):** `business-script/b4_stay_smoke.ps1` — smoke PowerShell: login Stay → `cancellation-reasons` → `cancel-request` trên booking **confirmed** (không chạy sync-local nữa).
 
 ---
 

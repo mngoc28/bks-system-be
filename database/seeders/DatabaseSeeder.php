@@ -24,6 +24,8 @@ final class DatabaseSeeder extends Seeder
             NewsTableSeeder::class,
             PropertiesTableSeeder::class,
             RoomsTableSeeder::class,
+            TouristSpotsTableSeeder::class,
+            RoomTouristSpotMapsTableSeeder::class,
             ServicesTableSeeder::class,
             // PropertyImagesTableSeeder::class,
             // RoomImagesTableSeeder::class,
@@ -36,6 +38,7 @@ final class DatabaseSeeder extends Seeder
             StayPortalSeeder::class,
             CancellationReasonCodesSeeder::class,
             CancellationPolicyBaselineSeeder::class,
+            ReviewsTableSeeder::class,
         ]);
     }
 }

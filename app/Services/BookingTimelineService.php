@@ -33,6 +33,8 @@ final class BookingTimelineService
     public const EVENT_GUEST_CANCEL_REQUEST_APPROVED = 'guest_cancel_request_approved';
     /** Partner rejected guest cancel-request (BCP). */
     public const EVENT_GUEST_CANCEL_REQUEST_REJECTED = 'guest_cancel_request_rejected';
+    /** Guest withdrew guest cancel-request (BCP). */
+    public const EVENT_GUEST_CANCEL_REQUEST_WITHDRAWN = 'guest_cancel_request_withdrawn';
 
     public const STATUS_PENDING   = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
@@ -235,6 +237,27 @@ final class BookingTimelineService
             self::STATUS_PENDING_CANCELLATION,
             $toTimelineStatus,
             $note,
+            $metadata,
+            $actorId,
+        );
+    }
+
+    /**
+     * Guest withdrew a pending cancellation request; booking returns to confirmed.
+     *
+     * @param array<string, mixed> $metadata
+     */
+    public function recordGuestCancelRequestWithdrawn(
+        int $bookingId,
+        ?int $actorId = null,
+        array $metadata = [],
+    ): BookingTimelineEvent {
+        return $this->append(
+            $bookingId,
+            self::EVENT_GUEST_CANCEL_REQUEST_WITHDRAWN,
+            self::STATUS_PENDING_CANCELLATION,
+            self::STATUS_CONFIRMED,
+            null,
             $metadata,
             $actorId,
         );

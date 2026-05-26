@@ -115,6 +115,16 @@ final class Room extends Model
     }
 
     /**
+     * Tourist spot mappings for this room.
+     *
+     * @return HasMany
+     */
+    public function touristSpotMaps(): HasMany
+    {
+        return $this->hasMany(RoomTouristSpotMap::class, 'room_id');
+    }
+
+    /**
      * Get the user who created this room.
      *
      * @return BelongsTo
@@ -132,5 +142,15 @@ final class Room extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * Get reviews for this room.
+     *
+     * @return HasMany
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'room_id');
     }
 }

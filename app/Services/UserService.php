@@ -124,6 +124,10 @@ class UserService
                 return [false, __('user.not_found')];
             }
 
+            if ($user->role === 'partner') {
+                $user->load(['partnerInfo.province', 'partnerInfo.ward']);
+            }
+
             return [
                 true,
                 [
@@ -137,6 +141,7 @@ class UserService
                     'id_avatar'  => $user->id_avatar,
                     'created_at' => $user->created_at,
                     'updated_at' => $user->updated_at,
+                    'partner_info' => $user->partnerInfo ?? null,
                 ],
             ];
         } catch (Exception $e) {

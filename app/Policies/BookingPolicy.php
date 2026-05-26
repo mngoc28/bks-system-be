@@ -116,6 +116,15 @@ final class BookingPolicy
     }
 
     /**
+     * Stay guest: withdraw cancel-request.
+     */
+    public function guestWithdrawCancelRequest(User $user, Booking $booking): bool
+    {
+        return $user->role === 'user'
+            && (int) $booking->user_id === (int) $user->id;
+    }
+
+    /**
      * Walks the relation chain to determine ownership without N+1 surprises.
      */
     private function isOwnerOf(User $user, Booking $booking): bool
