@@ -41,9 +41,11 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('bookings', function (Blueprint $table) {
-            $table->dropUnique(['booking_code']);
-            $table->dropColumn('booking_code');
-        });
+        if (DB::getDriverName() !== 'sqlite') {
+            Schema::table('bookings', function (Blueprint $table) {
+                $table->dropUnique(['booking_code']);
+                $table->dropColumn('booking_code');
+            });
+        }
     }
 };
