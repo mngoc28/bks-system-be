@@ -37,6 +37,7 @@ use App\Http\Controllers\Partner\PartnerStayServiceController;
 use App\Http\Controllers\Partner\PartnerRoomBlockController;
 use App\Http\Controllers\Partner\PartnerCalendarController;
 use App\Http\Controllers\Partner\PartnerCancellationRequestController;
+use App\Http\Controllers\Partner\PartnerRoomTouristSpotMapController;
 use App\Http\Controllers\Admin\TouristSpotController;
 use App\Http\Controllers\Admin\RoomTouristSpotMapController;
 use App\Http\Controllers\Stay\StayController;
@@ -46,6 +47,8 @@ use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Admin\AdminSettlementController;
+use App\Http\Controllers\Partner\PartnerSettlementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -365,6 +368,24 @@ Route::group([
         });
 
         /**
+         * Settlements Management API - Admin
+         * Base Url /api/v1/admin/settlements/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('settlements')->group(function () {
+            Route::get('/', [AdminSettlementController::class, 'index']);
+            Route::get('/summary', [AdminSettlementController::class, 'summary']);
+            Route::get('/report/daily', [AdminSettlementController::class, 'dailyReport']);
+            Route::get('/report/monthly', [AdminSettlementController::class, 'monthlyReport']);
+            Route::get('{id}', [AdminSettlementController::class, 'show'])->whereNumber('id');
+            Route::get('{id}/line-items', [AdminSettlementController::class, 'lineItems'])->whereNumber('id');
+            Route::post('{id}/issue', [AdminSettlementController::class, 'issue'])->whereNumber('id');
+            Route::post('{id}/confirm-payment', [AdminSettlementController::class, 'confirmPayment'])->whereNumber('id');
+            Route::post('{id}/adjustments', [AdminSettlementController::class, 'addAdjustment'])->whereNumber('id');
+            Route::get('{id}/export/excel', [PartnerSettlementController::class, 'exportExcel'])->whereNumber('id');
+            Route::get('{id}/export/pdf', [PartnerSettlementController::class, 'exportPdf'])->whereNumber('id');
+        });
+
+        /**
          * Dashboard API
          * Base Url /api/v1/admin/dashboard/
          */
@@ -525,12 +546,13 @@ Route::group([
         Route::prefix("properties")->group(function () {
             Route::get("searchAll", [PartnerPropertyController::class, "index"]);
             Route::get("types", [PropertiesController::class, "getAllPropertyTypes"]);
+            Route::get("all", [PartnerPropertyController::class, "getPropertyNames"]);
             Route::get("bookings/{id}", [PropertiesController::class, "getBookingsByProperty"])->whereNumber("id");
+            Route::get("{id}/rooms/preview", [PartnerPropertyController::class, "roomPreview"])->whereNumber("id");
             Route::get("{id}", [PartnerPropertyController::class, "show"])->whereNumber("id");
             Route::post("", [PartnerPropertyController::class, "store"]);
             Route::put("{id}", [PartnerPropertyController::class, "update"])->whereNumber("id");
             Route::delete("{id}", [PartnerPropertyController::class, "destroy"])->whereNumber("id");
-            Route::get("all", [PartnerPropertyController::class, "getPropertyNames"]);
         });
 
         /**
@@ -549,6 +571,18 @@ Route::group([
             Route::post('bulk-delete', [PartnerRoomController::class, 'bulkDelete']);
             Route::put('{id}', [PartnerRoomController::class, 'update']);
             Route::delete('{id}', [RoomsController::class, 'destroy']);
+        });
+
+        /**
+         * Room Tourist Spot Maps API
+         * Base Url /api/v1/partner/room-tourist-spot-maps/
+         */
+        Route::prefix('room-tourist-spot-maps')->group(function () {
+            Route::get('/', [PartnerRoomTouristSpotMapController::class, 'index']);
+            Route::get('{id}', [PartnerRoomTouristSpotMapController::class, 'show'])->whereNumber('id');
+            Route::post('/', [PartnerRoomTouristSpotMapController::class, 'store']);
+            Route::put('{id}', [PartnerRoomTouristSpotMapController::class, 'update'])->whereNumber('id');
+            Route::delete('{id}', [PartnerRoomTouristSpotMapController::class, 'destroy'])->whereNumber('id');
         });
 
         /**
@@ -647,6 +681,7 @@ Route::group([
             Route::put('{id}', [BookingController::class, 'update'])->whereNumber('id');
             Route::put('{id}/cancel', [PartnerBookingController::class, 'cancel'])->whereNumber('id');
             Route::put('{id}/confirm', [PartnerBookingController::class, 'confirm'])->whereNumber('id');
+            Route::post('{id}/confirm-deposit', [PartnerBookingController::class, 'confirmDeposit'])->whereNumber('id');
             Route::put('{id}/no-show', [PartnerBookingController::class, 'noShow'])->whereNumber('id');
             Route::put('{id}/check-in', [PartnerBookingController::class, 'checkIn'])->whereNumber('id');
             Route::put('{id}/check-out', [PartnerBookingController::class, 'checkOut'])->whereNumber('id');
@@ -711,6 +746,19 @@ Route::group([
             Route::post('create', [CouponController::class, 'store']);
             Route::put('update/{id}', [CouponController::class, 'update']);
             Route::delete('delete/{id}', [CouponController::class, 'destroy']);
+        });
+
+        /**
+         * Settlements API - Partner
+         * Base Url /api/v1/partner/settlements/
+         */
+        Route::prefix('settlements')->group(function () {
+            Route::get('/', [PartnerSettlementController::class, 'index']);
+            Route::get('{id}', [PartnerSettlementController::class, 'show'])->whereNumber('id');
+            Route::get('{id}/line-items', [PartnerSettlementController::class, 'lineItems'])->whereNumber('id');
+            Route::post('{id}/dispute', [PartnerSettlementController::class, 'dispute'])->whereNumber('id');
+            Route::get('{id}/export/excel', [PartnerSettlementController::class, 'exportExcel'])->whereNumber('id');
+            Route::get('{id}/export/pdf', [PartnerSettlementController::class, 'exportPdf'])->whereNumber('id');
         });
 
         /**
@@ -784,16 +832,19 @@ Route::group([
     // Home public APIs
     Route::prefix('home')->group(function () {
         Route::prefix('rooms')->group(function () {
-            Route::get('/getLatest', [HomeController::class, 'getLatestRooms']);
-            Route::get('/by-province', [HomeController::class, 'getRoomsByProvince']);
+            Route::get('/getTopRatedRoom', [HomeController::class, 'getTopRatedRooms']);
+            Route::get('/rooms-by-province', [HomeController::class, 'getRoomsByProvince']);
+            Route::get('/rooms-by-tourist-spot', [HomeController::class, 'getRoomsByTouristSpot']);
             Route::get('/filter', [HomeController::class, 'filterRooms']);
         });
         Route::get('/provinces', [HomeController::class, 'getProvinces']);
+        Route::get('/tourist-spots', [HomeController::class, 'getTouristSpots']);
         Route::get('/property-types', [PropertiesController::class, 'getAllPropertyTypes']);
         Route::get('/wards/{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
         Route::get('/partners/random', [HomeController::class, 'getRandomPartners']);
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);
         Route::get('/reviews', [ReviewController::class, 'getLandingPageReviews']);
+        Route::post('/coupons/register', [HomeController::class, 'registerCoupon']);
     });
 
     // Rooms public APIs
@@ -847,6 +898,7 @@ Route::group([
         Route::get('bookings', [StayController::class, 'getBookings']);
         Route::get('bookings/{id}', [StayController::class, 'show']);
         Route::post('bookings/{id}/extend', [StayController::class, 'extend']);
+        Route::post('bookings/{id}/submit-receipt', [StayController::class, 'submitReceipt'])->whereNumber('id');
 
         Route::middleware(['bcp.cancellation'])->group(function () {
             Route::get('cancellation-reasons', [StayBookingCancellationController::class, 'cancellationReasons']);

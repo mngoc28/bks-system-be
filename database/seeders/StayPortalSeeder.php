@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Booking;
@@ -8,18 +10,20 @@ use App\Models\Room;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\ResolvesBookingPriceId;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-class StayPortalSeeder extends Seeder
+final class StayPortalSeeder extends Seeder
 {
+    use ResolvesBookingPriceId;
     /**
      * Run the database seeds.
      *
      * @return void
      */
-    public function run()
+    public function run(): void
     {
         // 1. Ensure the test user exists and has a rich profile
         $user = User::updateOrCreate(
@@ -49,17 +53,38 @@ class StayPortalSeeder extends Seeder
             return;
         }
 
+        $pricesByRoomId = $this->loadRoomPricesIndexedByRoomId();
+
+        if ($pricesByRoomId === []) {
+            $this->command->error('No room_prices found. Please run RoomPricesTableSeeder first.');
+            return;
+        }
+
         // Cleanup existing stay data for this user to avoid mess
         Booking::where('user_id', $user->id)->delete();
 
-        // 3. Create ONE ACTIVE BOOKING (In Progress)
+        // 3. Create ONE ACTIVE BOOKING (In Progress) — 30 ngày → ưu tiên gói tháng
         $activeRoom = $rooms->random();
+        $activeStart = Carbon::now()->subDays(5)->format('Y-m-d');
+        $activeEnd = Carbon::now()->addDays(25)->format('Y-m-d');
+        $activePriceId = $this->resolvePriceIdForStay(
+            (int) $activeRoom->id,
+            $activeStart,
+            $activeEnd,
+            $pricesByRoomId,
+        );
+
+        if ($activePriceId === null) {
+            $this->command->error('No price for active stay demo room.');
+            return;
+        }
+
         $activeBooking = Booking::create([
             'user_id' => $user->id,
             'room_id' => $activeRoom->id,
-            'price_id' => DB::table('room_prices')->where('room_id', $activeRoom->id)->first()?->id ?? 1,
-            'start_date' => Carbon::now()->subDays(5),
-            'end_date' => Carbon::now()->addDays(25),
+            'price_id' => $activePriceId,
+            'start_date' => $activeStart,
+            'end_date' => $activeEnd,
             'status' => 1, // Confirmed / In Progress
             'note' => 'Yêu cầu phòng yên tĩnh và dọn phòng vào buổi sáng.',
             'created_by' => $adminId,
@@ -90,14 +115,28 @@ class StayPortalSeeder extends Seeder
 
         $this->command->info('Active booking and contract created.');
 
-        // 4. Create ONE UPCOMING BOOKING (Pending)
+        // 4. Create ONE UPCOMING BOOKING (Pending) — 5 ngày → ưu tiên gói ngày
         $upcomingRoom = $rooms->where('id', '!=', $activeRoom->id)->random();
+        $upcomingStart = Carbon::now()->addDays(35)->format('Y-m-d');
+        $upcomingEnd = Carbon::now()->addDays(40)->format('Y-m-d');
+        $upcomingPriceId = $this->resolvePriceIdForStay(
+            (int) $upcomingRoom->id,
+            $upcomingStart,
+            $upcomingEnd,
+            $pricesByRoomId,
+        );
+
+        if ($upcomingPriceId === null) {
+            $this->command->error('No price for upcoming stay demo room.');
+            return;
+        }
+
         $upcomingBooking = Booking::create([
             'user_id' => $user->id,
             'room_id' => $upcomingRoom->id,
-            'price_id' => DB::table('room_prices')->where('room_id', $upcomingRoom->id)->first()?->id ?? 1,
-            'start_date' => Carbon::now()->addDays(35),
-            'end_date' => Carbon::now()->addDays(40),
+            'price_id' => $upcomingPriceId,
+            'start_date' => $upcomingStart,
+            'end_date' => $upcomingEnd,
             'status' => 0, // Pending
             'note' => 'Kỳ nghỉ gia đình sắp tới.',
             'created_by' => $adminId,
@@ -121,12 +160,25 @@ class StayPortalSeeder extends Seeder
         for ($i = 1; $i <= 5; $i++) {
             $historyRoom = $rooms->random();
             $monthsAgo = $i * 2;
+            $historyStart = Carbon::now()->subMonths($monthsAgo)->subDays(10)->format('Y-m-d');
+            $historyEnd = Carbon::now()->subMonths($monthsAgo)->subDays(5)->format('Y-m-d');
+            $historyPriceId = $this->resolvePriceIdForStay(
+                (int) $historyRoom->id,
+                $historyStart,
+                $historyEnd,
+                $pricesByRoomId,
+            );
+
+            if ($historyPriceId === null) {
+                continue;
+            }
+
             Booking::create([
                 'user_id' => $user->id,
                 'room_id' => $historyRoom->id,
-                'price_id' => DB::table('room_prices')->where('room_id', $historyRoom->id)->first()?->id ?? 1,
-                'start_date' => Carbon::now()->subMonths($monthsAgo)->subDays(10),
-                'end_date' => Carbon::now()->subMonths($monthsAgo)->subDays(5),
+                'price_id' => $historyPriceId,
+                'start_date' => $historyStart,
+                'end_date' => $historyEnd,
                 'status' => 2, // Completed
                 'note' => 'Lịch sử kỳ nghỉ cũ #' . $i,
                 'created_by' => $adminId,

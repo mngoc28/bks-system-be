@@ -27,12 +27,15 @@ class TouristSpotCrudTest extends TestCase
     {
         $token = $this->signInAdmin();
 
+        $provinceId = \Illuminate\Support\Facades\DB::table('provinces')->first()?->id;
+
         // create
         $payload = [
             'name' => 'Test Spot',
             'slug' => 'test-spot',
             'category' => 'landmark',
             'region_label' => 'Test Region',
+            'province_id' => $provinceId,
             'is_featured' => true,
             'sort_order' => 10,
             'is_active' => true,

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\Contract;
+use App\Services\DepositService;
 
 final class StayService
 {
@@ -38,18 +39,25 @@ final class StayService
     protected $userRepository;
 
     /**
+     * @var DepositService
+     */
+    protected $depositService;
+
+    /**
      * Constructor
      */
     public function __construct(
         BookingRepositoryInterface $bookingRepository,
         ContractRepositoryInterface $contractRepository,
         ServiceRepositoryInterface $serviceRepository,
-        UsersRepositoryInterface $userRepository
+        UsersRepositoryInterface $userRepository,
+        DepositService $depositService
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->contractRepository = $contractRepository;
         $this->serviceRepository = $serviceRepository;
         $this->userRepository = $userRepository;
+        $this->depositService = $depositService;
     }
 
     /**
@@ -104,7 +112,7 @@ final class StayService
                         'id' => $item->id,
                         'hotel' => $item->room->property->name ?? 'BKS Hotel',
                         'date' => $item->start_date,
-                        'amount' => $item->price->price ?? 0,
+                        'amount' => $item->total_amount,
                         'status' => 'Completed',
                     ];
                 }),
@@ -141,17 +149,28 @@ final class StayService
     {
         $booking = $this->bookingRepository->getBookingDetailByUserId($id, $userId);
 
-        // Ensure a contract exists for pending bookings to make the flow work
+        // Ensure a contract exists for pending bookings to make the flow work (only for long-term lease bookings)
         if ($booking && $booking->status === 0 && $booking->contracts->isEmpty()) {
-            Contract::create([
-                'booking_id' => $booking->id,
-                'title'      => 'Hợp đồng thuê phòng #' . $booking->id,
-                'content'    => 'Nội dung hợp đồng đang được cập nhật...',
-                'status'     => 0, // Pending
-                'created_by' => $userId,
-                'updated_by' => $userId,
-            ]);
-            $booking->load('contracts');
+            $room = $booking->room;
+            $isLongTerm = false;
+            if ($room && $room->property) {
+                $propertyType = $room->property->propertyType;
+                $propertySlug = $propertyType ? strtolower($propertyType->slug) : '';
+                $isLongTerm = in_array($propertySlug, ['can-ho', 'apartment', 'can-ho-dich-vu']);
+            }
+
+            if ($isLongTerm) {
+                Contract::create([
+                    'booking_id' => $booking->id,
+                    'title'      => 'Hợp đồng thuê phòng #' . $booking->id,
+                    'content'    => 'Nội dung hợp đồng đang được cập nhật...',
+                    'status'     => 0, // Pending
+                    'contract_type' => 'LEASE_AGREEMENT',
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]);
+                $booking->load('contracts');
+            }
         }
 
         return $booking;
@@ -317,5 +336,33 @@ final class StayService
         ]);
 
         return ['success' => true, 'message' => 'Service request status updated successfully'];
+    }
+
+    /**
+     * Submit deposit receipt for a booking
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @param string $receiptPath
+     * @return array
+     */
+    public function submitDepositReceipt(int $bookingId, int $userId, string $receiptPath): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($bookingId);
+            if (!$booking || $booking->user_id !== $userId) {
+                return ['success' => false, 'message' => 'Booking not found or unauthorized'];
+            }
+
+            $success = $this->depositService->submitReceipt($bookingId, $receiptPath);
+            if (!$success) {
+                return ['success' => false, 'message' => 'Failed to submit receipt'];
+            }
+
+            return ['success' => true, 'message' => 'Receipt submitted successfully'];
+        } catch (Exception $e) {
+            Log::error('Error in StayService@submitDepositReceipt: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Internal server error'];
+        }
     }
 }

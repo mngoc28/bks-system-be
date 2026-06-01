@@ -28,6 +28,17 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Ho_Chi_Minh')
             ->withoutOverlapping()
             ->onOneServer();
+
+        // Admin Revenue Reconciliation — run on 1st and 16th at 01:00 AM to generate settlement periods
+        $schedule->job(new \App\Jobs\GenerateSettlementPeriodsJob())
+            ->cron('0 1 1,16 * *')
+            ->timezone('Asia/Ho_Chi_Minh')
+            ->withoutOverlapping();
+
+        // Auto cancel unpaid bookings past grace period — run every 10 minutes
+        $schedule->job(new \App\Jobs\CancelExpiredUnpaidBookingsJob())
+            ->everyTenMinutes()
+            ->withoutOverlapping();
     }
 
     /**

@@ -6,8 +6,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\RoomTouristSpotMap;
 
 final class TouristSpot extends Model
 {
@@ -21,9 +21,15 @@ final class TouristSpot extends Model
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'province_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class, 'province_id');
+    }
 
     public function roomTouristSpotMaps(): HasMany
     {

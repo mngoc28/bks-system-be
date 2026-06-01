@@ -408,7 +408,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      */
     public function getRecentHistoryByUserId(int $userId, int $limit = 2): Collection
     {
-        return $this->model->with(['room', 'room.property', 'price'])
+        return $this->model->with(['room', 'room.property', 'price', 'services'])
             ->where('user_id', $userId)
             ->where('status', BookingStatus::COMPLETED->value)
             ->orderBy('end_date', 'desc')
@@ -425,7 +425,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      */
     public function getBookingHistoryByUserId(int $userId, int $perPage = 10): LengthAwarePaginator
     {
-        return $this->model->with(['room', 'room.property', 'price'])
+        return $this->model->with(['room', 'room.property', 'price', 'services'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
@@ -441,7 +441,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking
     {
         /** @var \App\Models\Booking|null $booking */
-        $booking = $this->model->with(['room.property', 'price', 'services', 'contracts'])
+        $booking = $this->model->with(['room.property.propertyType', 'room.property.user', 'price', 'services', 'contracts', 'bookingDeposit'])
             ->where('id', $bookingId)
             ->where('user_id', $userId)
             ->first();
@@ -478,7 +478,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'partner.name as partner_name',
             'bookings.created_at',
             'bookings.stay_status',
-        );
+            'bookings.deposit_amount',
+            'bookings.deposit_status',
+        )->with('bookingDeposit');
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')

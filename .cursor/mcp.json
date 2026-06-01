@@ -4,8 +4,17 @@
       "url": "https://knowledge-mcp.global.api.aws"
     },
     "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@playwright/mcp@latest"]
+    },
+    "chrome-devtools": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest"]
+    },
+    "stitch": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "stitch-mcp-server"],
+      "envFile": "${workspaceFolder}/.cursor/stitch.env"
     }
   }
 }

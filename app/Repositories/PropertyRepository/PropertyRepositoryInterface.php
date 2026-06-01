@@ -24,4 +24,9 @@ interface PropertyRepositoryInterface extends RepositoryInterface
     public function getPropertyByIdForPartner(int $id, int $partnerId): object|null;
 
     public function getPropertyNamesForPartner(int $partnerId): Collection;
+
+    /**
+     * @return array{property: \App\Models\Property, rooms: \Illuminate\Support\Collection}|null
+     */
+    public function getPropertyRoomPreviewForPartner(int $propertyId, int $partnerId, int $limit): ?array;
 }

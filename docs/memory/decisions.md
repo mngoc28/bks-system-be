@@ -1,5 +1,27 @@
 # Repository Decisions Log
 
+## 2026-05-31 - Đối soát doanh thu Admin
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-20260531-REC-001 |
+| Context | Hệ thống chưa có luồng đối soát công nợ thực tế để thu 5% hoa hồng từ Partner và theo dõi trạng thái thanh toán. Dashboard Admin nhầm lẫn GMV toàn sàn với doanh thu nền tảng. FAQ và hợp đồng mẫu hiển thị sai tỷ lệ hoa hồng (10%, 12% thay vì 5%). |
+| Decision | Chọn Model A - Đối soát định kỳ, Partner nộp phí 5% hoa hồng trên tổng GMV (phòng + dịch vụ) của các đơn COMPLETED check-out thực tế. Chu kỳ ngày 05 và ngày 20 hàng tháng. Tạo 2 bảng mới `partner_settlement_periods` và `settlement_line_items`, liên kết khóa booking qua `settlement_period_id` khi chốt kỳ. Đồng bộ copy 5% trên FAQ và Onboarding Wizard. |
+| Rationale | Model A không yêu cầu payment gateway, phù hợp dòng tiền trực tiếp tại quầy của Partner ở Việt Nam. Chỉ tính đối soát khi đơn COMPLETED để tránh rủi ro công nợ ảo của các đơn CONFIRMED nhưng bị cancel/no-show thực tế. |
+| Related artifact | `docs/SRC/srs_admin_revenue_reconciliation.md`, `docs/designs/design_006.md`, `docs/plans/plan_006_admin_revenue_reconciliation.md`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| Status | Implemented (2026-05-31) |
+
+## 2026-05-29 - Homepage suggestions by tourist spot (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260529-RTM-HP-001 |
+| Context | UI homepage ghi "gợi ý theo điểm du lịch" nhưng tab/API vẫn theo tỉnh; user yêu cầu Sa Pa, Cát Bà, Lý Sơn, Bà Nà Hill |
+| Decision | Thêm API `GET home/rooms/rooms-by-tourist-spot` grouped by `tourist_spot_id`; FE tab theo spot; ẩn tab khi không đủ phòng mapped (mặc định, không fallback region trừ khi bật env); giữ `rooms-by-province` một release với feature flag rollback |
+| Rationale | Tận dụng schema plan_004; đúng ngữ nghĩa sản phẩm và mockup; tránh hiển thị phòng không gắn điểm |
+| Related artifact | `docs/plans/plan_007_homepage_suggested_rooms_by_tourist_spot.md` |
+| Status | Implemented in code (2026-05-29); Ops mapping production pending |
+
 ## 2026-05-21 - Room-tourist mapping implementation
 
 | Field | Decision |

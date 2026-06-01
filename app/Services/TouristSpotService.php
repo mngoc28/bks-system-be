@@ -29,6 +29,10 @@ final class TouristSpotService
                 $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
             }
 
+            if ($request->filled('province_id')) {
+                $query->where('province_id', (int) $request->input('province_id'));
+            }
+
             $spots = $query->orderByDesc('is_featured')
                 ->orderBy('sort_order')
                 ->orderBy('id', 'desc')
@@ -183,5 +187,57 @@ final class TouristSpotService
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')
             ->get();
+    }
+
+    /**
+     * Public list for search autocomplete (homepage / room search).
+     *
+     * @return array{success: bool, data: Collection<int, TouristSpot>|array, message: string}
+     */
+    public function listPublicSuggestions(Request $request): array
+    {
+        try {
+            $query = TouristSpot::query()->where('is_active', true);
+
+            if ($request->boolean('featured_only')) {
+                $query->where('is_featured', true);
+            }
+
+            if ($request->filled('keyword')) {
+                $keyword = trim((string) $request->input('keyword'));
+                $query->where(function ($builder) use ($keyword): void {
+                    $builder->where('name', 'like', '%' . $keyword . '%')
+                        ->orWhere('region_label', 'like', '%' . $keyword . '%')
+                        ->orWhere('slug', 'like', '%' . str_replace(' ', '-', $keyword) . '%');
+                });
+            }
+
+            if ($request->filled('province_id')) {
+                $query->where('province_id', (int) $request->input('province_id'));
+            }
+
+            $limit = min(max((int) $request->input('limit', 20), 1), 50);
+
+            $spots = $query
+                ->orderByDesc('is_featured')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->limit($limit)
+                ->get(['id', 'name', 'slug', 'region_label', 'is_featured', 'category']);
+
+            return [
+                'success' => true,
+                'data' => $spots,
+                'message' => 'Lấy danh sách điểm du lịch thành công.',
+            ];
+        } catch (\Throwable $throwable) {
+            Log::error('Error listing public tourist spot suggestions: ' . $throwable->getMessage());
+
+            return [
+                'success' => false,
+                'data' => [],
+                'message' => 'Lấy danh sách điểm du lịch thất bại.',
+            ];
+        }
     }
 }

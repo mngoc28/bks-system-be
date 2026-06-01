@@ -10,6 +10,7 @@ use App\Repositories\RoomAmenityRepository\RoomAmenityRepository;
 use App\Repositories\RoomPriceRepository\RoomPriceRepository;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\TouristSpot;
 use App\Models\PricePackage;
 use App\Services\RoomTouristSummaryService;
 use Illuminate\Http\Request;
@@ -331,15 +332,15 @@ final class RoomsService
 
     // ====== The functions below are APIs for the end user ======
     /**
-     * Get latest rooms
+     * Get top rated rooms
      *
      * @param \Illuminate\Http\Request $request
      * @return array
      */
-    public function getLatestRooms(Request $request): array
+    public function getTopRatedRooms(Request $request): array
     {
         try {
-            $rooms = $this->roomsRepository->getLatestRooms($request);
+            $rooms = $this->roomsRepository->getTopRatedRooms($request);
             $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
 
             return [
@@ -393,7 +394,10 @@ final class RoomsService
     public function handleSuggestedRoomsByProvince(Request $request): array
     {
         try {
-            $rooms = $this->roomsRepository->getRoomList($request);
+            $provinceIds = $request->input('province_ids', []);
+            $limit = (int) $request->input('limit', 4);
+
+            $rooms = $this->roomsRepository->getSuggestedRoomsByProvince($provinceIds, $limit);
             $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
 
             $groupedRooms = collect($rooms)
@@ -402,10 +406,10 @@ final class RoomsService
                     $firstRoom = $provinceRooms->first();
 
                     return [
-                        'province_id' => $firstRoom->province_id ?? null,
-                        'province_name' => $firstRoom->province_name ?? $provinceName,
-                        'province_name_en' => $firstRoom->province_name_en ?? null,
-                        'rooms' => $provinceRooms->values(),
+                         'province_id' => $firstRoom->province_id ?? null,
+                         'province_name' => $firstRoom->province_name ?? $provinceName,
+                         'province_name_en' => $firstRoom->province_name_en ?? null,
+                         'rooms' => $provinceRooms->values(),
                     ];
                 })
                 ->values();
@@ -423,6 +427,91 @@ final class RoomsService
                 'message' => __('room.messages.retrieved_failed'),
             ];
         }
+    }
+
+    /**
+     * Get suggested rooms grouped by tourist spot for homepage.
+     *
+     * @param Request $request
+     * @return array{success: bool, data?: mixed, message: string}
+     */
+    public function handleSuggestedRoomsByTouristSpot(Request $request): array
+    {
+        try {
+            $touristSpotIds = $this->resolveTouristSpotIdsFromRequest($request);
+            $limit = (int) $request->input('limit', 12);
+
+            if ($touristSpotIds === []) {
+                return [
+                    'success' => true,
+                    'data' => [],
+                    'message' => __('room.messages.retrieved_successfully'),
+                ];
+            }
+
+            $rooms = $this->roomsRepository->getSuggestedRoomsByTouristSpot($touristSpotIds, $limit);
+            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+
+            $minRooms = (int) config('homepage.spot_min_rooms', 4);
+
+            $groupedRooms = collect($rooms)
+                ->groupBy(fn ($room) => (int) ($room->tourist_spot_id ?? 0))
+                ->map(function ($spotRooms) use ($minRooms) {
+                    $firstRoom = $spotRooms->first();
+                    $roomsList = $spotRooms->values();
+
+                    if ($roomsList->count() < $minRooms) {
+                        return null;
+                    }
+
+                    return [
+                        'tourist_spot_id' => $firstRoom->tourist_spot_id ?? null,
+                        'tourist_spot_name' => $firstRoom->tourist_spot_name ?? null,
+                        'tourist_spot_slug' => $firstRoom->tourist_spot_slug ?? null,
+                        'region_label' => $firstRoom->tourist_spot_region_label ?? null,
+                        'rooms' => $roomsList,
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            return [
+                'success' => true,
+                'data' => $groupedRooms,
+                'message' => __('room.messages.retrieved_successfully'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching suggested rooms by tourist spot: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => __('room.messages.retrieved_failed'),
+            ];
+        }
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function resolveTouristSpotIdsFromRequest(Request $request): array
+    {
+        $ids = $request->input('tourist_spot_ids', []);
+        if (is_array($ids) && $ids !== []) {
+            return array_values(array_map('intval', $ids));
+        }
+
+        $slugs = $request->input('tourist_spot_slugs', []);
+        if (! is_array($slugs) || $slugs === []) {
+            return [];
+        }
+
+        return TouristSpot::query()
+            ->where('is_active', true)
+            ->whereIn('slug', $slugs)
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->all();
     }
 
     /**

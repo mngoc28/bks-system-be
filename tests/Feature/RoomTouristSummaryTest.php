@@ -15,7 +15,7 @@ class RoomTouristSummaryTest extends TestCase
         $this->seed();
 
         // call the public endpoint that returns latest rooms
-        $response = $this->getJson('/api/v1/home/rooms/getLatest');
+        $response = $this->getJson('/api/v1/home/rooms/getTopRatedRoom');
 
         $response->assertStatus(200);
 

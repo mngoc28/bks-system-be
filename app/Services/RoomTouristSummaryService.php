@@ -9,7 +9,10 @@ use Illuminate\Support\Collection;
 
 final class RoomTouristSummaryService
 {
-    public const MAX_SECONDARY_SPOTS = 2;
+    public function __construct(
+        private readonly RoomTouristGeographyService $geographyService,
+    ) {
+    }
 
     public function enrichRooms($rooms)
     {
@@ -59,15 +62,19 @@ final class RoomTouristSummaryService
             return [];
         }
 
-        $records = RoomTouristSpotMap::query()
-            ->with(['touristSpot'])
-            ->whereIn('room_id', $roomIds)
-            ->whereHas('touristSpot', static function ($query): void {
-                $query->where('is_active', true);
-            })
-            ->orderByDesc('is_primary')
-            ->orderByDesc('priority_order')
-            ->orderByDesc('id')
+        $records = $this->geographyService
+            ->applySameProvinceConstraint(
+                RoomTouristSpotMap::query()
+                    ->with(['touristSpot'])
+                    ->whereIn('room_tourist_spot_maps.room_id', $roomIds)
+                    ->whereHas('touristSpot', static function ($query): void {
+                        $query->where('is_active', true);
+                    })
+            )
+            ->orderByDesc('room_tourist_spot_maps.is_primary')
+            ->orderBy('room_tourist_spot_maps.distance_km')
+            ->orderBy('room_tourist_spot_maps.travel_time_minutes')
+            ->orderByDesc('room_tourist_spot_maps.id')
             ->get()
             ->groupBy('room_id');
 
@@ -95,28 +102,30 @@ final class RoomTouristSummaryService
         }
 
         $primaryMap = $mappedSpots->firstWhere('is_primary', true) ?? $mappedSpots->first();
-        $secondaryMaps = $mappedSpots
-            ->reject(static fn (RoomTouristSpotMap $map) => $map->id === $primaryMap->id)
-            ->take(self::MAX_SECONDARY_SPOTS)
-            ->values();
+        $primarySpot = $primaryMap->touristSpot;
+        $allSpots = $mappedSpots->map(fn (RoomTouristSpotMap $map): array => $this->mapSpotEntry($map));
 
         return [
             'has_tourist_mapping' => true,
-            'tourist_spot_name' => $primaryMap->touristSpot?->name,
+            'tourist_spot_name' => (string) ($primarySpot?->name ?? ''),
+            'tourist_spot_slug' => $primarySpot?->slug,
             'travel_time_label' => $this->formatTravelTime((int) $primaryMap->travel_time_minutes),
             'distance_label' => $this->formatDistance($primaryMap->distance_km),
-            'tourist_spots' => $secondaryMaps->map(function (RoomTouristSpotMap $map): array {
-                return [
-                    'id' => $map->touristSpot?->id,
-                    'name' => $map->touristSpot?->name,
-                    'slug' => $map->touristSpot?->slug,
-                    'travel_time_minutes' => (int) $map->travel_time_minutes,
-                    'travel_time_label' => $this->formatTravelTime((int) $map->travel_time_minutes),
-                    'distance_km' => $map->distance_km !== null ? (float) $map->distance_km : null,
-                    'distance_label' => $this->formatDistance($map->distance_km),
-                    'is_primary' => (bool) $map->is_primary,
-                ];
-            })->values()->all(),
+            'tourist_spots' => $allSpots->values()->all(),
+        ];
+    }
+
+    private function mapSpotEntry(RoomTouristSpotMap $map): array
+    {
+        return [
+            'id' => $map->touristSpot?->id,
+            'name' => (string) ($map->touristSpot?->name ?? ''),
+            'slug' => $map->touristSpot?->slug,
+            'travel_time_minutes' => (int) $map->travel_time_minutes,
+            'travel_time_label' => $this->formatTravelTime((int) $map->travel_time_minutes),
+            'distance_km' => $map->distance_km !== null ? (float) $map->distance_km : null,
+            'distance_label' => $this->formatDistance($map->distance_km),
+            'is_primary' => (bool) $map->is_primary,
         ];
     }
 
@@ -125,14 +134,19 @@ final class RoomTouristSummaryService
         return [
             'has_tourist_mapping' => false,
             'tourist_spot_name' => null,
+            'tourist_spot_slug' => null,
             'travel_time_label' => null,
             'distance_label' => null,
             'tourist_spots' => [],
         ];
     }
 
-    private function formatTravelTime(int $minutes): string
+    private function formatTravelTime(int $minutes): ?string
     {
+        if ($minutes <= 0) {
+            return null;
+        }
+
         return $minutes . ' phút di chuyển';
     }
 

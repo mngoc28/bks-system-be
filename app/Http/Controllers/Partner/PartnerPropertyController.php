@@ -8,6 +8,7 @@ use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Validations\PropertiesValidation;
 use App\Services\PropertiesService;
+use App\Services\PartnerPropertyRoomPreviewService;
 use App\Services\PropertyImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,15 +18,18 @@ final class PartnerPropertyController extends Controller
     protected PropertiesService $propertiesService;
     protected PropertiesValidation $propertiesValidation;
     protected PropertyImageService $propertyImageService;
+    protected PartnerPropertyRoomPreviewService $roomPreviewService;
 
     public function __construct(
         PropertiesService $propertiesService,
         PropertiesValidation $propertiesValidation,
-        PropertyImageService $propertyImageService
+        PropertyImageService $propertyImageService,
+        PartnerPropertyRoomPreviewService $roomPreviewService
     ) {
         $this->propertiesService     = $propertiesService;
         $this->propertiesValidation = $propertiesValidation;
         $this->propertyImageService  = $propertyImageService;
+        $this->roomPreviewService    = $roomPreviewService;
     }
 
     /**
@@ -96,6 +100,31 @@ final class PartnerPropertyController extends Controller
         }
 
         return $this->successResponse($result["data"], $result["message"]);
+    }
+
+    /**
+     * Room preview for a single partner property (max 20 rooms).
+     */
+    public function roomPreview(Request $request, int $id): JsonResponse
+    {
+        $validator = $this->propertiesValidation->roomPreviewValidation($request, $id);
+
+        if ($validator->fails()) {
+            return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
+        }
+
+        $limit  = min(max((int) $request->input('limit', 6), 1), 20);
+        $result = $this->roomPreviewService->getPreview($id, $limit);
+
+        if (! $result['success']) {
+            $statusCode = $result['data'] === null
+                ? HttpStatus::NOT_FOUND
+                : HttpStatus::BAD_REQUEST;
+
+            return $this->errorResponse($result['message'], null, $statusCode);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
     }
 
     /**

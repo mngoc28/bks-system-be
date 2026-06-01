@@ -6,6 +6,7 @@ namespace App\Repositories\PropertyRepository;
 
 use App\Enums\UserType;
 use App\Models\Property;
+use App\Models\Room;
 use App\Repositories\BaseRepository;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -108,7 +109,7 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
     public function getAllPropertyTypes(): Collection
     {
         return \App\Models\PropertyType::where('is_active', true)
-            ->select('id as value', 'name as label')
+            ->select('id as value', 'name as label', 'slug')
             ->get();
     }
 
@@ -140,54 +141,50 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
 
     public function getPropertiesForPartner(int $partnerId, Request $request, array $sort = []): LengthAwarePaginator
     {
-        $query = $this->model
-            ->withCount('rooms')
+        $roomsLoadMode = $this->resolvePartnerRoomsLoadMode($request);
+        $includeCover  = $this->shouldIncludePartnerPropertyCover($request);
+
+        $propertyReviewAgg = DB::table('reviews')
+            ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
             ->select([
-                'properties.*',
-                'users.name as user_name',
-                'provinces.name as province_name',
-                'wards.name as ward_name',
-                DB::raw(
-                    '(SELECT pi.image_url FROM property_images pi ' .
-                    'WHERE pi.property_id = properties.id ' .
-                    'ORDER BY pi.sort ASC, pi.id ASC LIMIT 1) as cover_image_url'
-                ),
-                DB::raw('(SELECT COUNT(*) FROM reviews JOIN rooms ON reviews.room_id = rooms.id ' .
-                    'WHERE rooms.property_id = properties.id) as reviews_count'),
-                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews JOIN rooms ON reviews.room_id = rooms.id ' .
-                    'WHERE rooms.property_id = properties.id) as reviews_avg_rating')
+                'rooms.property_id',
+                DB::raw('COUNT(reviews.id) as property_reviews_count'),
+                DB::raw('ROUND(AVG(reviews.rating), 1) as property_reviews_avg_rating'),
             ])
+            ->groupBy('rooms.property_id');
+
+        $selectColumns = [
+            'properties.*',
+            'users.name as user_name',
+            'provinces.name as province_name',
+            'wards.name as ward_name',
+            DB::raw('COALESCE(property_review_agg.property_reviews_count, 0) as reviews_count'),
+            DB::raw('property_review_agg.property_reviews_avg_rating as reviews_avg_rating'),
+        ];
+
+        if ($includeCover) {
+            $selectColumns[] = DB::raw(
+                '(SELECT pi.image_url FROM property_images pi ' .
+                'WHERE pi.property_id = properties.id ' .
+                'ORDER BY pi.sort ASC, pi.id ASC LIMIT 1) as cover_image_url'
+            );
+        }
+
+        $query = $this->model
+            ->select($selectColumns)
             ->leftJoin('users', 'properties.user_id', '=', 'users.id')
             ->leftJoin('provinces', 'properties.province_id', '=', 'provinces.id')
             ->leftJoin('wards', 'properties.ward_id', '=', 'wards.id')
-            ->where('properties.user_id', $partnerId);
+            ->leftJoinSub($propertyReviewAgg, 'property_review_agg', function ($join): void {
+                $join->on('property_review_agg.property_id', '=', 'properties.id');
+            })
+            ->where('properties.user_id', $partnerId)
+            ->withCount('rooms');
 
-        if ($request->boolean('with_rooms')) {
-            $query->with(['rooms' => function ($q) {
-                $q->with([
-                    'amenities:id,name',
-                    'services:id,name',
-                    'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
-                    'utilityFees',
-                    'images' => function ($imgQuery) {
-                        $imgQuery->where('sort', 1)->select('id', 'room_id', 'image_url');
-                    }
-                ])
-                ->select(
-                    'rooms.id',
-                    'rooms.property_id',
-                    'rooms.room_number',
-                    'rooms.title',
-                    'rooms.room_type',
-                    'rooms.status',
-                    'rooms.area',
-                    'rooms.people',
-                    DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
-                    DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews ' .
-                        'WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
-                )
-                ->orderBy('rooms.id', 'desc');
-            }]);
+        $this->applyPartnerRoomsEagerLoad($query, $request, $roomsLoadMode);
+
+        if ($request->filled('id')) {
+            $query->where('properties.id', (int) $request->id);
         }
 
         if ($request->filled('name')) {
@@ -264,5 +261,122 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
         return $this->model->select('id', 'name')
             ->where('user_id', $partnerId)
             ->get();
+    }
+
+    public function getPropertyRoomPreviewForPartner(int $propertyId, int $partnerId, int $limit): ?array
+    {
+        /** @var Property|null $property */
+        $property = $this->model
+            ->where('id', $propertyId)
+            ->where('user_id', $partnerId)
+            ->withCount('rooms')
+            ->first();
+
+        if ($property === null) {
+            return null;
+        }
+
+        $rooms = Room::query()
+            ->where('property_id', $propertyId)
+            ->with([
+                'amenities:id,name',
+                'services:id,name',
+                'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+            ])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->select(
+                'rooms.id',
+                'rooms.property_id',
+                'rooms.room_number',
+                'rooms.title',
+                'rooms.room_type',
+                'rooms.status',
+                'rooms.area',
+                'rooms.people',
+            )
+            ->orderBy('rooms.id', 'desc')
+            ->limit($limit)
+            ->get();
+
+        return [
+            'property' => $property,
+            'rooms'    => $rooms,
+        ];
+    }
+
+    /**
+     * @return 'none'|'preview'|'full'
+     */
+    private function resolvePartnerRoomsLoadMode(Request $request): string
+    {
+        $value = $request->input('with_rooms');
+
+        if ($value === null || $value === '' || $value === false || $value === 0 || $value === '0') {
+            return 'none';
+        }
+
+        if (is_string($value) && strtolower($value) === 'preview') {
+            return 'preview';
+        }
+
+        return 'full';
+    }
+
+    private function shouldIncludePartnerPropertyCover(Request $request): bool
+    {
+        if (! $request->filled('include')) {
+            return false;
+        }
+
+        return str_contains((string) $request->input('include'), 'cover');
+    }
+
+    /**
+     * @param 'none'|'preview'|'full' $mode
+     */
+    private function applyPartnerRoomsEagerLoad($query, Request $request, string $mode): void
+    {
+        if ($mode === 'none') {
+            return;
+        }
+
+        $roomsLimit = $mode === 'preview'
+            ? min(max((int) $request->input('rooms_limit', 6), 1), 20)
+            : null;
+
+        $query->with(['rooms' => function ($roomQuery) use ($mode, $roomsLimit): void {
+            $relations = [
+                'amenities:id,name',
+                'services:id,name',
+                'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+            ];
+
+            if ($mode === 'full') {
+                $relations[] = 'utilityFees';
+                $relations['images'] = static function ($imgQuery): void {
+                    $imgQuery->where('sort', 1)->select('id', 'room_id', 'image_url');
+                };
+            }
+
+            $roomQuery->with($relations)
+                ->withCount('reviews')
+                ->withAvg('reviews', 'rating')
+                ->select(
+                    'rooms.id',
+                    'rooms.property_id',
+                    'rooms.room_number',
+                    'rooms.title',
+                    'rooms.room_type',
+                    'rooms.status',
+                    'rooms.area',
+                    'rooms.people',
+                )
+                ->orderBy('rooms.id', 'desc');
+
+            if ($roomsLimit !== null) {
+                $roomQuery->limit($roomsLimit);
+            }
+        }]);
     }
 }

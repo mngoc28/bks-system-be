@@ -15,6 +15,7 @@ final class TouristSpotValidation
         return Validator::make($request->all(), [
             'keyword' => ['nullable', 'string', 'max:255'],
             'is_active' => ['nullable', 'boolean'],
+            'province_id' => ['nullable', 'integer', 'exists:provinces,id'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
     }
@@ -26,6 +27,7 @@ final class TouristSpotValidation
             'slug' => ['required', 'string', 'max:255', 'unique:tourist_spots,slug'],
             'category' => ['required', 'string', 'max:50'],
             'region_label' => ['nullable', 'string', 'max:255'],
+            'province_id' => ['required', 'integer', 'exists:provinces,id'],
             'is_featured' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
@@ -45,6 +47,7 @@ final class TouristSpotValidation
             ],
             'category' => ['sometimes', 'required', 'string', 'max:50'],
             'region_label' => ['nullable', 'string', 'max:255'],
+            'province_id' => ['sometimes', 'required', 'integer', 'exists:provinces,id'],
             'is_featured' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],

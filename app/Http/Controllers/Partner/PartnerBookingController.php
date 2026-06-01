@@ -80,7 +80,11 @@ final class PartnerBookingController extends Controller
         $result = $this->bookingService->handleCheckIn($id);
 
         if (!$result['success']) {
-            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+            $code = HttpStatus::BAD_REQUEST;
+            if (($result['code'] ?? null) === 'CHECKIN_GATE_FAILED') {
+                $code = HttpStatus::VALIDATION_ERROR;
+            }
+            return $this->errorResponse($result['message'], $result['code'] ?? null, $code);
         }
 
         return $this->successResponse(null, $result['message']);
@@ -248,5 +252,22 @@ final class PartnerBookingController extends Controller
         }
 
         return $this->successResponse($result['data'], $result['message']);
+    }
+
+    /**
+     * Confirm a deposit payment receipt.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function confirmDeposit(int $id): JsonResponse
+    {
+        $result = $this->bookingService->handleConfirmDeposit($id);
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse(null, $result['message']);
     }
 }

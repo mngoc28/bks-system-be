@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Repositories\PropertyRepository\PropertyRepositoryInterface;
+use App\Services\PartnerPropertyRoomPreviewService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -280,7 +281,7 @@ final class PropertiesService
 
             return [
                 'success' => true,
-                'data'    => $properties,
+                'data'    => PartnerPropertyRoomPreviewService::formatPropertyPaginator($properties),
                 'message' => __('property.messages.retrieved_successfully'),
             ];
         } catch (Exception $e) {

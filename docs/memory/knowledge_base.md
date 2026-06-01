@@ -1,5 +1,66 @@
 # Repository Knowledge Base
 
+## 2026-05-31 - Đối soát doanh thu Admin
+
+### Nguồn tham chiếu
+
+- `docs/SRC/srs_admin_revenue_reconciliation.md`
+- `docs/designs/design_006.md`
+- `docs/plans/plan_006_admin_revenue_reconciliation.md`
+- `docs/reports/domain/domain_review_admin_revenue_reconciliation.md`
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+
+### Kiến thức nghiệp vụ đã chốt
+
+- **Mô hình đối soát:** Chọn Model A - Đối soát định kỳ, Partner nộp phí 5% Platform Commission cho BKS. Lý do là khách trả trực tiếp tại quầy, BKS không giữ hộ tiền nên không thể khấu trừ trực tiếp.
+- **Chu kỳ đối soát:** Ngày 05 và ngày 20 hàng tháng (2 kỳ/tháng).
+  - Kỳ 1 (01 - 15): phát hành ngày 05 tháng sau.
+  - Kỳ 2 (16 - cuối tháng): phát hành ngày 20 tháng sau.
+- **Quy tắc chốt đơn:** Đơn chỉ vào kỳ đối soát khi thỏa mãn:
+  - Trạng thái booking `status = COMPLETED` (3).
+  - Trạng thái lưu trú `stay_status = checked_out`.
+  - `no_show_at` IS NULL và `settlement_period_id` IS NULL (chưa thuộc kỳ đối soát nào).
+  - `end_date` (check-out) nằm trong khoảng của kỳ đối soát.
+  - Đối tác được phê duyệt (`partner_info.approved_at` IS NOT NULL).
+- **Vòng đời đối soát:** `draft` (hệ thống tự tạo nháp) -> `issued` (Admin duyệt phát hành, gửi thông báo nợ phí) -> `paid` (Admin xác nhận chuyển khoản ngân hàng thực tế) -> `closed` (Khóa sổ kỳ đối soát, cấm sửa đổi booking liên quan). Trường hợp đối tác khiếu nại, kỳ chuyển sang `disputed` để Admin xử lý và nhập dòng điều chỉnh (Adjustment).
+- **Đồng bộ hóa 5%:** Chỉnh sửa copy trên FAQ (BecomeAPartner) và mẫu hợp đồng (PartnerOnboardingWizard) về tỷ lệ phí 5% cố định để tránh tranh chấp pháp lý.
+
+### Kiến thức kỹ thuật đã chốt
+
+- **Kiến trúc & Component:** Áp dụng mô hình Service-Repository kết hợp Queue Job. `SettlementService` xử lý logic nghiệp vụ chốt kỳ, duyệt và nộp phí. `RevenueReportingService` quản lý truy vấn báo cáo GMV và Commission. Job `GenerateSettlementPeriodsJob` được kích hoạt tự động qua Scheduler chạy nền bằng Redis.
+- **Cơ sở dữ liệu:**
+  - Bảng `partner_settlement_periods` lưu thông tin kỳ đối soát, tổng GMV, commission và trạng thái nợ phí.
+  - Bảng `settlement_line_items` lưu chi tiết booking trong kỳ.
+  - Bảng `settlement_adjustments` lưu nhật ký dòng điều chỉnh tăng/giảm tiền hoa hồng do Admin nhập.
+  - Cột `bookings.settlement_period_id` gán khóa ngoại để khóa dữ liệu và chống double-count.
+  - Cột `bookings.payment_collected_at` (nullable) cho Partner đánh dấu đã thu tiền tại quầy.
+- **Khóa dữ liệu (Locking):** Kích hoạt logic chặn sửa đổi booking tại `BookingService::update` khi `bookings.settlement_period_id` đã được gán vào kỳ đối soát không ở trạng thái `draft` hoặc `disputed`.
+- **Bảo mật & Phân quyền:** Phân quyền API thông qua middleware JWT (`role:admin` cho Admin và `role:partner` cho Partner). Kiểm tra ownership nghiêm ngặt (`partner_id === Auth::id()`) tại Controller đối tác.
+- **Tối ưu hiệu năng:** Job quét đơn chạy theo chunk 500 records. Eager Loading (`with('lineItems.booking.room')`) được áp dụng tại các API để tránh lỗi N+1 Query.
+- **FE:** Partner Dashboard có cú pháp copy chuyển khoản chuẩn `BKS-SETTLE-{partner_id}-{period_code}`, cho phép tải bảng kê PDF/Excel và bấm Khiếu nại khi kỳ ở trạng thái `issued`.
+
+## 2026-05-29 - Homepage gợi ý phòng theo điểm du lịch cụ thể
+
+### Nguồn tham chiếu
+
+- `docs/plans/plan_007_homepage_suggested_rooms_by_tourist_spot.md`
+- `docs/plans/plan_004.md`, `docs/designs/design_004.md`
+- `bks-system-fe/src/pages/EndUser/Home/components/SuggestedRoomsByProvince.tsx`
+- `app/Services/RoomsService.php` (`handleSuggestedRoomsByProvince`)
+
+### Kiến thức nghiệp vụ đã chốt (plan)
+
+- Section homepage **"Phòng được gợi ý theo từng điểm đến"** sẽ dùng tab **tourist spot** (Sa Pa, Cát Bà, Lý Sơn, Bà Nà Hill, …), không còn tab tỉnh làm nguồn chính.
+- Phòng vào tab khi có `room_tourist_spot_maps` tới spot tương ứng; sort: primary → rating → review count → travel time → updated_at.
+- Tab không đủ phòng mapped → **ẩn tab** (mặc định); fallback theo `region_label` chỉ khi bật env `HOMEPAGE_SPOT_FALLBACK_REGION=true`.
+- API mới: `GET /api/v1/home/rooms/rooms-by-tourist-spot`; API cũ `rooms-by-province` giữ tạm để rollback.
+
+### Kiến thức kỹ thuật đã chốt (plan)
+
+- Không migration schema mới; mở rộng seeder `tourist_spots` + query repository pattern giống `ROW_NUMBER() OVER (PARTITION BY tourist_spot_id ...)`.
+- FE: component `SuggestedRoomsByTouristSpot`, constant `SUGGESTED_ROOM_SPOT_PRIORITY`, flag `VITE_HOMEPAGE_SUGGESTIONS_BY_SPOT`.
+- CTA deep-link search: query `tourist_spot_slug` (phase D).
+
 ## 2026-05-25 - Cơ chế đánh giá kỳ nghỉ BKS Stay
 
 ### Nguồn tham chiếu

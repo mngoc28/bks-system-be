@@ -137,7 +137,7 @@ return [
         2 => 'Tòa nhà / tháp',
         3 => 'Biệt thự',
         4 => 'Nhà phố / nhà liền kề',
-        5 => 'Căn hộ dịch vụ',
+        5 => 'Căn hộ / Căn hộ dịch vụ',
         6 => 'Nhà trọ / homestay',
         7 => 'Khách sạn',
         8 => 'Văn phòng',

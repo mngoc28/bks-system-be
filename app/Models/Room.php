@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 final class Room extends Model
 {
@@ -152,5 +153,73 @@ final class Room extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class, 'room_id');
+    }
+
+    /**
+     * Scope to join base tables required for room cards.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithBaseJoins($query)
+    {
+        return $query
+            ->join('properties as b', 'rooms.property_id', '=', 'b.id')
+            ->join('users as u', 'b.user_id', '=', 'u.id')
+            ->leftJoin('partner_info as pi', 'pi.user_id', '=', 'u.id')
+            ->join('provinces as p', 'b.province_id', '=', 'p.id')
+            ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
+            ->leftJoin('room_prices as rp', 'rooms.id', '=', 'rp.room_id')
+            ->leftJoin('room_images as ri', function ($join) {
+                $join->on('rooms.id', '=', 'ri.room_id')
+                    ->where('ri.sort', 1);
+            });
+    }
+
+    /**
+     * Get SQL expression for cheapest daily price.
+     *
+     * @return string
+     */
+    public static function cheapestDailyPriceSql(): string
+    {
+        return 'ROUND(CASE
+            WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
+                AND MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) IS NOT NULL
+            THEN (CASE WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                    < MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+                THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+                ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) END)
+            WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
+            THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
+            ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+        END, 0)';
+    }
+
+    /**
+     * Get database-specific SQL expression for aggregated room prices.
+     *
+     * @return string
+     */
+    public static function allPricesSql(): string
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            return <<<'SQL'
+COALESCE(
+    '[' || GROUP_CONCAT(DISTINCT
+        '{"unit":"' || rp.unit || '", "price":' || rp.price ||
+        ', "deposit_amount":' || COALESCE(rp.deposit_amount, 0) ||
+        ', "minimum_stay":' || COALESCE(rp.minimum_stay, 0) || '}'
+    ) || ']',
+    '[]'
+)
+SQL;
+        }
+
+        return 'IFNULL(CONCAT(\'[\', GROUP_CONCAT(DISTINCT CONCAT(' .
+            '\'{"unit":"\', rp.unit, \'", "price":\', rp.price, ' .
+            '\', "deposit_amount":\', IFNULL(rp.deposit_amount, 0), ' .
+            '\', "minimum_stay":\', IFNULL(rp.minimum_stay, 0), \'}\'' .
+            ')), \']\'), \'[]\')';
     }
 }

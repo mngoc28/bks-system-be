@@ -7,6 +7,7 @@
 .env
 .env.dev
 .env.backup
+.cursor/stitch.env
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
@@ -22,3 +23,6 @@ carcert.pem
 
 # Playwright MCP files
 .playwright-mcp/
+
+# UI Designs assets
+/docs/ui-designs/booking-deposit-financial/assets/

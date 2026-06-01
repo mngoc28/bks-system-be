@@ -163,19 +163,9 @@ final class PartnerCalendarService
         $end = optional($booking->end_date)->format('Y-m-d')
             ?? (string) $booking->getRawOriginal('end_date');
 
-        $nights = 0;
-        try {
-            $nights = (int) Carbon::parse($start)->diffInDays(Carbon::parse($end));
-        } catch (\Throwable $e) {
-            $nights = 0;
-        }
-
         $room       = $booking->relationLoaded('room') ? $booking->room : null;
         $user       = $booking->relationLoaded('user') ? $booking->user : null;
-        $unitPrice  = $booking->relationLoaded('price') && $booking->price
-            ? (float) $booking->price->price
-            : 0.0;
-        $totalAmount = $nights > 0 ? $unitPrice * $nights : $unitPrice;
+        $totalAmount = BookingStayAmountCalculator::computeRoomStayTotalForBooking($booking);
 
         $roomLabel = $room?->room_number ?: ($room?->title ?? null);
 

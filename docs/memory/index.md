@@ -1,5 +1,20 @@
 # Repository Memory Index
 
+## Đối soát doanh thu Admin
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-05-31 | SRS đối soát doanh thu Admin (Model A): Chu kỳ đối soát ngày 05 và 20 hàng tháng, tính hoa hồng 5% trên GMV (phòng + dịch vụ) của các đơn COMPLETED check-out thực tế; quản lý công nợ Partner thủ công. | `docs/SRC/srs_admin_revenue_reconciliation.md`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| 2026-05-31 | Design D006 đối soát doanh thu Admin: Thiết kế kiến trúc Service-Repository, Scheduler Job tự động quét đơn, 3 bảng đề xuất mới (`partner_settlement_periods`, `settlement_line_items`, `settlement_adjustments`), phân quyền RBAC và cơ chế khóa đơn chống thay đổi sau khi chốt kỳ. | `docs/designs/design_006.md`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| 2026-05-31 | Kế hoạch triển khai PLAN-REC-006 đối soát doanh thu Admin: Chia thành 4 Phase (Foundation, Core Backend, REST APIs & Export, Frontend UI) với 20+ task chi tiết dài ~62 giờ lập trình, bao gồm test tự động và kế hoạch rollback. | `docs/plans/plan_006_admin_revenue_reconciliation.md` |
+| 2026-05-31 | Hoàn thành Module Đối soát doanh thu Admin (Phase 1-4): Hiện thực hóa toàn bộ database schema, logic job chốt kỳ, logic khóa booking đã đối soát, các endpoints API Admin/Partner, tính năng xuất báo cáo Excel/PDF, đồng bộ copy phí hoa hồng 5% và hoàn thiện UI dashboard Admin/Partner. Toàn bộ tests chạy qua 100%. | `docs/plans/plan_006_admin_revenue_reconciliation.md`, `bks-system-fe/src/pages/Partner/Finance/index.tsx`, `bks-system-fe/src/pages/Admin/SettlementManage/index.tsx` |
+
+## Homepage suggested rooms by tourist spot
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-05-29 | Plan PLAN-RTM-HP-007: chuyển section homepage từ gom theo tỉnh (`rooms-by-province`) sang gom theo `tourist_spot` (Sa Pa, Cát Bà, Lý Sơn, Bà Nà Hill); API mới `rooms-by-tourist-spot`, FE `SuggestedRoomsByTouristSpot`, search deep-link, Ops mapping ≥8 phòng/spot | `docs/plans/plan_007_homepage_suggested_rooms_by_tourist_spot.md`, `docs/plans/plan_004.md`, `docs/SRC/srs_room_tourist_spot_mapping.md`, `docs/SRC/srs_landing_page_prominence.md`, `bks-system-fe/src/pages/EndUser/Home/components/SuggestedRoomsByProvince.tsx` |
+
 ## Cơ chế đánh giá kỳ nghỉ Stay
 
 | Date | Entry | Related artifacts |
