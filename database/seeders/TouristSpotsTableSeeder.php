@@ -23,7 +23,8 @@ class TouristSpotsTableSeeder extends Seeder
 
             // Đà Nẵng
             ['name' => 'Bà Nà Hill', 'slug' => Str::slug('Bà Nà Hill'), 'category' => 'landmark', 'region_label' => 'Đà Nẵng', 'is_featured' => true, 'sort_order' => 5, 'is_active' => true],
-            ['name' => 'Ngũ Hành Sơn', 'slug' => Str::slug('Ngũ Hành Sơn'), 'category' => 'landmark', 'region_label' => 'Đà Nẵng', 'is_featured' => false, 'sort_order' => 6, 'is_active' => true],
+            ['name' => 'Bãi biển Mỹ Khê', 'slug' => Str::slug('Bãi biển Mỹ Khê'), 'category' => 'beach', 'region_label' => 'Đà Nẵng', 'is_featured' => true, 'sort_order' => 6, 'is_active' => true],
+            ['name' => 'Chùa Linh Ứng', 'slug' => Str::slug('Chùa Linh Ứng'), 'category' => 'landmark', 'region_label' => 'Đà Nẵng', 'is_featured' => false, 'sort_order' => 61, 'is_active' => true],
             ['name' => 'Cầu Rồng', 'slug' => Str::slug('Cầu Rồng'), 'category' => 'bridge', 'region_label' => 'Đà Nẵng', 'is_featured' => false, 'sort_order' => 7, 'is_active' => true],
             ['name' => 'Bán đảo Sơn Trà', 'slug' => Str::slug('Bán đảo Sơn Trà'), 'category' => 'landmark', 'region_label' => 'Đà Nẵng', 'is_featured' => false, 'sort_order' => 8, 'is_active' => true],
 
@@ -53,19 +54,35 @@ class TouristSpotsTableSeeder extends Seeder
             ['name' => 'Chùa Thiên Mụ', 'slug' => Str::slug('Chùa Thiên Mụ'), 'category' => 'landmark', 'region_label' => 'Huế', 'is_featured' => false, 'sort_order' => 23, 'is_active' => true],
             ['name' => 'Cầu Tràng Tiền', 'slug' => Str::slug('Cầu Tràng Tiền'), 'category' => 'bridge', 'region_label' => 'Huế', 'is_featured' => false, 'sort_order' => 24, 'is_active' => true],
 
-            // Lào Cai
-            ['name' => 'Đỉnh Fansipan', 'slug' => Str::slug('Đỉnh Fansipan'), 'category' => 'mountain', 'region_label' => 'Lào Cai', 'is_featured' => true, 'sort_order' => 25, 'is_active' => true],
-            ['name' => 'Bản Cát Cát', 'slug' => Str::slug('Bản Cát Cát'), 'category' => 'landmark', 'region_label' => 'Lào Cai', 'is_featured' => false, 'sort_order' => 26, 'is_active' => true],
-            ['name' => 'Núi Hàm Rồng', 'slug' => Str::slug('Núi Hàm Rồng'), 'category' => 'mountain', 'region_label' => 'Lào Cai', 'is_featured' => false, 'sort_order' => 27, 'is_active' => true],
+            // Lao Cai / Sa Pa (homepage MVP)
+            ['name' => 'Sa Pa', 'slug' => 'sa-pa', 'category' => 'mountain', 'region_label' => 'Lào Cai', 'is_featured' => true, 'sort_order' => 25, 'is_active' => true],
+            ['name' => 'Đỉnh Fansipan', 'slug' => Str::slug('Đỉnh Fansipan'), 'category' => 'mountain', 'region_label' => 'Lào Cai', 'is_featured' => false, 'sort_order' => 26, 'is_active' => true],
+            ['name' => 'Bản Cát Cát', 'slug' => Str::slug('Bản Cát Cát'), 'category' => 'landmark', 'region_label' => 'Lào Cai', 'is_featured' => false, 'sort_order' => 27, 'is_active' => true],
+            ['name' => 'Núi Hàm Rồng', 'slug' => Str::slug('Núi Hàm Rồng'), 'category' => 'mountain', 'region_label' => 'Lào Cai', 'is_featured' => false, 'sort_order' => 28, 'is_active' => true],
+
+            // Hai Phong — Cat Ba island (homepage MVP)
+            ['name' => 'Cát Bà', 'slug' => 'cat-ba', 'category' => 'landmark', 'region_label' => 'Hải Phòng', 'is_featured' => true, 'sort_order' => 29, 'is_active' => true],
+
+            // Quang Ngai — Ly Son (homepage MVP)
+            ['name' => 'Lý Sơn', 'slug' => 'ly-son', 'category' => 'landmark', 'region_label' => 'Quảng Ngãi', 'is_featured' => true, 'sort_order' => 30, 'is_active' => true],
 
             // Ninh Bình
-            ['name' => 'Tràng An', 'slug' => Str::slug('Tràng An'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => true, 'sort_order' => 28, 'is_active' => true],
-            ['name' => 'Chùa Bái Đính', 'slug' => Str::slug('Chùa Bái Đính'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => false, 'sort_order' => 29, 'is_active' => true],
-            ['name' => 'Hang Múa', 'slug' => Str::slug('Hang Múa'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => false, 'sort_order' => 30, 'is_active' => true],
+            ['name' => 'Tràng An', 'slug' => Str::slug('Tràng An'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => true, 'sort_order' => 31, 'is_active' => true],
+            ['name' => 'Chùa Bái Đính', 'slug' => Str::slug('Chùa Bái Đính'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => false, 'sort_order' => 32, 'is_active' => true],
+            ['name' => 'Hang Múa', 'slug' => Str::slug('Hang Múa'), 'category' => 'landmark', 'region_label' => 'Ninh Bình', 'is_featured' => false, 'sort_order' => 33, 'is_active' => true],
         ];
 
+        $provincesByName = DB::table('provinces')->pluck('id', 'name');
+
         foreach ($spots as $s) {
-            DB::table('tourist_spots')->insert(array_merge($s, ['created_at' => now(), 'updated_at' => now()]));
+            $regionLabel = $s['region_label'] ?? null;
+            $provinceId = $regionLabel !== null ? $provincesByName->get($regionLabel) : null;
+
+            DB::table('tourist_spots')->insert(array_merge($s, [
+                'province_id' => $provinceId !== null ? (int) $provinceId : null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
         }
     }
 }

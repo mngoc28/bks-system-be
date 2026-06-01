@@ -76,6 +76,25 @@ final class PropertiesValidation
                     'integer',
                     'min:1',
                 ],
+                'id'            => [
+                    'nullable',
+                    'integer',
+                    'min:1',
+                ],
+                'with_rooms'    => [
+                    'nullable',
+                ],
+                'rooms_limit'   => [
+                    'nullable',
+                    'integer',
+                    'min:1',
+                    'max:20',
+                ],
+                'include'       => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
             ],
             [
                 'name.max'          => __('property.validation.name.max'),
@@ -267,6 +286,43 @@ final class PropertiesValidation
             ],
             [
                 'id' => __('property.attributes.id'),
+            ]
+        );
+    }
+
+    /**
+     * Validate partner property room preview request.
+     *
+     * @return \Illuminate\Contracts\Validation\Validator|\Illuminate\Validation\Validator
+     */
+    public function roomPreviewValidation(Request $request, int $id)
+    {
+        return Validator::make(
+            array_merge($request->all(), ['id' => $id]),
+            [
+                'id'    => [
+                    'required',
+                    'integer',
+                    'exists:properties,id',
+                ],
+                'limit' => [
+                    'nullable',
+                    'integer',
+                    'min:1',
+                    'max:20',
+                ],
+            ],
+            [
+                'id.required' => __('property.validation.id.required'),
+                'id.integer'  => __('property.validation.id.integer'),
+                'id.exists'   => __('property.validation.id.exists'),
+                'limit.integer' => __('pagination.per_page.integer'),
+                'limit.min'     => __('pagination.per_page.min'),
+                'limit.max'     => __('pagination.per_page.max'),
+            ],
+            [
+                'id'    => __('property.attributes.id'),
+                'limit' => __('pagination.per_page'),
             ]
         );
     }

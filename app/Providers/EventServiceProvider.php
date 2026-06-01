@@ -11,10 +11,14 @@ use App\Events\BookingCreated;
 use App\Events\BookingNoShow;
 use App\Events\ContractRenewalReminderQueued;
 use App\Events\RoomBlockChanged;
+use App\Events\SettlementPeriodIssued;
+use App\Listeners\SendSettlementNotification;
 use App\Listeners\InvalidateCalendarCache;
 use App\Listeners\RecordCancellationRequestBroadcastMarker;
 use App\Listeners\InvalidatePartnerKpiCache;
 use App\Listeners\RecordBookingTimeline;
+use App\Events\RoomInventoryReleased;
+use App\Listeners\SyncInventoryToChannelManager;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -61,6 +65,12 @@ class EventServiceProvider extends ServiceProvider
 
         CancellationRequestUpdated::class => [
             [RecordCancellationRequestBroadcastMarker::class, 'handle'],
+        ],
+        SettlementPeriodIssued::class => [
+            SendSettlementNotification::class,
+        ],
+        RoomInventoryReleased::class => [
+            SyncInventoryToChannelManager::class,
         ],
     ];
 

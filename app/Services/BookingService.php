@@ -27,9 +27,12 @@ use App\Jobs\SendBooking;
 use App\Jobs\SendBookingCancelled;
 use App\Jobs\VerifyMail;
 use App\Models\Booking;
+use App\Models\RoomPrice;
+use App\Models\PartnerSettlementPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\BookingTimelineService;
 use App\Services\ConflictChecker;
+use App\Services\DepositService;
 use Throwable;
 
 final class BookingService
@@ -44,6 +47,7 @@ final class BookingService
     protected PricePackageRepositoryInterface $pricePackageRepository;
     protected BookingTimelineService $timelineService;
     protected ConflictChecker $conflictChecker;
+    protected DepositService $depositService;
 
     /**
      * Constructor
@@ -58,6 +62,7 @@ final class BookingService
         PricePackageRepositoryInterface $pricePackageRepository,
         BookingTimelineService $timelineService,
         ConflictChecker $conflictChecker,
+        DepositService $depositService,
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->roomsRepository = $roomsRepository;
@@ -66,6 +71,7 @@ final class BookingService
         $this->pricePackageRepository = $pricePackageRepository;
         $this->timelineService = $timelineService;
         $this->conflictChecker = $conflictChecker;
+        $this->depositService = $depositService;
     }
 
     /**
@@ -195,6 +201,9 @@ final class BookingService
             $data['status'] = $data['status'] ?? 0;
             $booking = $this->bookingRepository->create($data);
 
+            // Create deposit if required by policy
+            $this->depositService->createDeposit($booking);
+
             // Realtime: broadcast booking mới đến partner sở hữu room (Phase 2).
             $scope = $this->resolveBroadcastScope($booking);
             if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
@@ -248,6 +257,14 @@ final class BookingService
                 ];
             }
 
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể hủy.',
+                ];
+            }
+
             $checkUser = $this->bookingRepository->checkUser($request);
             if (!$checkUser) {
                 return [
@@ -294,6 +311,27 @@ final class BookingService
 
             DB::beginTransaction();
             $now = Carbon::now();
+
+            // Release the room (free the room status)
+            $this->roomsRepository->update($booking->room_id, ['status' => true]);
+
+            // Resolve cancellation policy to check if free cancel
+            $resolver = new \App\Services\CancellationPolicyResolver();
+            $resolution = $resolver->resolveForBooking($booking, $now);
+            $isFreeCancel = (
+                $resolution->refundPercent === 100.0
+                || $resolution->feePercent === 0.0
+                || $resolution->feePercent === null
+            );
+
+            if ($isFreeCancel) {
+                // Free cancellation -> refund deposit
+                $this->depositService->refundDeposit($id);
+            } else {
+                // Forfeit deposit (paid cancellation)
+                $this->depositService->forfeitDeposit($id);
+            }
+
             $this->bookingRepository->update($id, [
                 'status'              => BookingStatus::CANCELLED->value,
                 'cancelled_at'        => $now,
@@ -301,9 +339,13 @@ final class BookingService
             ]);
             $bookingUpdate = $this->bookingRepository->find($id);
 
+            // Broadcast Inventory Released event for Channel Manager (T3.3)
+            event(new \App\Events\RoomInventoryReleased($booking->room_id));
+
             $this->timelineService->recordCancelled($id, $reason, $fromStatus, null, [
                 'cancelled_at' => $now->toIso8601String(),
                 'role'         => $role,
+                'policy_resolution' => $resolution->toTimelineMetadataFragment(),
             ]);
 
             DB::commit();
@@ -373,6 +415,123 @@ final class BookingService
                 'success' => false,
                 'data'    => null,
                 'message' => __('booking.messages.update_failed'),
+            ];
+        }
+    }
+
+    /**
+     * System automatically cancels a booking due to unpaid deposit/grace period expiration.
+     *
+     * @param int $id
+     * @param string $reason
+     * @return array{success: bool, data: mixed, message: string}
+     */
+    public function handleSystemCancelBooking(int $id, string $reason): array
+    {
+        try {
+            DB::beginTransaction();
+
+            // Acquire lock on the booking record
+            $booking = Booking::lockForUpdate()->find($id);
+
+            if (!$booking) {
+                DB::rollBack();
+                return ['success' => false, 'data' => null, 'message' => 'Booking not found'];
+            }
+
+            if ((int) $booking->status === BookingStatus::CANCELLED->value) {
+                DB::rollBack();
+                return ['success' => true, 'data' => $booking, 'message' => 'Already cancelled'];
+            }
+
+            $fromStatus = $this->mapStatusName((int) $booking->status);
+            $now = Carbon::now();
+
+            // Release the room (free the room status)
+            $this->roomsRepository->update($booking->room_id, ['status' => true]);
+
+            $this->bookingRepository->update($id, [
+                'status'              => BookingStatus::CANCELLED->value,
+                'cancelled_at'        => $now,
+                'cancellation_reason' => $reason,
+                'deposit_status'      => 'expired_cancelled',
+            ]);
+
+            $bookingUpdate = $this->bookingRepository->find($id);
+
+            $this->timelineService->recordCancelled($id, $reason, $fromStatus, null, [
+                'cancelled_at' => $now->toIso8601String(),
+                'role'         => 'system',
+            ]);
+
+            DB::commit();
+
+            // Broadcast Inventory Released event for Channel Manager (T3.3)
+            event(new \App\Events\RoomInventoryReleased($booking->room_id));
+
+            // --- Broadcast realtime event ---
+            $scope = $this->resolveBroadcastScope($bookingUpdate);
+            if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
+                $this->safeDispatch(
+                    'booking.cancelled',
+                    static function () use ($bookingUpdate, $scope, $reason): void {
+                        BookingCancelled::dispatch(
+                            $bookingUpdate,
+                            $scope['partner_id'],
+                            $scope['property_id'],
+                            null,
+                            $reason,
+                        );
+                    },
+                );
+            }
+
+            // --- Send cancellation email to guest (after commit) ---
+            $bookingWithRelations = Booking::with(['user', 'room.property'])->find($id);
+            $guest     = $bookingWithRelations?->user;
+            $guestRoom = $bookingWithRelations?->room;
+            if ($guest && $guest->email) {
+                $startCarbon = Carbon::parse($bookingUpdate->start_date);
+                $endCarbon   = Carbon::parse($bookingUpdate->end_date);
+                $cancelledAt = Carbon::parse($bookingUpdate->cancelled_at)
+                    ->timezone('Asia/Ho_Chi_Minh')
+                    ->format('d/m/Y H:i:s');
+
+                $cancelEmailData = [
+                    'booking_code'        => (string) ($bookingUpdate->booking_code ?? ''),
+                    'booking_created_at'  => Carbon::parse($bookingUpdate->created_at)
+                        ->timezone('Asia/Ho_Chi_Minh')
+                        ->format('d/m/Y H:i:s'),
+                    'room_title'          => (string) ($guestRoom?->title ?? ''),
+                    'property_name'       => (string) ($guestRoom?->property?->name ?? ''),
+                    'property_address'    => (string) ($guestRoom?->property?->address_detail ?? ''),
+                    'start_date'          => $startCarbon->format('d/m/Y'),
+                    'end_date'            => $endCarbon->format('d/m/Y'),
+                    'cancelled_at'        => $cancelledAt,
+                    'cancellation_reason' => $reason,
+                    'bookings_url'        => config('app.url_frontend') . '/bks-stay/bookings/' . $bookingUpdate->id,
+                    'room_url'            => config('app.url_frontend') . '/rooms/' . $bookingUpdate->room_id,
+                    'goline_phone'       => '0243 795 7250',
+                ];
+
+                SendBookingCancelled::dispatch($guest->email, $guest->name ?? $guest->email, $cancelEmailData);
+            }
+
+            return [
+                'success' => true,
+                'data'    => $bookingUpdate,
+                'message' => 'System cancelled successfully',
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('System booking cancellation failed', [
+                'booking_id' => $id,
+                'error'       => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'System cancellation failed',
             ];
         }
     }
@@ -465,6 +624,14 @@ final class BookingService
                     'success' => false,
                     'data'    => null,
                     'message' => __('booking.messages.not_found'),
+                ];
+            }
+
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể xác nhận.',
                 ];
             }
 
@@ -733,6 +900,24 @@ final class BookingService
                     'message' => __('booking.messages.unauthorized_staff_action'),
                 ];
             }
+
+            $booking = $this->bookingRepository->find($id);
+            if (!$booking) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.not_found'),
+                ];
+            }
+
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể chỉnh sửa.',
+                ];
+            }
+
             $updated = $this->bookingRepository->update(
                 $id,
                 $request->only(['start_date', 'end_date', 'status'])
@@ -872,16 +1057,35 @@ final class BookingService
                 __('booking.messages.room_unavailable')
             );
 
-            // get price to calculate total amount
-            $price = $this->pricePackageRepository->getDefaultPriceOfRoom($roomId);
+            $startDateInput = (string) $request->input('start_date');
+            $endDateInput = (string) $request->input('end_date');
+
+            $roomPrice = null;
+            $requestedPriceId = $request->input('price_id');
+            if ($requestedPriceId !== null && $requestedPriceId !== '') {
+                $roomPrice = RoomPrice::query()
+                    ->where('id', (int) $requestedPriceId)
+                    ->where('room_id', $roomId)
+                    ->first();
+            }
+            if ($roomPrice === null) {
+                $resolvedPriceId = BookingStayAmountCalculator::resolveRoomPriceIdForStay(
+                    $roomId,
+                    $startDateInput,
+                    $endDateInput,
+                );
+                $roomPrice = $resolvedPriceId !== null
+                    ? RoomPrice::query()->find($resolvedPriceId)
+                    : null;
+            }
 
             // create booking
             $booking = $this->bookingRepository->create([
                 'user_id'    => $createUser->id,
                 'room_id'    => $roomId,
-                'start_date' => $request->input('start_date'),
-                'end_date'   => $request->input('end_date'),
-                'price_id'   => $price->price_id ?? null,
+                'start_date' => $startDateInput,
+                'end_date'   => $endDateInput,
+                'price_id'   => $roomPrice?->id,
                 'note'       => $request->input('note'),
                 'status'     => BookingStatus::PENDING->value,
                 'created_by' => $createUser->id,
@@ -901,14 +1105,27 @@ final class BookingService
             $booking->update(['booking_code' => $bookingCode]);
             $booking->refresh();
 
+            // Create deposit if required by policy
+            $this->depositService->createDeposit($booking);
+
             // prepare room to send mail
             $room = $this->roomsRepository->getRoomInfoSendMail($roomId);
 
             // calculate total amount
-            $startDate = Carbon::parse($request->input('start_date'));
-            $endDate = Carbon::parse($request->input('end_date'));
-            $totalDays = $startDate->diffInDays($endDate) + 1;
-            $roomStayTotal = ((float) ($price->cheapest_daily_price ?? 0)) * $totalDays;
+            $startDate = Carbon::parse($startDateInput);
+            $endDate = Carbon::parse($endDateInput);
+            if ($roomPrice === null && $booking->price_id) {
+                $roomPrice = RoomPrice::query()->find($booking->price_id);
+            }
+            $totalDays = BookingStayAmountCalculator::countStayDays(
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            );
+            $roomStayTotal = BookingStayAmountCalculator::computeRoomStayTotalForRoomPrice(
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+                $roomPrice,
+            );
 
             // Format services for email template (from selected services in booking)
             $selectedServices = $booking->services()->select('name', 'price')->get();
@@ -930,6 +1147,10 @@ final class BookingService
                 'room_id'            => (int) $booking->room_id,
                 'price_id'           => (int) $booking->price_id,
                 'total_amount'       => $grandTotal,
+                'room_stay_amount'   => $roomStayTotal,
+                'services_total'     => $servicesTotal,
+                'unit_price'         => (float) ($roomPrice?->price ?? 0),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
                 'room_title'         => (string) ($room->title ?? ''),
                 'property_address'   => (string) ($room->property_address ?? ''),
             ];
@@ -955,7 +1176,12 @@ final class BookingService
                 'start_time'         => $startDate->format('d/m/Y'),
                 'end_time'           => $endDate->format('d/m/Y'),
                 'total_days'         => $totalDays,
-                'estimate_deadline'  => Carbon::now()->addDays(7)->format('d/m/Y'),
+                'room_stay_amount'   => $roomStayTotal,
+                'services_total'     => $servicesTotal,
+                'unit_price'         => (float) ($roomPrice?->price ?? 0),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'deposit_deadline'   => $this->computeDepositDeadline($startDate, Carbon::now()),
+                'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
                 'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => $token,
@@ -1075,24 +1301,12 @@ final class BookingService
 
     private function computeRoomStayTotalForBooking(Booking $booking): float
     {
-        $start = Carbon::parse($booking->start_date);
-        $end = Carbon::parse($booking->end_date);
-        $totalDays = $start->diffInDays($end) + 1;
-        $booking->loadMissing('price');
-        $daily = (float) ($booking->price?->price ?? 0);
-        if ($daily <= 0.0) {
-            $pkg = $this->pricePackageRepository->getDefaultPriceOfRoom((int) $booking->room_id);
-            $daily = (float) ($pkg->cheapest_daily_price ?? 0);
-        }
-
-        return $daily * $totalDays;
+        return BookingStayAmountCalculator::computeRoomStayTotalForBooking($booking);
     }
 
     private function computeServicesTotalForBooking(Booking $booking): float
     {
-        $booking->loadMissing('services');
-
-        return (float) $booking->services->sum(fn ($service) => (float) ($service->price ?? 0));
+        return BookingStayAmountCalculator::computeServicesTotalForBooking($booking);
     }
 
     // =========================================================================
@@ -1140,12 +1354,47 @@ final class BookingService
                 return ['success' => false, 'message' => 'Booking not found'];
             }
 
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể check-in.'
+                ];
+            }
+
             if ($booking->status === BookingStatus::PENDING_CANCELLATION->value) {
                 return ['success' => false, 'message' => 'Không thể nhận phòng cho đơn đang chờ duyệt hủy'];
             }
 
             if ($booking->status !== BookingStatus::CONFIRMED->value) {
                 return ['success' => false, 'message' => 'Chỉ có thể nhận phòng cho đơn đã duyệt'];
+            }
+
+            // [T3.1] Check-in Gate Verification
+            // 1. Verify deposit has been paid and confirmed if applicable
+            $isPendingDeposit = !in_array(
+                $booking->deposit_status,
+                ['confirmed_by_partner', 'held_in_escrow'],
+                true
+            );
+            if ($booking->deposit_amount > 0 && $isPendingDeposit) {
+                return [
+                    'success' => false,
+                    'code'    => 'CHECKIN_GATE_FAILED',
+                    'message' => 'Không thể Check-in do chưa hoàn tất thanh toán hoặc xác thực đặt cọc.'
+                ];
+            }
+
+            // 2. Verify Lease Agreement is signed for long term rentals
+            $hasUnsignedLease = $booking->contracts()
+                ->where('contract_type', 'LEASE_AGREEMENT')
+                ->where('status', 0)
+                ->exists();
+            if ($hasUnsignedLease) {
+                return [
+                    'success' => false,
+                    'code'    => 'CHECKIN_GATE_FAILED',
+                    'message' => 'Không thể Check-in do chưa hoàn thành ký kết hợp đồng thuê nhà điện tử.'
+                ];
             }
 
             DB::beginTransaction();
@@ -1163,6 +1412,40 @@ final class BookingService
     }
 
     /**
+     * Handle partner confirming deposit manual validation.
+     *
+     * @param int $id
+     * @return array
+     */
+    public function handleConfirmDeposit(int $id): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($id);
+            if (!$booking) {
+                return ['success' => false, 'message' => 'Booking not found'];
+            }
+
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể xác thực cọc.'
+                ];
+            }
+
+            $success = $this->depositService->confirmReceiptByPartner($id);
+            if (!$success) {
+                return ['success' => false, 'message' => 'Không thể xác thực đặt cọc cho đơn hàng này.'];
+            }
+
+            return ['success' => true, 'message' => 'Xác thực đặt cọc thành công.'];
+        } catch (Exception $e) {
+            Log::error("Confirm deposit failed: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Xác thực đặt cọc thất bại.'];
+        }
+    }
+
+
+    /**
      * Handle Check-out for a booking
      *
      * @param int $id
@@ -1174,6 +1457,13 @@ final class BookingService
             $booking = $this->bookingRepository->find($id);
             if (!$booking) {
                 return ['success' => false, 'message' => 'Booking not found'];
+            }
+
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể check-out.'
+                ];
             }
 
             DB::beginTransaction();
@@ -1215,6 +1505,14 @@ final class BookingService
                     'success' => false,
                     'data'    => null,
                     'message' => __('booking.messages.not_found'),
+                ];
+            }
+
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể đánh dấu no-show.',
                 ];
             }
 
@@ -1318,6 +1616,14 @@ final class BookingService
                 ];
             }
 
+            if ($this->isBookingLocked($booking)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Đơn đặt phòng đã được chốt đối soát tài chính và khóa, không thể di chuyển.',
+                ];
+            }
+
             $checkUser = $this->bookingRepository->checkUser($request);
             if (! $checkUser) {
                 return [
@@ -1416,5 +1722,117 @@ final class BookingService
                 'message' => __('booking.messages.update_failed'),
             ];
         }
+    }
+
+    /**
+     * Kiểm tra xem đơn đặt phòng có bị khóa đối soát hay không.
+     *
+     * @param \App\Models\Booking $booking
+     * @return bool
+     */
+    private function isBookingLocked(Booking $booking): bool
+    {
+        if ($booking->settlement_period_id === null) {
+            return false;
+        }
+
+        $booking->loadMissing('settlementPeriod');
+        $period = $booking->settlementPeriod;
+
+        if (!$period) {
+            return false;
+        }
+
+        $allowedStatuses = [
+            PartnerSettlementPeriod::STATUS_DRAFT,
+            PartnerSettlementPeriod::STATUS_DISPUTED,
+        ];
+        return !in_array($period->status, $allowedStatuses, true);
+    }
+
+    /**
+     * Tính deadline nộp cọc theo grace period.
+     *
+     * Logic (đồng bộ với FE BookingDetail.tsx line 216):
+     *   - Nếu ngày check-in cách thời điểm tạo booking <= 48h → grace 2 giờ
+     *   - Còn lại → grace 12 giờ
+     */
+    private function computeDepositDeadline(Carbon $startDate, Carbon $createdAt): string
+    {
+        $diffHours = $createdAt->diffInHours($startDate, false);
+        $graceHours = $diffHours <= 48 ? 2 : 12;
+
+        return $createdAt->copy()
+            ->addHours($graceHours)
+            ->timezone('Asia/Ho_Chi_Minh')
+            ->format('H:i \n\g\à\y d/m/Y');
+    }
+
+    /**
+     * Tạo đoạn mô tả chính sách hủy phòng dạng HTML để nhúng vào email.
+     *
+     * Lấy tất cả tiers theo stay_kind (short/long) từ version hiện hành,
+     * format thành bảng HTML đơn giản.
+     */
+    private function formatCancellationPolicyForEmail(Booking $booking): string
+    {
+        $version  = (string) config('bcp.baseline_policy_version', '2026-baseline-v1');
+        $tz       = (string) config('app.timezone', 'Asia/Ho_Chi_Minh');
+        $longMin  = (int) config('bcp.long_stay_min_nights', 30);
+
+        $start = Carbon::parse((string) $booking->start_date, $tz);
+        $end   = Carbon::parse((string) $booking->end_date, $tz);
+
+        $stayKind = \App\Support\Bcp\CancellationPolicyTierMatcher::stayKind($start, $end, $longMin, $tz);
+
+        $tiers = \App\Models\CancellationPolicyTier::query()
+            ->where('version', $version)
+            ->where('stay_kind', $stayKind)
+            ->orderByDesc('hours_before_checkin_min')
+            ->get();
+
+        if ($tiers->isEmpty()) {
+            return '<p style="color:#6b7280;font-size:13px;">' .
+                'Vui lòng liên hệ hỗ trợ để biết chi tiết chính sách hủy phòng.</p>';
+        }
+
+        $rows = '';
+        foreach ($tiers as $tier) {
+            $minH   = (int) $tier->hours_before_checkin_min;
+            $maxH   = $tier->hours_before_checkin_max;
+            $refund = $tier->refund_percent !== null
+                ? number_format((float) $tier->refund_percent, 0) . '%'
+                : 'N/A';
+
+            if ($maxH === null) {
+                $when = 'Hủy trước ' . $minH . 'h so với giờ nhận phòng';
+            } elseif ($minH === 0) {
+                $when = 'Hủy trong vòng ' . $maxH . 'h trước giờ nhận phòng';
+            } else {
+                $when = 'Hủy trong ' . $minH . 'h – ' . $maxH . 'h trước giờ nhận phòng';
+            }
+
+            $color = ($refund === '100%') ? '#10b981' : '#dc2626';
+            $rows .= '<tr style="border-bottom:1px solid #f3f4f6;">'
+                . '<td style="padding:8px 12px;font-size:13px;color:#374151;">' . $when . '</td>'
+                . '<td style="padding:8px 12px;font-size:13px;font-weight:700;color:'
+                . $color . ';text-align:right;">' . $refund . ' hoàn tiền cọc</td>'
+                . '</tr>';
+        }
+
+        $label = $stayKind === 'long'
+            ? 'dài hạn (≥' . $longMin . ' đêm)'
+            : 'ngắn hạn';
+
+        return '<p style="font-size:12px;color:#6b7280;margin:0 0 8px 0;">Áp dụng cho lưu trú ' . $label . '</p>'
+            . '<table style="width:100%;border-collapse:collapse;background:#fff;">'
+            . '<thead><tr style="background:#f9fafb;">'
+            . '<th style="padding:8px 12px;font-size:12px;text-align:left;color:#6b7280;">Thời điểm hủy</th>'
+            . '<th style="padding:8px 12px;font-size:12px;text-align:right;color:#6b7280;">Hoàn tiền cọc</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows . '</tbody>'
+            . '</table>'
+            . '<p style="font-size:11px;color:#9ca3af;margin:8px 0 0 0;">'
+            . '* Thời gian tính từ 00:00 ngày nhận phòng theo múi giờ Việt Nam (GMT+7).</p>';
     }
 }

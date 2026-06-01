@@ -43,6 +43,16 @@ final class RoomController extends Controller
      */
     public function roomList(Request $request): JsonResponse
     {
+        $validator = $this->roomsValidation->searchRoomValidation($request);
+
+        if ($validator->fails()) {
+            return $this->validateError(
+                $validator->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
         $result = $this->roomsService->handleRoomList($request);
 
         if (!$result["success"]) {

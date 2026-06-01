@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo giá và thủ tục đăng ký - BKS System</title>
+    <title>Xác nhận đặt phòng - BKS Stay</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -180,7 +180,7 @@
         <!-- Header -->
         <div class="header">
             <h1>Welcome to BKS</h1>
-            <p>Báo giá và thủ tục đăng ký đặt phòng</p>
+            <p>Xác nhận đặt phòng tại hệ thống BKS Stay</p>
         </div>
 
         <!-- Content -->
@@ -188,10 +188,7 @@
             <!-- Greeting -->
             <div class="greeting">
                 <p>Kính gửi: <strong>{{ $name }}</strong>,</p>
-                <p>Căn hộ/Phòng mà bạn yêu cầu thông tin qua
-                <strong>"BKS System"</strong>
-                hiện trong tình trạng
-                <strong style="color: #10b981;">sẵn sàng</strong> và có thể đặt.</p>
+                <p>Đặt phòng của bạn đã được <strong style="color: #10b981;">ghi nhận thành công</strong> trên hệ thống <strong>BKS Stay</strong>. Phòng đã được hệ thống giữ cho bạn, vui lòng hoàn tất đặt cọc trước thời hạn bên dưới để đảm bảo chỗ ở.</p>
             </div>
 
             <!-- Room Info -->
@@ -202,44 +199,47 @@
                 Ngày giờ đặt phòng: <strong>{{ $data['booking_created_at'] }}</strong><br>
                 Từ ngày: <strong>{{ $data['start_time'] }}</strong><br>
                 Đến ngày: <strong>{{ $data['end_time'] }}</strong><br>
+                Tổng số ngày đặt: <strong>{{ (int) ($data['total_days'] ?? 0) }} ngày</strong><br>
                 Xem chi tiết phòng tại:
                 <a href="{{ $data['room_url'] }}"
-                    style="text-decoration: underline;">{{ $data['room_url'] }}
+                    style="text-decoration: underline;">Xem chi tiết căn hộ
                 </a>
             </div>
+
+            {{-- Deposit Deadline --}}
+            @if(!empty($data['deposit_deadline']))
+            <div style="background:#fef2f2; border:2px solid #fca5a5; padding:16px; border-radius:8px; margin:16px 0; text-align:center;">
+                <p style="margin:0 0 6px 0; font-size:13px; color:#374151; font-weight:600;">⏰ Hạn nộp cọc giữ phòng:</p>
+                <p style="margin:0 0 6px 0; font-size:22px; font-weight:700; color:#dc2626; letter-spacing:1px;">{{ $data['deposit_deadline'] }}</p>
+                <p style="margin:0; font-size:12px; color:#6b7280;">Sau thời điểm này, hệ thống sẽ tự động hủy đặt phòng nếu chưa có biên lai cọc.</p>
+            </div>
+            @endif
 
             <!-- Registration Links -->
             <div class="section">
                 <div class="section-title">Đăng ký thông tin</div>
                 
-                <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 15px 0;">
+                <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.8;">
                     @if(!empty($data['is_first_time']))
-                    <p style="margin: 0 0 15px 0; color: #4b5563;">
-                        Xem các đơn đặt phòng của bạn tại URL bên dưới.
+                    <p style="margin: 0 0 10px 0; color: #4b5563;">
+                        <strong>Bước 1:</strong> Đây là lần đầu bạn đặt phòng tại hệ thống BKS Stay. Vui lòng nhấp vào liên kết dưới đây để thiết lập mật khẩu và kích hoạt tài khoản thành viên của bạn:
                     </p>
-                    <a href="{{ $data['bookings_url'] }}"
-                        >{{ $data['bookings_url'] }}
+                    <a href="{{ config('app.url_frontend') }}/set-password/{{ $data['token'] }}" style="color: #3B82F6; font-weight: 600; text-decoration: underline; display: inline-block; margin-bottom: 15px;">
+                        Kích hoạt tài khoản & Thiết lập mật khẩu
                     </a>
                     <br>
-                    <p style="margin: 15px 0 5px 0;">
-                        Nếu bạn chưa thiết lập mật khẩu, vui lòng thiết lập mật khẩu tại URL bên dưới.
+                    <p style="margin: 10px 0 10px 0; color: #4b5563;">
+                        <strong>Bước 2:</strong> Sau khi kích hoạt tài khoản thành công, nhấp vào liên kết dưới đây để xem trực tiếp chi tiết đặt phòng của bạn:
                     </p>
-                    <a href="{{ config('app.url_frontend') }}/set-password/{{ $data['token'] }}">
-                        {{ config('app.url_frontend') }}/set-password/{{ $data['token'] }}
+                    <a href="{{ $data['bookings_url'] }}" style="color: #3B82F6; font-weight: 600; text-decoration: underline;">
+                        Xem chi tiết đặt phòng của bạn
                     </a>
                     @else
                     <p style="margin: 0 0 15px 0; color: #4b5563;">
-                        Tài khoản của bạn đã tồn tại. Vui lòng đăng nhập hệ thống trước để xem và quản lý lịch sử đặt phòng:
+                        Tài khoản thành viên của bạn đã tồn tại trên hệ thống BKS Stay. Vui lòng nhấp vào liên kết dưới đây để truy cập chi tiết đặt phòng của bạn (hệ thống sẽ tự động chuyển hướng đến trang đăng nhập nếu phiên làm việc đã hết hạn):
                     </p>
-                    <a href="{{ config('app.url_frontend') }}/bks-stay/login">
-                        {{ config('app.url_frontend') }}/bks-stay/login
-                    </a>
-                    <br>
-                    <p style="margin: 15px 0 5px 0; color: #4b5563;">
-                        Sau khi đăng nhập, xem các đơn đặt phòng của bạn tại URL bên dưới.
-                    </p>
-                    <a href="{{ $data['bookings_url'] }}"
-                        >{{ $data['bookings_url'] }}
+                    <a href="{{ $data['bookings_url'] }}" style="color: #3B82F6; font-weight: 600; text-decoration: underline;">
+                        Xem chi tiết đặt phòng của bạn
                     </a>
                     @endif
                 </div>
@@ -252,25 +252,57 @@
                     Ngoài ra, số tiền cuối cùng có thể thay đổi tùy theo thời gian trong năm, v.v.
                 </div>
 
+                <div class="info-box" style="margin-top: 20px; background-color: #eff6ff; border: 1px solid #3B82F6; line-height: 1.8;">
+                    <strong>ℹ️ Hướng dẫn nhận phòng (Check-in):</strong><br>
+                    @if(($data['price_unit'] ?? '') === 'month')
+                        • Sau khi đăng ký và được Đối tác (Chủ phòng) xác nhận đặt phòng <strong style="color: #10b981;">thành công</strong>, hệ thống BKS Stay sẽ tự động khởi tạo <strong>Hợp đồng thuê căn hộ dịch vụ</strong> điện tử.<br>
+                        • <strong>Khuyến nghị:</strong> Bạn hãy truy cập chi tiết đặt phòng, bấm <strong>"Ký hợp đồng & Xác nhận"</strong> để thực hiện ký trực tuyến và chọn <strong>"In hợp đồng / Xem trước"</strong> để lưu hoặc in bản hợp đồng nhằm xuất trình khi nhận bàn giao căn hộ.
+                    @else
+                        • Sau khi đăng ký và được Đối tác (Chủ phòng) xác nhận đặt phòng <strong style="color: #10b981;">thành công</strong>, hệ thống BKS Stay sẽ tự động cấp phát <strong>Phiếu xác nhận lưu trú (Stay Voucher)</strong> để bạn kiểm tra trong phần chi tiết đặt phòng.<br>
+                        • <strong>Khuyến nghị:</strong> Hãy bấm nút <strong>"Tải ảnh (PNG)"</strong> để lưu Phiếu về thiết bị ngay khi có thể, giúp bạn chủ động xuất trình cho lễ tân khi check-in ngay cả khi điện thoại không có kết nối internet.
+                    @endif
+                </div>
+
             <!-- Pricing Details -->
             <div class="section">
                 <div class="section-title">Tổng giá trị ước tính</div>
                 
                 @php
-                    $total_service = 0;
+                    $totalDays = (int) ($data['total_days'] ?? 0);
+                    $servicesTotal = 0;
                     if (!empty($data['services'])) {
                         foreach ($data['services'] as $item) {
-                            $total_service += (float) ($item['amount'] ?? 0);
+                            $servicesTotal += (float) ($item['amount'] ?? 0);
                         }
                     }
-                    $total = $data['total_amount'] + $total_service;
+                    $roomStayAmount = (float) ($data['room_stay_amount'] ?? 0);
+                    if ($roomStayAmount <= 0 && !empty($data['total_amount'])) {
+                        $roomStayAmount = max(0, (float) $data['total_amount'] - $servicesTotal);
+                    }
+                    $grandTotal = $roomStayAmount + $servicesTotal;
+                    $priceUnit = strtolower((string) ($data['price_unit'] ?? 'day'));
+                    $unitSuffix = match ($priceUnit) {
+                        'month' => ' · gói tháng',
+                        'week'  => ' · gói tuần',
+                        'year'  => ' · gói năm',
+                        default => '',
+                    };
+                    $roomFeeLabel = 'Phí thuê phòng (' . $totalDays . ' ngày' . $unitSuffix . ')';
                 @endphp
                 
                 <div class="list-items">
+                    @if (!empty($data['unit_price']) && (float) $data['unit_price'] > 0)
+                        <div class="list-item" style="justify-content: space-between;">
+                            <span class="item-name">Đơn giá</span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format((float) $data['unit_price'], 0) }} VNĐ / {{ $data['price_unit'] === 'month' ? 'tháng' : 'ngày' }}
+                            </span>
+                        </div>
+                    @endif
                     <div class="list-item" style="justify-content: space-between;">
-                        <span class="item-name">Phí thuê phòng ({{ $data['total_days'] }} ngày)</span>
+                        <span class="item-name">{{ $roomFeeLabel }}</span>
                         <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
-                            {{ number_format($data['total_amount'], 0) }} VNĐ
+                            {{ number_format($roomStayAmount, 0) }} VNĐ
                         </span>
                         </div>
 
@@ -290,7 +322,7 @@
                     <div class="list-item">
                         <span class="item-name"><strong>Tổng tiền</strong></span>
                         <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
-                            {{ number_format($total, 0) }} VNĐ
+                            {{ number_format($grandTotal, 0) }} VNĐ
                         </span>
                     </div>
 
@@ -310,12 +342,22 @@
 
             <!-- Important Reminders -->
             <div class="info-box">
-                <strong>Lưu ý quan trọng:</strong> Tình trạng phòng trống và báo giá được cập nhật tại thời điểm gửi email này. 
-                Việc đặt phòng được xử lý theo thứ tự ưu tiên.
-                Nếu bạn quan tâm, vui lòng cân nhắc đăng ký càng sớm càng tốt.
+                <strong>Lưu ý quan trọng:</strong> Phòng đã được hệ thống giữ cho bạn kể từ khi đặt phòng thành công.
+                Vui lòng hoàn tất đặt cọc trước hạn để tránh bị hủy tự động.
             </div>
 
-            <!-- Support Information -->
+            <div class="section">
+                <div class="section-title">Chính sách hủy phòng</div>
+                <div style="background:#fff; border:1px solid #e5e7eb; padding:15px; border-radius:8px;">
+                    @if(!empty($data['cancellation_policy']))
+                        {!! $data['cancellation_policy'] !!}
+                    @else
+                        <p style="font-size:13px; color:#6b7280;">Vui lòng liên hệ hỗ trợ để biết chi tiết chính sách hủy phòng.</p>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Support Information --}}
             <div class="section">
                 <div class="section-title">Cần hỗ trợ?</div>
                 <p>Nếu bạn gặp khó khăn khi đăng ký trực tuyến, vui lòng liên hệ:</p>
@@ -326,7 +368,7 @@
             <!-- Contact Information -->
             <div class="section">
                 <div class="section-title">Thông tin liên hệ</div>
-                <p><strong>Căn hộ/Phòng cho thuê theo ngày và tháng "BKS SYSTEM":</strong> <a href="{{ config('app.url_frontend') }}" style="color: #3B82F6;">{{ config('app.url_frontend') }}</a></p>
+                <p><strong>Nền tảng căn hộ / căn hộ dịch vụ lưu trú ngắn và trung hạn "BKS SYSTEM":</strong> <a href="{{ config('app.url_frontend') }}" style="color: #3B82F6;">Website BKS System</a></p>
                 <p><strong>Hệ thống quản lý đặt phòng "StayConnect":</strong> <a href="{{ config('app.url_frontend') }}/bks-stay" style="color: #3B82F6;">BKS Stay Portal</a></p>
                 <p><strong>Được vận hành bởi:</strong> {{ $data['company_name'] }} </p>
             </div>

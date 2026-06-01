@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Stay;
 
+use App\Enums\BookingStatus;
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Services\StayService;
@@ -84,10 +85,19 @@ final class StayContractController extends Controller
                 ->whereHas('booking', function ($q) use ($userId) {
                     $q->where('user_id', $userId);
                 })
+                ->with('booking')
                 ->first();
 
             if (!$contract) {
                 return $this->errorResponse('Contract not found or access denied', null, HttpStatus::NOT_FOUND);
+            }
+
+            if (!$contract->booking || (int) $contract->booking->status !== BookingStatus::CONFIRMED->value) {
+                return $this->errorResponse(
+                    'Đơn đặt phòng chưa được Partner xác nhận. Vui lòng đợi trước khi ký hợp đồng.',
+                    null,
+                    HttpStatus::BAD_REQUEST
+                );
             }
 
             if ($contract->status === 1) {

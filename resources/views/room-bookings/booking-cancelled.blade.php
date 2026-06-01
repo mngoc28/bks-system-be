@@ -217,11 +217,11 @@
                     <ul style="margin: 0; padding-left: 20px; color: #1e40af;">
                         <li style="margin-bottom: 6px;">
                             Xem lại lịch sử đặt phòng tại:
-                            <a href="{{ $data['bookings_url'] }}">{{ $data['bookings_url'] }}</a>
+                            <a href="{{ $data['bookings_url'] }}">Lịch sử đặt phòng</a>
                         </li>
                         <li>
                             Xem chi tiết phòng tại:
-                            <a href="{{ $data['room_url'] }}">{{ $data['room_url'] }}</a>
+                            <a href="{{ $data['room_url'] }}">Xem chi tiết căn hộ</a>
                         </li>
                     </ul>
                 </div>

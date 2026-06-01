@@ -1,7 +1,7 @@
 ---
 name: stack-personas
 description: >-
-  Supplies CM Stack role prompts (business analyst, technical lead/architect, senior engineer, QA).
+  Supplies CM Stack role prompts (business analyst, technical lead/architect, senior engineer, QA, UAT).
   Read these files when stack-brainstorm, stack-analyze, stack-design, stack-plan, stack-task,
   or stack-fast-track instruct applying a named persona. Use when those workflows reference persona files.
 ---
@@ -13,8 +13,10 @@ These Markdown files mirror the original Claude Code **agent** definitions. Curs
 | File | Role |
 |------|------|
 | `business-analyst.md` | Requirements, PRDs, acceptance criteria |
+| `hospitality-expert.md` | Hospitality & accommodation operations, guest journeys, domain rules, industry standards |
 | `technical-lead-architect.md` | Architecture, design, technical review |
 | `senior-engineer.md` | Implementation, code, tests |
 | `qa-engineer.md` | Review, QA reports, testing strategy |
+| `uat-tester.md` | User Acceptance Testing, usability, business scenarios, sign-off |
 
 Paths are relative to this skill folder (e.g. `business-analyst.md` alongside this `SKILL.md`).

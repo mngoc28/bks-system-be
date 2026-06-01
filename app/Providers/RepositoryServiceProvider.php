@@ -60,6 +60,14 @@ use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationReq
 use App\Repositories\PartnerCancellationRequestRepository\PartnerCancellationRequestRepositoryInterface;
 use App\Repositories\ReviewRepository\ReviewRepository;
 use App\Repositories\ReviewRepository\ReviewRepositoryInterface;
+use App\Repositories\PartnerSettlementPeriodRepository\PartnerSettlementPeriodRepository;
+use App\Repositories\PartnerSettlementPeriodRepository\PartnerSettlementPeriodRepositoryInterface;
+use App\Repositories\SettlementLineItemRepository\SettlementLineItemRepository;
+use App\Repositories\SettlementLineItemRepository\SettlementLineItemRepositoryInterface;
+use App\Repositories\SettlementAdjustmentRepository\SettlementAdjustmentRepository;
+use App\Repositories\SettlementAdjustmentRepository\SettlementAdjustmentRepositoryInterface;
+use App\Repositories\BookingDepositRepository\BookingDepositRepository;
+use App\Repositories\BookingDepositRepository\BookingDepositRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -182,6 +190,22 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->singleton(
             ReviewRepositoryInterface::class,
             ReviewRepository::class
+        );
+        $this->app->singleton(
+            PartnerSettlementPeriodRepositoryInterface::class,
+            PartnerSettlementPeriodRepository::class
+        );
+        $this->app->singleton(
+            SettlementLineItemRepositoryInterface::class,
+            SettlementLineItemRepository::class
+        );
+        $this->app->singleton(
+            SettlementAdjustmentRepositoryInterface::class,
+            SettlementAdjustmentRepository::class
+        );
+        $this->app->singleton(
+            BookingDepositRepositoryInterface::class,
+            BookingDepositRepository::class
         );
     }
 

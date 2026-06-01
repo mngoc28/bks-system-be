@@ -113,6 +113,16 @@ final class Booking extends Model
     }
 
     /**
+     * Get the booking deposit associated with this booking.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function bookingDeposit(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(BookingDeposit::class, 'booking_id');
+    }
+
+    /**
      * Append-only timeline of lifecycle events for this booking.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
@@ -181,5 +191,33 @@ final class Booking extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class, 'booking_id');
+    }
+
+    /**
+     * Get the settlement period that contains this booking.
+     *
+     * @return BelongsTo
+     */
+    public function settlementPeriod(): BelongsTo
+    {
+        return $this->belongsTo(PartnerSettlementPeriod::class, 'settlement_period_id');
+    }
+
+    /**
+     * Get the settlement line item corresponding to this booking.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function settlementLineItem(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(SettlementLineItem::class, 'booking_id');
+    }
+
+    /**
+     * Tổng tạm tính (tiền phòng theo unit gói giá + dịch vụ).
+     */
+    public function getTotalAmountAttribute(): float
+    {
+        return \App\Services\BookingStayAmountCalculator::computeGrandTotalForBooking($this);
     }
 }

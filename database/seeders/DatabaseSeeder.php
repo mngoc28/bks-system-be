@@ -39,6 +39,7 @@ final class DatabaseSeeder extends Seeder
             CancellationReasonCodesSeeder::class,
             CancellationPolicyBaselineSeeder::class,
             ReviewsTableSeeder::class,
+            PartnerSettlementsSeeder::class,
         ]);
     }
 }

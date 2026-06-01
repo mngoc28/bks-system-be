@@ -24,10 +24,20 @@ final class RoomsValidation
                 'property_id' => ['nullable', 'integer', 'exists:properties,id'],
                 'property_ids' => ['nullable', 'array', 'max:100'],
                 'property_ids.*' => ['integer', 'exists:properties,id'],
+                'province_id' => ['nullable', 'integer', 'exists:provinces,id'],
+                'ward_id' => ['nullable', 'integer', 'exists:wards,id'],
+                'partner_id' => ['nullable', 'integer', 'exists:users,id'],
+                'property_type_id' => ['nullable', 'integer', 'exists:property_types,id'],
+                'keyword' => ['nullable', 'string', 'max:255'],
                 'title'       => ['nullable', 'string', 'max:100'],
                 'room_number' => ['nullable', 'string', 'max:50'],
                 'room_type'   => ['nullable', 'in:' . implode(',', RoomType::roomTypeValues())],
                 'status'      => ['nullable', 'in:' . implode(',', RoomStatus::statusValues())],
+                'page' => ['nullable', 'integer', 'min:1'],
+                'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+                'sort_by' => ['nullable', 'in:cheapest_daily_price,people'],
+                'sort_direction' => ['nullable', 'in:asc,desc'],
+                'tourist_spot_slug' => ['nullable', 'string', 'max:255', 'exists:tourist_spots,slug'],
             ],
             [
                 'property_id.exists' => __('room.validation.property_id.exists'),
@@ -46,10 +56,65 @@ final class RoomsValidation
                 'property_id' => __('room.attributes.property_id'),
                 'property_ids' => __('room.attributes.property_id'),
                 'property_ids.*' => __('room.attributes.property_id'),
+                'province_id' => __('property.attributes.province_id'),
+                'ward_id' => __('property.attributes.ward_id'),
+                'partner_id' => 'đối tác',
+                'property_type_id' => __('property.attributes.property_type_id'),
+                'keyword' => __('room.attributes.title'),
                 'title'       => __('room.attributes.title'),
                 'room_number' => __('room.attributes.room_number'),
                 'room_type'   => __('room.attributes.room_type'),
                 'status'      => __('room.attributes.status'),
+                'page' => 'trang',
+                'per_page' => 'số lượng mỗi trang',
+                'sort_by' => 'trường sắp xếp',
+                'sort_direction' => 'chiều sắp xếp',
+            ]
+        );
+    }
+
+    /**
+     * Validate public tourist spot suggestion list.
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
+    public function publicTouristSpotsValidation(Request $request): \Illuminate\Contracts\Validation\Validator
+    {
+        return Validator::make(
+            $request->all(),
+            [
+                'keyword' => ['nullable', 'string', 'max:255'],
+                'province_id' => ['nullable', 'integer', 'exists:provinces,id'],
+                // Query strings often send "1"/"0" or "true"/"false"; use $request->boolean() after validation.
+                'featured_only' => ['nullable'],
+                'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            ],
+        );
+    }
+
+    /**
+     * Validate suggested rooms grouped by tourist spot for homepage.
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
+    public function suggestedRoomsByTouristSpotValidation(Request $request): \Illuminate\Contracts\Validation\Validator
+    {
+        return Validator::make(
+            $request->all(),
+            [
+                'tourist_spot_ids' => ['nullable', 'array', 'max:20'],
+                'tourist_spot_ids.*' => ['integer', 'exists:tourist_spots,id'],
+                'tourist_spot_slugs' => ['nullable', 'array', 'max:20'],
+                'tourist_spot_slugs.*' => ['string', 'max:255', 'exists:tourist_spots,slug'],
+                'limit' => ['nullable', 'integer', 'min:1', 'max:20'],
+            ],
+            [],
+            [
+                'tourist_spot_ids' => 'điểm du lịch',
+                'tourist_spot_slugs' => 'điểm du lịch',
+                'limit' => __('room.attributes.title'),
             ]
         );
     }

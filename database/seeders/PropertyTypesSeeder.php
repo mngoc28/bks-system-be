@@ -30,12 +30,12 @@ final class PropertyTypesSeeder extends Seeder
             ],
             [
                 'slug' => 'can-ho-dich-vu-theo-phong',
-                'name' => 'Căn hộ dịch vụ cho thuê theo phòng',
-                'description' => 'Mô hình căn hộ cao cấp được chia nhỏ thành các phòng riêng biệt, kết hợp tiện nghi nhà ở và dịch vụ khách sạn.',
+                'name' => 'Căn hộ dịch vụ',
+                'description' => 'Mô hình căn hộ hoặc căn hộ dịch vụ phục vụ nhu cầu lưu trú ngắn và trung hạn, kết hợp tiện nghi nhà ở với trải nghiệm vận hành chuyên nghiệp.',
             ],
             [
                 'slug' => 'homestay-co-chia-phong',
-                'name' => 'Homestay có chia phòng',
+                'name' => 'Homestay',
                 'description' => 'Không gian sống gia đình được thiết kế chia thành nhiều phòng nghỉ riêng, mang lại cảm giác ấm cúng và gần gũi.',
             ],
         ];

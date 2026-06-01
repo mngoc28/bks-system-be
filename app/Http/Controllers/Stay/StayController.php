@@ -64,6 +64,8 @@ final class StayController extends Controller
 
         $perPage = request()->input('per_page', 10);
         $bookings = $this->stayService->getBookingHistory((int) $userId, (int) $perPage);
+        $bookings->getCollection()->each->append('total_amount');
+
         return $this->successResponse($bookings, 'Booking history retrieved successfully');
     }
 
@@ -85,6 +87,8 @@ final class StayController extends Controller
             if (!$booking) {
                 return $this->errorResponse('Booking not found', null, HttpStatus::NOT_FOUND);
             }
+            $booking->append('total_amount');
+
             return $this->successResponse($booking, 'Booking details retrieved successfully');
         } catch (\Exception $e) {
             return $this->errorResponse('Failed to retrieve booking details', null, HttpStatus::INTERNAL_SERVER_ERROR);
@@ -124,6 +128,37 @@ final class StayController extends Controller
         }
 
         $result = $this->stayService->extendBooking($id, (int)$userId, $request->input('new_end_date'));
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse(null, $result['message']);
+    }
+
+    /**
+     * Submit deposit receipt for a booking
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function submitReceipt(\Illuminate\Http\Request $request, int $id): JsonResponse
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return $this->errorResponse('Unauthorized', null, HttpStatus::UNAUTHORIZED);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'receipt_path' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors()->first(), $validator->errors(), HttpStatus::VALIDATION_ERROR);
+        }
+
+        $result = $this->stayService->submitDepositReceipt($id, (int)$userId, $request->input('receipt_path'));
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);

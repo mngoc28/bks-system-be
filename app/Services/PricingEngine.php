@@ -67,6 +67,7 @@ final class PricingEngine
             })
             ->first();
 
+            $now = Carbon::now();
             if ($matchedRule) {
                 if ($matchedRule->type === 'markup') {
                     if ($matchedRule->value_type === 'percentage') {
@@ -82,6 +83,9 @@ final class PricingEngine
                     }
                 }
                 $appliedRule = $matchedRule->name;
+            } elseif ($date->isToday() && $now->hour >= 16) {
+                $dayPrice -= ($basePrice * 0.20);
+                $appliedRule = 'Last-Minute Flash Sale';
             }
 
             $totalAmount += $dayPrice;

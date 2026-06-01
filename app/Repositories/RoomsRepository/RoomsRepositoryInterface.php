@@ -48,12 +48,12 @@ interface RoomsRepositoryInterface extends RepositoryInterface
     public function getRoomNamesByPropertyId(int $propertyId): Collection;
 
     /**
-     * Get latest rooms
+     * Get top rated rooms
      *
      * @param Request $request
-     * @return array
+     * @return object | null
      */
-    public function getLatestRooms(Request $request): object | null;
+    public function getTopRatedRooms(Request $request): object | null;
 
     /**
      * Get room list with filters
@@ -62,6 +62,24 @@ interface RoomsRepositoryInterface extends RepositoryInterface
      * @return object|null
      */
     public function getRoomList(Request $request): object | null;
+
+    /**
+     * Get suggested rooms by province IDs with limit
+     *
+     * @param array $provinceIds
+     * @param int $limit
+     * @return object|null
+     */
+    public function getSuggestedRoomsByProvince(array $provinceIds, int $limit): object | null;
+
+    /**
+     * Get suggested rooms by tourist spot IDs with limit per spot.
+     *
+     * @param array<int> $touristSpotIds
+     * @param int $limit
+     * @return object|null
+     */
+    public function getSuggestedRoomsByTouristSpot(array $touristSpotIds, int $limit): object | null;
 
     /**
      * Get room info for sending booking email

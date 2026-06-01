@@ -6,12 +6,12 @@ parameters:
 			path: app/Exceptions/Handler.php
 
 		-
-			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
-			count: 2
-			path: app/Http/Controllers/BookingController.php
+			message: "#^Method App\\\\Exports\\\\SettlementLineItemsExport\\:\\:query\\(\\) has invalid return type Laravel\\\\Scout\\\\Builder\\.$#"
+			count: 1
+			path: app/Exports/SettlementLineItemsExport.php
 
 		-
-			message: "#^PHPDoc tag @param references unknown parameter\\: \\$bookingServices$#"
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
 			count: 1
 			path: app/Http/Controllers/BookingController.php
 
@@ -51,24 +51,14 @@ parameters:
 			path: app/Http/Controllers/ServiceController.php
 
 		-
-			message: "#^Access to undefined constant App\\\\Enums\\\\HttpStatus\\:\\:UNPROCESSABLE_ENTITY\\.$#"
-			count: 3
-			path: app/Http/Controllers/Stay/StayServiceController.php
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: app/Http/Controllers/Stay/StayContractController.php
 
 		-
 			message: "#^PHPDoc tag @param has invalid value \\(int id\\)\\: Unexpected token \"id\", expected variable at offset 47$#"
 			count: 1
 			path: app/Http/Controllers/UserController.php
-
-		-
-			message: "#^Array has 2 duplicate keys with value 'bindings' \\(\"bindings\", \"bindings\"\\)\\.$#"
-			count: 1
-			path: app/Http/Kernel.php
-
-		-
-			message: "#^Array has 2 duplicate keys with value 'verified' \\(\"verified\", \"verified\"\\)\\.$#"
-			count: 1
-			path: app/Http/Kernel.php
 
 		-
 			message: "#^Access to an undefined property Illuminate\\\\Contracts\\\\Auth\\\\Authenticatable\\:\\:\\$status\\.$#"
@@ -201,6 +191,156 @@ parameters:
 			path: app/Http/Resources/CouponResource.php
 
 		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$address_detail\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$area\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$description\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$name\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$property_type_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$province_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$province_name\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$rent_category\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$reviews_avg_rating\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$reviews_count\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$rooms\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$rooms_count\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$ward_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$ward_name\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:\\$year_built\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Call to an undefined method App\\\\Http\\\\Resources\\\\Partner\\\\PartnerPropertyListResource\\:\\:relationLoaded\\(\\)\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerPropertyListResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$amenities\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$area\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$people\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$prices\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$property_id\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$reviews_avg_rating\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$reviews_count\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$room_number\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$room_type\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$services\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$status\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
+			message: "#^Access to an undefined property App\\\\Http\\\\Resources\\\\Partner\\\\PartnerRoomPreviewResource\\:\\:\\$title\\.$#"
+			count: 1
+			path: app/Http/Resources/Partner/PartnerRoomPreviewResource.php
+
+		-
 			message: "#^PHPDoc tag @param references unknown parameter\\: \\$request$#"
 			count: 1
 			path: app/Http/Validations/AmenityValidation.php
@@ -266,28 +406,13 @@ parameters:
 			path: app/Repositories/BaseRepository.php
 
 		-
-			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$building_id\\.$#"
-			count: 2
-			path: app/Repositories/BookingRepository/BookingRepository.php
-
-		-
-			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$building_name\\.$#"
-			count: 2
-			path: app/Repositories/BookingRepository/BookingRepository.php
-
-		-
 			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$month\\.$#"
 			count: 4
 			path: app/Repositories/BookingRepository/BookingRepository.php
 
 		-
 			message: "#^Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:\\$total\\.$#"
-			count: 4
-			path: app/Repositories/BookingRepository/BookingRepository.php
-
-		-
-			message: "#^Method App\\\\Repositories\\\\BookingRepository\\\\BookingRepository\\:\\:getActiveBookingByUserId\\(\\) should return App\\\\Models\\\\Booking\\|null but returns Illuminate\\\\Database\\\\Eloquent\\\\Model\\|null\\.$#"
-			count: 1
+			count: 2
 			path: app/Repositories/BookingRepository/BookingRepository.php
 
 		-
@@ -321,14 +446,34 @@ parameters:
 			path: app/Repositories/PartnerInforRepository/PartnerInforRepositoryInterface.php
 
 		-
-			message: "#^Parameter \\#1 \\$table of static method Illuminate\\\\Database\\\\Connection\\:\\:table\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\:\\:withBaseJoins\\(\\)\\.$#"
 			count: 1
 			path: app/Repositories/RoomsRepository/RoomsRepository.php
 
 		-
-			message: "#^PHPDoc tag @return with type array is incompatible with native type object\\|null\\.$#"
+			message: "#^Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Model\\:\\:withBaseJoins\\(\\)\\.$#"
+			count: 4
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
+
+		-
+			message: "#^Method App\\\\Repositories\\\\RoomsRepository\\\\RoomsRepository\\:\\:allPricesExpression\\(\\) is unused\\.$#"
 			count: 1
-			path: app/Repositories/RoomsRepository/RoomsRepositoryInterface.php
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
+
+		-
+			message: "#^Method App\\\\Repositories\\\\RoomsRepository\\\\RoomsRepository\\:\\:applyBaseRoomJoins\\(\\) is unused\\.$#"
+			count: 1
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$table of method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>\\:\\:leftJoin\\(\\) expects string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 1
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
+
+		-
+			message: "#^Parameter \\#1 \\$table of static method Illuminate\\\\Database\\\\Connection\\:\\:table\\(\\) expects Closure\\|Illuminate\\\\Database\\\\Query\\\\Builder\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 3
+			path: app/Repositories/RoomsRepository/RoomsRepository.php
 
 		-
 			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is not subtype of native type Illuminate\\\\Pagination\\\\LengthAwarePaginator\\.$#"
@@ -357,38 +502,13 @@ parameters:
 
 		-
 			message: "#^PHPDoc tag @return with type Illuminate\\\\Http\\\\JsonResponse is incompatible with native type array\\.$#"
-			count: 2
+			count: 1
 			path: app/Services/AuthService.php
 
 		-
 			message: "#^Parameter \\#1 \\$forceForever of static method Tymon\\\\JWTAuth\\\\JWT\\:\\:refresh\\(\\) expects bool, Tymon\\\\JWTAuth\\\\Token\\|null given\\.$#"
 			count: 1
 			path: app/Services/AuthService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleCreateBooking\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
-			count: 1
-			path: app/Services/BookingService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetAllOrSearchBookings\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
-			count: 1
-			path: app/Services/BookingService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetAllOrSearchBookings\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Booking\\|null, message\\: string\\} but returns array\\{success\\: true, data\\: Illuminate\\\\Pagination\\\\LengthAwarePaginator, message\\: \\(array\\|string\\)\\}\\.$#"
-			count: 1
-			path: app/Services/BookingService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleGetBookingById\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
-			count: 1
-			path: app/Services/BookingService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\BookingService\\:\\:handleUpdateBooking\\(\\) has invalid return type App\\\\Services\\\\Booking\\.$#"
-			count: 1
-			path: app/Services/BookingService.php
 
 		-
 			message: "#^PHPDoc tag @return with type array\\<string, mixed\\> is incompatible with native type bool\\.$#"
@@ -456,59 +576,14 @@ parameters:
 			path: app/Services/RoomImageService.php
 
 		-
-			message: "#^Call to an undefined method App\\\\Repositories\\\\RoomMaintenanceRepository\\\\RoomMaintenanceRepositoryInterface\\:\\:getList\\(\\)\\.$#"
+			message: "#^Method App\\\\Services\\\\RoomTouristSpotMapService\\:\\:ensureSinglePrimary\\(\\) is unused\\.$#"
 			count: 1
-			path: app/Services/RoomMaintenanceService.php
-
-		-
-			message: "#^Call to an undefined method Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator\\:\\:toArray\\(\\)\\.$#"
-			count: 1
-			path: app/Services/RoomMaintenanceService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:createRoom\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:getRoomById\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:getRoomById\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Room\\|null, message\\: string\\} but returns array\\{success\\: false, message\\: \\(array\\|string\\)\\}\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:handlePublicRoomDetail\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:handlePublicRoomDetail\\(\\) should return array\\{success\\: bool, data\\: App\\\\Services\\\\Room\\|null, message\\: string\\} but returns array\\{success\\: false, message\\: \\(array\\|string\\)\\}\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^Method App\\\\Services\\\\RoomsService\\:\\:updateRoom\\(\\) has invalid return type App\\\\Services\\\\Room\\.$#"
-			count: 1
-			path: app/Services/RoomsService.php
-
-		-
-			message: "#^PHPDoc tag @param references unknown parameter\\: \\$roomImageService$#"
-			count: 1
-			path: app/Services/RoomsService.php
+			path: app/Services/RoomTouristSpotMapService.php
 
 		-
 			message: "#^PHPDoc tag @param references unknown parameter\\: \\$data$#"
 			count: 2
 			path: app/Services/ServiceService.php
-
-		-
-			message: "#^PHPDoc tag @return with type Illuminate\\\\Contracts\\\\Pagination\\\\LengthAwarePaginator is not subtype of native type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/StayService.php
 
 		-
 			message: "#^Method App\\\\Services\\\\UserReportService\\:\\:createReport\\(\\) should return array\\{success\\: bool, message\\: string, data\\: mixed, code\\?\\: int\\} but returns array\\{success\\: true, message\\: \\(array\\|string\\), data\\: mixed, code\\: App\\\\Enums\\\\HttpStatus\\:\\:CREATED\\}\\.$#"

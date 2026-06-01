@@ -56,7 +56,7 @@ final class RoomTouristSpotMapController extends Controller
 
         $result = $this->roomTouristSpotMapService->store($request->only([
             'room_id', 'tourist_spot_id', 'distance_km', 'travel_time_minutes',
-            'priority_order', 'is_primary', 'source_type', 'note',
+            'priority_order', 'is_primary', 'source_type', 'note', 'apply_to_all_rooms',
         ]));
 
         if (! $result['success']) {
@@ -75,7 +75,7 @@ final class RoomTouristSpotMapController extends Controller
 
         $result = $this->roomTouristSpotMapService->update($id, $request->only([
             'room_id', 'tourist_spot_id', 'distance_km', 'travel_time_minutes',
-            'priority_order', 'is_primary', 'source_type', 'note',
+            'priority_order', 'is_primary', 'source_type', 'note', 'apply_to_all_rooms',
         ]));
 
         if (! $result['success']) {
@@ -85,9 +85,10 @@ final class RoomTouristSpotMapController extends Controller
         return $this->successResponse($result['data'], $result['message']);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $result = $this->roomTouristSpotMapService->destroy($id);
+        $applyToAllRooms = $request->boolean('apply_to_all_rooms');
+        $result = $this->roomTouristSpotMapService->destroy($id, ['apply_to_all_rooms' => $applyToAllRooms]);
         if (! $result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::NOT_FOUND);
         }
