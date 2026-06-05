@@ -51,6 +51,7 @@ Phase 3: Flow Integration & Channel Manager Sync
 
 Phase 4: Frontend Portal & Communication UI
 ├── [T4.1] BookingSuccess Checklist Wizard UI
+├── [T4.1b] Checkout Last-Minute Warning Alert UI ◄── (mới)
 ├── [T4.2] Guest PNG Voucher & print media CSS
 ├── [T4.3] Email room-booking.blade.php Customization
 ├── [T4.4] Front Desk Confirmation Panel
@@ -117,9 +118,12 @@ Phase 4: Frontend Portal & Communication UI
 - **Dependencies:** [T1.3]
 
 #### [T2.2] Xây dựng Dynamic Deposit Policy Ruleset
-- **Description:** Hiện thực hóa logic kiểm tra xem phòng này, vào ngày này có yêu cầu cọc hay không (mùa thấp điểm/ngày thường: không cọc; cuối tuần/ngày lễ: bắt buộc cọc). Căn cứ theo cấu hình hạng phòng và thời điểm tạo đơn (Lead Time).
+- **Description:** 
+  - Hiện thực hóa logic kiểm tra xem phòng này, vào ngày này có yêu cầu cọc hay không (mùa thấp điểm/ngày thường: không cọc; cuối tuần/ngày lễ: bắt buộc cọc). Căn cứ theo cấu hình hạng phòng và thời điểm tạo đơn (Lead Time).
+  - Tích hợp cấu hình Loại giá (`refundable_rate` / `non_refundable_rate`) do Partner thiết lập hoặc tự động áp dụng `non_refundable_rate` mặc định.
 - **Acceptance Criteria:**
   - [ ] Trả về số tiền cọc cần đóng ($0$ hoặc một phần tỷ lệ % hoặc 100%) tùy thuộc cấu hình đầu vào.
+  - [ ] Xác định đúng loại giá áp dụng (Refundable hay Non-Refundable).
 - **Files Affected:**
   - `app/Services/DynamicDepositPolicyService.php` (mới)
 - **Dependencies:** [T1.3]
@@ -164,7 +168,10 @@ Phase 4: Frontend Portal & Communication UI
 #### [T3.2] Room Cancellation & Refund Handler
 - **Description:** Logic tính toán tiền hoàn và phạt cọc khi hủy phòng:
   - Hủy miễn phí: Hoàn 100% cọc cho khách.
-  - Hủy mất phí: Chuyển tiền phạt cho Host, ghi nhận GMV từ tiền phạt cọc này và thu 5% hoa hồng cho hệ thống.
+  - Hủy mất phí thông thường: Chuyển tiền phạt cho Host, ghi nhận GMV từ tiền phạt cọc này và thu 5% hoa hồng cho hệ thống.
+  - Hủy đặt phòng Last-Minute (<24h trước check-in):
+    - Đối với `non_refundable_rate`: Phạt 100% tiền thanh toán, chuyển cho Host, thu 5% hoa hồng.
+    - Đối với `refundable_rate`: Hoàn tối đa 50% tiền thanh toán cho khách (nếu hủy trước check-in >= 4 tiếng), phần còn lại phạt chuyển cho Host, thu 5% hoa hồng trên phần phạt.
 - **Files Affected:**
   - `app/Services/BookingService.php` (chỉnh sửa)
   - `app/Services/SettlementService.php` (chỉnh sửa)
@@ -201,6 +208,14 @@ Phase 4: Frontend Portal & Communication UI
   - Sử dụng mã màu xanh lá cây `#10b981` cho từ khóa thành công.
 - **Files Affected:**
   - `bks-system-fe/src/pages/EndUser/BookingSuccess/index.tsx` (chỉnh sửa)
+- **Dependencies:** [T3.1]
+
+#### [T4.1b] Giao diện Cảnh báo Hủy phòng Last-Minute tại Trang Thanh toán (Checkout Page Alert)
+- **Description:**
+  - Khi khách đặt phòng sát giờ (<24h trước check-in) thuộc loại giá `non_refundable_rate`, hiển thị banner/alert màu cam kèm biểu tượng cảnh báo ⚠️.
+  - Thêm một checkbox bắt buộc *"Tôi hiểu và đồng ý với chính sách không hoàn tiền này"*. Khách hàng phải tích chọn checkbox này thì mới có thể bấm nút "Xác nhận đặt phòng".
+- **Files Affected:**
+  - `bks-system-fe/src/pages/EndUser/Checkout/index.tsx` (chỉnh sửa)
 - **Dependencies:** [T3.1]
 
 #### [T4.2] Tải ảnh Stay Voucher PNG & Tối ưu hóa CSS In ấn (@media print)

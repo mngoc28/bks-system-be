@@ -851,6 +851,7 @@ Route::group([
     Route::prefix('rooms')->group(function () {
         Route::get('/search', [EURoomsController::class, 'roomList']);
         Route::get('{id}', [EURoomsController::class, 'publicRoomDetail'])->whereNumber('id');
+        Route::get('{id}/booked-dates', [EURoomsController::class, 'bookedDates'])->whereNumber('id');
         Route::get('{id}/reviews', [ReviewController::class, 'getRoomReviews'])->whereNumber('id');
     });
 
@@ -939,4 +940,7 @@ Route::group([
             Route::delete('{id}', [NotificationController::class, 'destroy'])->whereNumber('id');
         });
     });
+
+    // SePay Webhook Callback
+    Route::post('payments/sepay-webhook', [\App\Http\Controllers\SepayWebhookController::class, 'handleWebhook']);
 });

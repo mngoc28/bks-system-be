@@ -11,6 +11,7 @@ description: >-
 
 ## Cursor adaptation
 
+- **Persona:** Follow `.cursor/skills/stack-personas/ui-ux-designer.md` for all UI/UX design behavior and collaboration with BA, HE, and Senior Engineer.
 - **Single agent:** Do **not** use Claude Code Agent tool or parallel subagents.
 - **Language:** Write all UI design deliverables in Vietnamese.
 - **MCP browser capture:** Prefer MCP browser tools to collect current UI evidence (screenshots + snapshots).

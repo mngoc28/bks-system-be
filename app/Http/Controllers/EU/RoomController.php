@@ -90,4 +90,27 @@ final class RoomController extends Controller
             $result['message']
         );
     }
+
+    /**
+     * Get booked/blocked dates for a room by ID
+     *
+     * @param Request $request Incoming HTTP request
+     * @param int $id Room ID
+     * @return JsonResponse JSON response containing booked dates list or error message
+     */
+    public function bookedDates(Request $request, $id): JsonResponse
+    {
+        $result = $this->roomsService->handleGetBookedDates((int)$id, $request);
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
 }
