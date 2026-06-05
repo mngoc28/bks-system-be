@@ -48,6 +48,7 @@ final class BookingService
     protected BookingTimelineService $timelineService;
     protected ConflictChecker $conflictChecker;
     protected DepositService $depositService;
+    protected DynamicDepositPolicyService $policyService;
 
     /**
      * Constructor
@@ -63,6 +64,7 @@ final class BookingService
         BookingTimelineService $timelineService,
         ConflictChecker $conflictChecker,
         DepositService $depositService,
+        DynamicDepositPolicyService $policyService,
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->roomsRepository = $roomsRepository;
@@ -72,6 +74,7 @@ final class BookingService
         $this->timelineService = $timelineService;
         $this->conflictChecker = $conflictChecker;
         $this->depositService = $depositService;
+        $this->policyService = $policyService;
     }
 
     /**
@@ -1079,16 +1082,38 @@ final class BookingService
                     : null;
             }
 
+            $roomModel = $this->roomsRepository->find($roomId);
+            if (!$roomModel) {
+                throw new \Exception("Room not found");
+            }
+
+            // Check dynamic deposit requirements
+            $depositPolicy = $this->policyService->calculateRequiredDeposit(
+                $roomModel,
+                $roomPrice,
+                $startDateInput,
+                $endDateInput
+            );
+
+            $paymentMethod = $request->input('payment_method');
+
+            if ($depositPolicy['required'] && $depositPolicy['amount'] > 0) {
+                if ($paymentMethod === 'pay_at_counter') {
+                    throw new \Exception("Tùy chọn thanh toán tại quầy không khả dụng vì phòng yêu cầu đặt cọc trong khoảng thời gian này.");
+                }
+            }
+
             // create booking
             $booking = $this->bookingRepository->create([
-                'user_id'    => $createUser->id,
-                'room_id'    => $roomId,
-                'start_date' => $startDateInput,
-                'end_date'   => $endDateInput,
-                'price_id'   => $roomPrice?->id,
-                'note'       => $request->input('note'),
-                'status'     => BookingStatus::PENDING->value,
-                'created_by' => $createUser->id,
+                'user_id'        => $createUser->id,
+                'room_id'        => $roomId,
+                'start_date'     => $startDateInput,
+                'end_date'       => $endDateInput,
+                'price_id'       => $roomPrice?->id,
+                'note'           => $request->input('note'),
+                'status'         => BookingStatus::PENDING->value,
+                'created_by'     => $createUser->id,
+                'payment_method' => $paymentMethod,
             ]);
 
             // create link between booking and service table
@@ -1154,6 +1179,10 @@ final class BookingService
                 'room_title'         => (string) ($room->title ?? ''),
                 'property_address'   => (string) ($room->property_address ?? ''),
             ];
+
+            if ($paymentMethod === 'online') {
+                $responseData['payment_url'] = url('/api/v1/payments/checkout?booking_id=' . $booking->id);
+            }
 
             $emailInfo = [
                 'booking_code'       => $bookingCode,
@@ -1231,7 +1260,6 @@ final class BookingService
             $email = mb_strtolower(trim((string) $request->input('email')));
             $rawCode = preg_replace('/\s+/', '', (string) $request->input('booking_code'));
 
-            /** @var Booking|null $booking */
             $booking = Booking::query()
                 ->with(['user', 'room.property', 'services', 'price'])
                 ->whereRaw('LOWER(booking_code) = ?', [mb_strtolower($rawCode)])
@@ -1296,6 +1324,8 @@ final class BookingService
             'total_amount'     => round($roomStayTotal + $servicesTotal, 2),
             'room_title'       => (string) ($booking->room?->title ?? ''),
             'property_address' => (string) ($booking->room?->property?->address_detail ?? ''),
+            'payment_method'   => (string) ($booking->payment_method ?? 'online'),
+            'created_at'       => $booking->getRawOriginal('created_at') ? Carbon::parse($booking->getRawOriginal('created_at'))->toIso8601String() : null,
         ];
     }
 

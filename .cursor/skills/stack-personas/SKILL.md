@@ -1,9 +1,9 @@
 ---
 name: stack-personas
 description: >-
-  Supplies CM Stack role prompts (business analyst, technical lead/architect, senior engineer, QA, UAT).
-  Read these files when stack-brainstorm, stack-analyze, stack-design, stack-plan, stack-task,
-  or stack-fast-track instruct applying a named persona. Use when those workflows reference persona files.
+  Supplies CM Stack role prompts (business analyst, UI/UX designer, hospitality expert, technical lead/architect,
+  senior engineer, QA, UAT). Read these files when stack-brainstorm, stack-analyze, stack-design, stack-ui-design-gate,
+  stack-plan, stack-task, or stack-fast-track instruct applying a named persona. Use when those workflows reference persona files.
 ---
 
 # CM Stack personas (Cursor)
@@ -13,6 +13,7 @@ These Markdown files mirror the original Claude Code **agent** definitions. Curs
 | File | Role |
 |------|------|
 | `business-analyst.md` | Requirements, PRDs, acceptance criteria |
+| `ui-ux-designer.md` | Screen design, UI/UX specs, visual preview, engineer handoff (with `stack-ui-design-gate`) |
 | `hospitality-expert.md` | Hospitality & accommodation operations, guest journeys, domain rules, industry standards |
 | `technical-lead-architect.md` | Architecture, design, technical review |
 | `senior-engineer.md` | Implementation, code, tests |

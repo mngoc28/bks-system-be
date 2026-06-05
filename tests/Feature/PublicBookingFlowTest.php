@@ -32,13 +32,14 @@ final class PublicBookingFlowTest extends TestCase
         $email = 'public-flow-'.uniqid('', true).'@example.com';
 
         $response = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
-            'name'        => 'Nguyen Van Test',
-            'email'       => $email,
-            'phone'       => '0909123456',
-            'start_date'  => $start,
-            'end_date'    => $end,
-            'note'        => 'PHPUnit',
-            'service_ids' => [],
+            'name'           => 'Nguyen Van Test',
+            'email'          => $email,
+            'phone'          => '0909123456',
+            'start_date'     => $start,
+            'end_date'       => $end,
+            'note'           => 'PHPUnit',
+            'service_ids'    => [],
+            'payment_method' => 'online',
         ]);
 
         $response->assertStatus(201);
@@ -76,13 +77,14 @@ final class PublicBookingFlowTest extends TestCase
         $email = 'lookup-flow-'.uniqid('', true).'@example.com';
 
         $create = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
-            'name'        => 'Tran Thi Lookup',
-            'email'       => $email,
-            'phone'       => '0909988776',
-            'start_date'  => $start,
-            'end_date'    => $end,
-            'note'        => 'PHPUnit lookup',
-            'service_ids' => [],
+            'name'           => 'Tran Thi Lookup',
+            'email'          => $email,
+            'phone'          => '0909988776',
+            'start_date'     => $start,
+            'end_date'       => $end,
+            'note'           => 'PHPUnit lookup',
+            'service_ids'    => [],
+            'payment_method' => 'online',
         ]);
 
         $create->assertStatus(201);
@@ -111,13 +113,14 @@ final class PublicBookingFlowTest extends TestCase
         $email = 'lookup-other-'.uniqid('', true).'@example.com';
 
         $create = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
-            'name'        => 'Le Van Other',
-            'email'       => $email,
-            'phone'       => '0909111222',
-            'start_date'  => $start,
-            'end_date'    => $end,
-            'note'        => 'PHPUnit',
-            'service_ids' => [],
+            'name'           => 'Le Van Other',
+            'email'          => $email,
+            'phone'          => '0909111222',
+            'start_date'     => $start,
+            'end_date'       => $end,
+            'note'           => 'PHPUnit',
+            'service_ids'    => [],
+            'payment_method' => 'online',
         ]);
         $create->assertStatus(201);
         $code = (string) $create->json('data.booking_code');

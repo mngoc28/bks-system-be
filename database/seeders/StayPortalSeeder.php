@@ -61,7 +61,12 @@ final class StayPortalSeeder extends Seeder
         }
 
         // Cleanup existing stay data for this user to avoid mess
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+        $bookingIds = Booking::where('user_id', $user->id)->pluck('id');
+        DB::table('settlement_line_items')->whereIn('booking_id', $bookingIds)->delete();
+        DB::table('contracts')->whereIn('booking_id', $bookingIds)->delete();
         Booking::where('user_id', $user->id)->delete();
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
 
         // 3. Create ONE ACTIVE BOOKING (In Progress) — 30 ngày → ưu tiên gói tháng
         $activeRoom = $rooms->random();

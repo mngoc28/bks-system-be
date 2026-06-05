@@ -25,3 +25,8 @@ Route::get('/login', function () {
         'data'    => null,
     ], 401);
 })->name('login');
+
+// Payment checkout routes
+use App\Http\Controllers\CheckoutController;
+Route::get('/api/v1/payments/checkout', [CheckoutController::class, 'checkoutPage']);
+Route::post('/api/v1/payments/checkout', [CheckoutController::class, 'handlePayment']);

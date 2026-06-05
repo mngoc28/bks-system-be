@@ -35,7 +35,7 @@ return [
     ],
     'CLOUDINARY_MAX_IMAGE_SIZE' => 10 * 1024 * 1024,
     'CLOUDINARY_MAX_IMAGES' => 10,
-    "CLOUDINARY_HEADER_IMAGE_URL" => "https://res.cloudinary.com/dyragzjcd/image/upload",
+    "CLOUDINARY_HEADER_IMAGE_URL" => "https://res.cloudinary.com/dc2ivo5ez/image/upload",
     'IMAGE_RESIZE_WIDTH' => 800,
     'WEBP_QUALITY' => 85,
     'IMAGE_TYPES' => [

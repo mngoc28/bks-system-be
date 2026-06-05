@@ -13,6 +13,9 @@ use App\Models\Room;
 use App\Models\TouristSpot;
 use App\Models\PricePackage;
 use App\Services\RoomTouristSummaryService;
+use App\Services\ConflictChecker;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +35,7 @@ final class RoomsService
     private RoomPriceService $roomPriceService;
     private UtilityFeeService $utilityFeeService;
     private RoomTouristSummaryService $roomTouristSummaryService;
+    private ConflictChecker $conflictChecker;
 
     /**
      * Constructor method.
@@ -43,6 +47,7 @@ final class RoomsService
      * @param RoomServiceService $roomServiceService Handles business logic for room services
      * @param RoomAmenityService $roomAmenityService Handles business logic for room amenities
      * @param RoomPriceService $roomPriceService Handles business logic for room prices
+     * @param ConflictChecker $conflictChecker Conflict checker service
      */
 
     public function __construct(
@@ -54,7 +59,8 @@ final class RoomsService
         RoomAmenityService $roomAmenityService,
         RoomPriceService $roomPriceService,
         UtilityFeeService $utilityFeeService,
-        RoomTouristSummaryService $roomTouristSummaryService
+        RoomTouristSummaryService $roomTouristSummaryService,
+        ConflictChecker $conflictChecker
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->roomServiceRepository = $roomServiceRepository;
@@ -65,6 +71,7 @@ final class RoomsService
         $this->roomPriceService = $roomPriceService;
         $this->utilityFeeService = $utilityFeeService;
         $this->roomTouristSummaryService = $roomTouristSummaryService;
+        $this->conflictChecker = $conflictChecker;
     }
     /**
      * Get all rooms or search by criteria with pagination
@@ -526,6 +533,10 @@ final class RoomsService
             $room = $this->roomsRepository->getPublicRoomDetail((int)$id);
             $room = $this->roomTouristSummaryService->enrichRoom($room);
 
+            if ($room && isset($room->images) && is_string($room->images)) {
+                $room->images = json_decode($room->images, true);
+            }
+
             return [
                 "success" => true,
                 "data" => $room,
@@ -811,6 +822,71 @@ final class RoomsService
             ];
         } catch (\Exception $e) {
             return ["success" => false, "message" => "Lỗi xóa hàng loạt: " . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get list of booked/blocked dates for a room
+     *
+     * @param int $roomId
+     * @param Request $request
+     * @return array
+     */
+    public function handleGetBookedDates(int $roomId, Request $request): array
+    {
+        try {
+            // Mặc định lấy từ hôm nay đến 6 tháng tiếp theo
+            $startDate = $request->query('start_date', Carbon::today()->toDateString());
+            $endDate   = $request->query('end_date', Carbon::today()->addMonths(6)->toDateString());
+
+            $conflicts = $this->conflictChecker->findConflicts($roomId, $startDate, $endDate);
+
+            $bookedDates = [];
+
+            // Duyệt qua Bookings
+            foreach ($conflicts['bookings'] as $booking) {
+                $start = Carbon::parse($booking->start_date);
+                $end   = Carbon::parse($booking->end_date);
+
+                // Ngày checkout là exclusive, do đó chỉ tính các đêm thực tế khách ở: [start, end - 1]
+                if ($start->lt($end)) {
+                    $period = CarbonPeriod::create($start, $end->subDay());
+                    foreach ($period as $date) {
+                        $bookedDates[] = $date->toDateString();
+                    }
+                }
+            }
+
+            // Duyệt qua Room Blocks
+            foreach ($conflicts['blocks'] as $block) {
+                $start = Carbon::parse($block->start_date);
+                $end   = Carbon::parse($block->end_date);
+
+                // Block kết thúc cũng tuân thủ quy tắc check-in/check-out
+                if ($start->lt($end)) {
+                    $period = CarbonPeriod::create($start, $end->subDay());
+                    foreach ($period as $date) {
+                        $bookedDates[] = $date->toDateString();
+                    }
+                }
+            }
+
+            $bookedDates = array_values(array_unique($bookedDates));
+            sort($bookedDates);
+
+            return [
+                'success' => true,
+                'data'    => $bookedDates,
+                'message' => 'Lấy danh sách ngày bận thành công.'
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error handleGetBookedDates: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [
+                'success' => false,
+                'message' => 'Lấy danh sách ngày bận thất bại.'
+            ];
         }
     }
 }

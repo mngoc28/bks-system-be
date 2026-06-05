@@ -445,6 +445,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 ')), \']\'), \'[]\') as utility_fees'),
             DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
             DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
+            DB::raw('(SELECT JSON_ARRAYAGG(JSON_OBJECT(\'id\', rim.id, \'image_url\', rim.image_url)) FROM (SELECT id, image_url FROM room_images WHERE room_id = rooms.id ORDER BY sort ASC) rim) as images'),
         ];
     }
 

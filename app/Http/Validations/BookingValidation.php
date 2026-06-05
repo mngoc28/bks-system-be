@@ -200,6 +200,7 @@ class BookingValidation
             'note'          => 'nullable|string',
             'service_ids'   => 'nullable|array',
             'service_ids.*' => 'integer|exists:services,id',
+            'payment_method'=> 'required|string|in:online,pay_at_counter',
         ], $messages);
     }
 
