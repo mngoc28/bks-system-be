@@ -63,9 +63,10 @@ final class PartnerKpiServiceTest extends TestCase
 
     public function test_occupancy_rate_handles_zero_rooms_gracefully(): void
     {
-        $this->roomsRepository->shouldReceive('countRoomsForPartner')->with(7)->andReturn(0);
-        $this->roomsRepository->shouldReceive('getEmptyRoomsForPartner')->with(7)->andReturn(0);
+        $this->roomsRepository->shouldReceive('countRoomsForPartner')->with(7, [])->andReturn(0);
+        $this->roomsRepository->shouldReceive('getEmptyRoomsForPartner')->with(7, null)->andReturn(0);
         $this->bookingRepository->shouldReceive('getRevenueByMonthForPartner')
+            ->with(7, Mockery::type('string'), Mockery::type('string'), null)
             ->andReturn(new Collection([]));
         $this->bookingRepository->shouldReceive('countBookingsForPartner')
             ->andReturn(0);
@@ -80,9 +81,10 @@ final class PartnerKpiServiceTest extends TestCase
 
     public function test_occupancy_and_net_revenue_are_calculated_correctly(): void
     {
-        $this->roomsRepository->shouldReceive('countRoomsForPartner')->andReturn(10);
-        $this->roomsRepository->shouldReceive('getEmptyRoomsForPartner')->andReturn(3);
+        $this->roomsRepository->shouldReceive('countRoomsForPartner')->with(7, [])->andReturn(10);
+        $this->roomsRepository->shouldReceive('getEmptyRoomsForPartner')->with(7, null)->andReturn(3);
         $this->bookingRepository->shouldReceive('getRevenueByMonthForPartner')
+            ->with(7, Mockery::type('string'), Mockery::type('string'), null)
             ->andReturn(new Collection([
                 ['month' => '2026-05', 'revenue' => 8_000_000.0],
                 ['month' => '2026-04', 'revenue' => 2_000_000.0],
@@ -99,6 +101,7 @@ final class PartnerKpiServiceTest extends TestCase
         $this->assertSame(9_500_000.0, $result['netRevenueMtd']);
         $this->assertSame(0.05, $result['commissionRate']);
         $this->assertSame(4, $result['pendingCount']);
+        $this->assertSame(0, $result['overbookingCount']);
         $this->assertArrayHasKey('calculatedAt', $result);
     }
 
@@ -117,10 +120,30 @@ final class PartnerKpiServiceTest extends TestCase
                 parent::__construct($bookingRepository, $roomsRepository);
             }
 
-            protected function computeAvgConfirmSeconds(int $partnerId): ?int
+            protected function computeAvgConfirmSeconds(int $partnerId, ?int $propertyId = null): ?int
             {
                 return $this->stubAvgSeconds;
             }
+
+            public function computeOverbookingCount(int $partnerId, ?int $propertyId = null): int
+            {
+                return 0;
+            }
         };
+    }
+
+    public function test_count_overlap_pairs_matches_calendar_semantics(): void
+    {
+        $overlapping = [
+            (object) ['start_date' => '2026-05-10', 'end_date' => '2026-05-15'],
+            (object) ['start_date' => '2026-05-12', 'end_date' => '2026-05-20'],
+        ];
+        $backToBack = [
+            (object) ['start_date' => '2026-05-10', 'end_date' => '2026-05-15'],
+            (object) ['start_date' => '2026-05-15', 'end_date' => '2026-05-20'],
+        ];
+
+        $this->assertSame(1, PartnerKpiService::countOverlapPairs($overlapping));
+        $this->assertSame(0, PartnerKpiService::countOverlapPairs($backToBack));
     }
 }

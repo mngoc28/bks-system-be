@@ -75,4 +75,72 @@ final class PublicRoomSearchPaginationTest extends TestCase
         $this->assertArrayNotHasKey('current_page', $data);
         $this->assertTrue(array_is_list($data));
     }
+
+    public function test_public_room_search_applies_price_filters(): void
+    {
+        $responseAll = $this->getJson('/api/v1/rooms/search');
+        $responseAll->assertOk();
+        $allRooms = $responseAll->json('data');
+
+        if (count($allRooms) > 0) {
+            $prices = array_map(function ($r) {
+                return (float) ($r['cheapest_daily_price'] ?? 0);
+            }, $allRooms);
+
+            $minPrice = min($prices);
+            $maxPrice = max($prices);
+
+            if ($minPrice < $maxPrice) {
+                $midPrice = ($minPrice + $maxPrice) / 2;
+
+                $responseFiltered = $this->getJson("/api/v1/rooms/search?price_max={$midPrice}");
+                $responseFiltered->assertOk();
+                $filteredRooms = $responseFiltered->json('data');
+
+                foreach ($filteredRooms as $r) {
+                    $this->assertLessThanOrEqual($midPrice, (float) ($r['cheapest_daily_price'] ?? 0));
+                }
+
+                $responseFilteredMin = $this->getJson("/api/v1/rooms/search?price_min={$midPrice}");
+                $responseFilteredMin->assertOk();
+                $filteredRoomsMin = $responseFilteredMin->json('data');
+
+                foreach ($filteredRoomsMin as $r) {
+                    $this->assertGreaterThanOrEqual($midPrice, (float) ($r['cheapest_daily_price'] ?? 0));
+                }
+            }
+        }
+    }
+
+    public function test_public_room_search_applies_guests_and_rent_type_filters(): void
+    {
+        $responseAll = $this->getJson('/api/v1/rooms/search');
+        $responseAll->assertOk();
+        $allRooms = $responseAll->json('data');
+
+        if (count($allRooms) > 0) {
+            $peopleCounts = array_map(function ($r) {
+                return (int) ($r['people'] ?? 0);
+            }, $allRooms);
+
+            $maxPeople = max($peopleCounts);
+
+            if ($maxPeople > 1) {
+                $responseFiltered = $this->getJson("/api/v1/rooms/search?guests={$maxPeople}");
+                $responseFiltered->assertOk();
+                $filteredRooms = $responseFiltered->json('data');
+
+                foreach ($filteredRooms as $r) {
+                    $this->assertGreaterThanOrEqual($maxPeople, (int) ($r['people'] ?? 0));
+                }
+            }
+
+            $responseDaily = $this->getJson('/api/v1/rooms/search?rent_type=daily');
+            $responseDaily->assertOk();
+            foreach ($responseDaily->json('data') as $r) {
+                $this->assertNotEmpty($r['cheapest_daily_price']);
+                $this->assertGreaterThan(0, (float) $r['cheapest_daily_price']);
+            }
+        }
+    }
 }

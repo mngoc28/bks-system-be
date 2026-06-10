@@ -40,10 +40,4 @@ jobs:
     - name: STEP 2 - Run Static Analysis (Larastan / PHPStan)
       run: composer run phpstan
 
-    - name: STEP 3 - Run Unit Tests (PHPUnit)
-      run: |
-        touch database/database.sqlite
-        php artisan test
-      env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
+

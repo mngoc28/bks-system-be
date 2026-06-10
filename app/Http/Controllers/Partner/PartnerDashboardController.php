@@ -8,6 +8,7 @@ use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Validations\DashboardValidation;
 use App\Services\DashboardService;
+use App\Services\PartnerDashboardScopeResolver;
 use App\Services\PartnerKpiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,37 +16,29 @@ use Illuminate\Support\Facades\Auth;
 
 final class PartnerDashboardController extends Controller
 {
-    protected DashboardService $dashboardService;
-    protected DashboardValidation $dashboardValidation;
-    protected PartnerKpiService $partnerKpiService;
-
-    /**
-     * Constructor
-     *
-     * @param DashboardService $dashboardService
-     * @param DashboardValidation $dashboardValidation
-     * @param PartnerKpiService $partnerKpiService
-     */
     public function __construct(
-        DashboardService $dashboardService,
-        DashboardValidation $dashboardValidation,
-        PartnerKpiService $partnerKpiService
+        protected DashboardService $dashboardService,
+        protected DashboardValidation $dashboardValidation,
+        protected PartnerKpiService $partnerKpiService,
+        protected PartnerDashboardScopeResolver $dashboardScopeResolver,
     ) {
-        $this->dashboardService    = $dashboardService;
-        $this->dashboardValidation = $dashboardValidation;
-        $this->partnerKpiService   = $partnerKpiService;
     }
 
     /**
      * Get headline KPIs (occupancy, GMV, net revenue, time-to-confirm,
-     * pending count) for the authenticated partner.
+     * pending count, overbooking count) for the authenticated partner.
      *
-     * @return JsonResponse
+     * Query: property_id (optional)
      */
-    public function getKpis(): JsonResponse
+    public function getKpis(Request $request): JsonResponse
     {
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
         $partnerId = (int) Auth::id();
-        $result = $this->partnerKpiService->getDashboardKpis($partnerId);
+        $result = $this->partnerKpiService->getDashboardKpis($partnerId, $scope['propertyId']);
 
         if (! $result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -57,12 +50,17 @@ final class PartnerDashboardController extends Controller
     /**
      * Get 30-day occupancy chart data for the authenticated partner.
      *
-     * @return JsonResponse
+     * Query: property_id (optional)
      */
-    public function getOccupancyChart(): JsonResponse
+    public function getOccupancyChart(Request $request): JsonResponse
     {
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
         $partnerId = (int) Auth::id();
-        $result = $this->partnerKpiService->getOccupancyChart($partnerId);
+        $result = $this->partnerKpiService->getOccupancyChart($partnerId, $scope['propertyId']);
 
         if (! $result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -74,12 +72,17 @@ final class PartnerDashboardController extends Controller
     /**
      * Get 30-day GMV / net revenue chart data for the authenticated partner.
      *
-     * @return JsonResponse
+     * Query: property_id (optional)
      */
-    public function getGmvChart(): JsonResponse
+    public function getGmvChart(Request $request): JsonResponse
     {
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
         $partnerId = (int) Auth::id();
-        $result = $this->partnerKpiService->getGmvChart($partnerId);
+        $result = $this->partnerKpiService->getGmvChart($partnerId, $scope['propertyId']);
 
         if (! $result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
@@ -190,13 +193,19 @@ final class PartnerDashboardController extends Controller
     }
 
     /**
-     * Get summary stats for partner
-     * @return JsonResponse
+     * Get summary stats for partner.
+     *
+     * Query: property_id (optional)
      */
-    public function getStats(): JsonResponse
+    public function getStats(Request $request): JsonResponse
     {
-        $partnerId = Auth::id();
-        $result = $this->dashboardService->getStatsForPartner($partnerId);
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
+        $partnerId = (int) Auth::id();
+        $result = $this->dashboardService->getStatsForPartner($partnerId, $scope['propertyId']);
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -205,13 +214,29 @@ final class PartnerDashboardController extends Controller
     }
 
     /**
-     * Get pending bookings for partner
-     * @return JsonResponse
+     * Get pending bookings for partner.
+     *
+     * Query: property_id (optional), limit (optional, max 20)
      */
-    public function getPendingBookings(): JsonResponse
+    public function getPendingBookings(Request $request): JsonResponse
     {
-        $partnerId = Auth::id();
-        $result = $this->dashboardService->getPendingBookingsForPartner($partnerId);
+        $validator = $this->dashboardValidation->validateDashboardScope($request);
+        if ($validator->fails()) {
+            return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
+        }
+
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
+        $partnerId = (int) Auth::id();
+        $limit = (int) ($request->input('limit') ?? 10);
+        $result = $this->dashboardService->getPendingBookingsForPartner(
+            $partnerId,
+            $limit,
+            $scope['propertyId'],
+        );
 
         if ($result['success']) {
             return $this->successResponse($result['data'], $result['message']);
@@ -247,5 +272,30 @@ final class PartnerDashboardController extends Controller
             return $this->successResponse($result['data'], $result['message']);
         }
         return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+    }
+
+    /**
+     * @return array{propertyId: int|null, error: array{message: string, status: HttpStatus}|null}
+     */
+    private function resolveScope(Request $request): array
+    {
+        $validator = $this->dashboardValidation->validateDashboardScope($request);
+        if ($validator->fails()) {
+            return [
+                'propertyId' => null,
+                'error'      => [
+                    'message' => $validator->errors()->first(),
+                    'status'  => HttpStatus::VALIDATION_ERROR,
+                ],
+            ];
+        }
+
+        $propertyId = $request->filled('property_id') ? (int) $request->input('property_id') : null;
+        $resolved = $this->dashboardScopeResolver->resolvePropertyId((int) Auth::id(), $propertyId);
+
+        return [
+            'propertyId' => $resolved['propertyId'],
+            'error'      => $resolved['error'],
+        ];
     }
 }

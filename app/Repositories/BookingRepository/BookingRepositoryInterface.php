@@ -59,6 +59,15 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function getBookingsPerMonth(string $startDate, string $endDate): Collection;
 
     /**
+     * Count non-cancelled bookings grouped by start_date (day).
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection<int, array{date: string, total: int}>
+     */
+    public function getBookingsPerDay(string $startDate, string $endDate): Collection;
+
+    /**
      * Check if the user is authorized for the booking
      *
      * @param \Illuminate\Http\Request|mixed $request
@@ -78,9 +87,20 @@ interface BookingRepositoryInterface extends RepositoryInterface
     /**
      * Get bookings grouped by property
      *
+     * @param string|null $startDate
+     * @param string|null $endDate
      * @return Collection
      */
-    public function getBookingsByProperty(): Collection;
+    public function getBookingsByProperty(?string $startDate = null, ?string $endDate = null): Collection;
+
+    /**
+     * Count bookings grouped by status within a start_date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection<int, array{status: int, total: int}>
+     */
+    public function getBookingStatusBreakdown(string $startDate, string $endDate): Collection;
 
     /**
      * Get revenue by month
@@ -181,16 +201,22 @@ interface BookingRepositoryInterface extends RepositoryInterface
      * @param string $endDate
      * @return Collection
      */
-    public function getRevenueByMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection;
+    public function getRevenueByMonthForPartner(
+        int $partnerId,
+        string $startDate,
+        string $endDate,
+        ?int $propertyId = null,
+    ): Collection;
 
     /**
      * Get pending bookings for a specific partner
      *
      * @param int $partnerId
      * @param int $limit
+     * @param int|null $propertyId
      * @return Collection
      */
-    public function getPendingBookingsForPartner(int $partnerId, int $limit = 5): Collection;
+    public function getPendingBookingsForPartner(int $partnerId, int $limit = 10, ?int $propertyId = null): Collection;
 
     /**
      * Count bookings matching criteria for a specific partner
@@ -200,4 +226,11 @@ interface BookingRepositoryInterface extends RepositoryInterface
      * @return int
      */
     public function countBookingsForPartner(int $partnerId, array $filters = []): int;
+
+    /**
+     * Count bookings matching criteria across the whole system (admin scope).
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function countBookingsForAdmin(array $filters = []): int;
 }

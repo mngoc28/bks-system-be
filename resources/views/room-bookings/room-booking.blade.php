@@ -24,6 +24,9 @@
             text-align: center;
             border-radius: 5px 5px 0 0;
         }
+        .header.paid {
+            background-color: #10b981;
+        }
         .header h1 {
             margin: 0;
             font-size: 24px;
@@ -178,9 +181,9 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <div class="header">
+        <div class="header {{ !empty($data['is_paid']) ? 'paid' : '' }}">
             <h1>Welcome to BKS</h1>
-            <p>Xác nhận đặt phòng tại hệ thống BKS Stay</p>
+            <p>{{ !empty($data['is_paid']) ? 'Xác nhận thanh toán & Hoàn tất đặt phòng' : 'Xác nhận đặt phòng tại hệ thống BKS Stay' }}</p>
         </div>
 
         <!-- Content -->
@@ -188,7 +191,11 @@
             <!-- Greeting -->
             <div class="greeting">
                 <p>Kính gửi: <strong>{{ $name }}</strong>,</p>
+                @if(!empty($data['is_paid']))
+                <p>Hệ thống <strong>BKS Stay</strong> đã nhận được thanh toán đặt cọc của bạn. Yêu cầu đặt phòng của bạn đã được chuyển sang trạng thái <strong>Đã xác nhận (Confirmed)</strong> và phòng đã được giữ thành công cho kỳ lưu trú của bạn.</p>
+                @else
                 <p>Đặt phòng của bạn đã được <strong style="color: #10b981;">ghi nhận thành công</strong> trên hệ thống <strong>BKS Stay</strong>. Phòng đã được hệ thống giữ cho bạn, vui lòng hoàn tất đặt cọc trước thời hạn bên dưới để đảm bảo chỗ ở.</p>
+                @endif
             </div>
 
             <!-- Room Info -->
@@ -206,8 +213,14 @@
                 </a>
             </div>
 
-            {{-- Deposit Deadline --}}
-            @if(!empty($data['deposit_deadline']))
+            {{-- Deposit Deadline / Success Notice --}}
+            @if(!empty($data['is_paid']))
+            <div style="background:#f0fdf4; border:2px solid #bbf7d0; padding:16px; border-radius:8px; margin:16px 0; text-align:center;">
+                <p style="margin:0 0 6px 0; font-size:13px; color:#166534; font-weight:700;">✅ THANH TOÁN THÀNH CÔNG</p>
+                <p style="margin:0 0 6px 0; font-size:16px; font-weight:600; color:#14532d;">Đã xác nhận số tiền cọc: {{ number_format($data['room_deposit'], 0) }} VNĐ</p>
+                <p style="margin:0; font-size:12px; color:#166534;">Cảm ơn bạn đã tin dùng dịch vụ BKS Stay.</p>
+            </div>
+            @elseif(!empty($data['deposit_deadline']))
             <div style="background:#fef2f2; border:2px solid #fca5a5; padding:16px; border-radius:8px; margin:16px 0; text-align:center;">
                 <p style="margin:0 0 6px 0; font-size:13px; color:#374151; font-weight:600;">⏰ Hạn nộp cọc giữ phòng:</p>
                 <p style="margin:0 0 6px 0; font-size:22px; font-weight:700; color:#dc2626; letter-spacing:1px;">{{ $data['deposit_deadline'] }}</p>

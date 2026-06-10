@@ -188,4 +188,141 @@ final class ReportingService
             'daily_stats'    => array_reverse($dailyStats),
         ];
     }
+
+    /**
+     * Hospitality KPIs for admin (system-wide).
+     *
+     * @return array{
+     *   adr: float,
+     *   revpar: float,
+     *   occupancy_rate: float,
+     *   total_revenue: float,
+     *   nights_sold: int,
+     *   capacity: int,
+     *   booking_count: int,
+     *   total_rooms: int
+     * }
+     */
+    public function getAdminKPIs(string $startDate, string $endDate): array
+    {
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+        $totalDays = (int) $start->diffInDays($end) + 1;
+
+        $totalRooms = (int) Room::count();
+        $totalAvailableRoomNights = $totalRooms * $totalDays;
+
+        $bookings = Booking::query()
+            ->whereIn('status', [
+                BookingStatus::CONFIRMED->value,
+                BookingStatus::COMPLETED->value,
+                BookingStatus::PENDING_CANCELLATION->value,
+            ])
+            ->where('start_date', '<=', $endDate)
+            ->where('end_date', '>=', $startDate)
+            ->with(['price', 'services'])
+            ->get();
+
+        $totalRevenue = 0.0;
+        $totalOccupiedNights = 0;
+
+        foreach ($bookings as $booking) {
+            $bookingStart = Carbon::parse($booking->start_date)->startOfDay();
+            $bookingEnd = Carbon::parse($booking->end_date)->startOfDay();
+            $overlapStart = $bookingStart->greaterThan($start) ? $bookingStart : $start;
+            $overlapEnd = $bookingEnd->lessThan($end) ? $bookingEnd : $end;
+
+            if ($overlapStart->greaterThan($overlapEnd)) {
+                continue;
+            }
+
+            $nights = (int) $overlapStart->diffInDays($overlapEnd) + 1;
+            $totalOccupiedNights += $nights;
+
+            $bookingNights = max(1, (int) $bookingStart->diffInDays($bookingEnd) + 1);
+            $bookingTotal = BookingStayAmountCalculator::computeGrandTotalForBooking($booking);
+            $totalRevenue += $bookingTotal * ($nights / $bookingNights);
+        }
+
+        $adr = $totalOccupiedNights > 0 ? $totalRevenue / $totalOccupiedNights : 0.0;
+        $occupancyRate = $totalAvailableRoomNights > 0
+            ? ($totalOccupiedNights / $totalAvailableRoomNights) * 100
+            : 0.0;
+        $revpar = $totalAvailableRoomNights > 0 ? $totalRevenue / $totalAvailableRoomNights : 0.0;
+
+        return [
+            'adr' => round($adr, 2),
+            'revpar' => round($revpar, 2),
+            'occupancy_rate' => round($occupancyRate, 2),
+            'total_revenue' => round($totalRevenue, 2),
+            'nights_sold' => $totalOccupiedNights,
+            'capacity' => $totalAvailableRoomNights,
+            'booking_count' => $bookings->count(),
+            'total_rooms' => $totalRooms,
+        ];
+    }
+
+    /**
+     * Compare current period KPIs with the immediately preceding period of equal length.
+     *
+     * @return array{
+     *   current: array<string, float|int>,
+     *   previous: array<string, float|int>,
+     *   previousPeriod: array{startDate: string, endDate: string},
+     *   change: array<string, float|null>
+     * }
+     */
+    public function getAdminPeriodComparison(string $startDate, string $endDate): array
+    {
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+        $periodDays = (int) $start->diffInDays($end) + 1;
+
+        $previousEnd = $start->copy()->subDay();
+        $previousStart = $previousEnd->copy()->subDays($periodDays - 1);
+
+        $current = $this->getAdminKPIs($startDate, $endDate);
+        $previous = $this->getAdminKPIs(
+            $previousStart->toDateString(),
+            $previousEnd->toDateString(),
+        );
+
+        return [
+            'current' => $current,
+            'previous' => $previous,
+            'previousPeriod' => [
+                'startDate' => $previousStart->toDateString(),
+                'endDate' => $previousEnd->toDateString(),
+            ],
+            'change' => [
+                'adr' => $this->percentChange((float) $current['adr'], (float) $previous['adr']),
+                'revpar' => $this->percentChange((float) $current['revpar'], (float) $previous['revpar']),
+                'occupancy_rate' => $this->percentChange(
+                    (float) $current['occupancy_rate'],
+                    (float) $previous['occupancy_rate'],
+                ),
+                'total_revenue' => $this->percentChange(
+                    (float) $current['total_revenue'],
+                    (float) $previous['total_revenue'],
+                ),
+                'nights_sold' => $this->percentChange(
+                    (float) $current['nights_sold'],
+                    (float) $previous['nights_sold'],
+                ),
+                'booking_count' => $this->percentChange(
+                    (float) $current['booking_count'],
+                    (float) $previous['booking_count'],
+                ),
+            ],
+        ];
+    }
+
+    private function percentChange(float $current, float $previous): float
+    {
+        if ($previous <= 0.0) {
+            return $current > 0.0 ? 100.0 : 0.0;
+        }
+
+        return round((($current - $previous) / $previous) * 100, 1);
+    }
 }

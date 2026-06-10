@@ -176,6 +176,31 @@ class UserController extends \App\Http\Controllers\Controller
     }
 
     /**
+     * Update user account status — activate, block, or unblock (admin only).
+     */
+    public function updateStatus(Request $request, int $id): JsonResponse
+    {
+        $this->authorize('update', Auth::user());
+
+        $validated = $this->validation->validateUpdateStatus($request);
+        if ($validated->fails()) {
+            return $this->errorResponse(
+                $validated->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR,
+            );
+        }
+
+        [$status, $dataResult] = $this->userService->handleUpdateStatus($id, (int) $request->input('status'));
+
+        if ($status === true) {
+            return $this->successResponse($dataResult, __('user.status_update_success'));
+        }
+
+        return $this->errorResponse($dataResult, null, HttpStatus::BAD_REQUEST);
+    }
+
+    /**
      * Update user by id (admin only, for apiResource)
      * @param Request $request
      * @param int $id

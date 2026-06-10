@@ -8,6 +8,7 @@ use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Services\StayService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 final class StayController extends Controller
@@ -128,6 +129,44 @@ final class StayController extends Controller
         }
 
         $result = $this->stayService->extendBooking($id, (int)$userId, $request->input('new_end_date'));
+
+        if (!$result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse(null, $result['message']);
+    }
+
+    /**
+     * Submit deposit receipt for a booking
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    /**
+     * Change payment method for a booking (once only).
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function changePaymentMethod(Request $request, int $id): JsonResponse
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return $this->errorResponse('Unauthorized', null, HttpStatus::UNAUTHORIZED);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'payment_method' => 'required|string|in:online,pay_at_counter',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse($validator->errors()->first(), $validator->errors(), HttpStatus::VALIDATION_ERROR);
+        }
+
+        $result = $this->stayService->changePaymentMethod($id, (int) $userId, $request->input('payment_method'));
 
         if (!$result['success']) {
             return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);

@@ -19,6 +19,11 @@ class BookingValidation
         return Validator::make($request->all(), [
             'start_date'=> 'nullable|date',
             'end_date'  => 'nullable|date|after_or_equal:start_date',
+            'start_date_mode' => 'nullable|string|in:exact,from',
+            'end_date_mode' => 'nullable|string|in:exact,to',
+            'stay_status' => 'nullable|string|in:pending,checked_in,checked_out,no_show',
+            'deposit_status' => 'nullable|string|in:none,pending,payment_submitted,confirmed_by_partner,held_in_escrow,refunded,forfeited,expired_cancelled',
+            'payment_status' => 'nullable|string|in:unpaid,partially_paid,paid,refunded',
             'per_page'  => 'nullable|integer|min:1',
             'page'      => 'nullable|integer|min:1',
             'status'    => 'nullable|integer|in:'.implode(
@@ -217,6 +222,23 @@ class BookingValidation
         return Validator::make($request->all(), [
             'email'         => 'required|email|max:255',
             'booking_code'  => 'required|string|max:32|regex:/^RM-\d{4}-\d{1,9}$/i',
+        ], $messages);
+    }
+
+    /**
+     * Public update guest email: validation.
+     *
+     * @param Request $request
+     * @return \Illuminate\Validation\Validator
+     */
+    public function publicUpdateBookingEmailValidation(Request $request): \Illuminate\Validation\Validator
+    {
+        $messages = $this->getCustomMessages();
+
+        return Validator::make($request->all(), [
+            'booking_code' => 'required|string|max:32|regex:/^RM-\d{4}-\d{1,9}$/i',
+            'old_email'    => 'required|email|max:255',
+            'new_email'    => 'required|email|max:255|different:old_email',
         ], $messages);
     }
 }

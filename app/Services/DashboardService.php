@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\BookingStatus;
 use App\Enums\RoomStatus;
 use App\Enums\Status;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\DB;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Repositories\PropertyRepository\PropertyRepositoryInterface;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
 use App\Repositories\RoomMaintenanceRepository\RoomMaintenanceRepositoryInterface;
 use App\Repositories\ServiceRepository\ServiceRepositoryInterface;
 use App\Repositories\UsersRepository\UsersRepositoryInterface;
+use App\Services\ConflictChecker;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -23,6 +28,7 @@ final class DashboardService
     protected ServiceRepositoryInterface $serviceRepository;
     protected UsersRepositoryInterface $usersRepository;
     protected RoomMaintenanceRepositoryInterface $roomMaintenanceRepository;
+    protected ConflictChecker $conflictChecker;
 
     public function __construct(
         RoomsRepositoryInterface $roomsRepository,
@@ -30,7 +36,8 @@ final class DashboardService
         PropertyRepositoryInterface $propertyRepository,
         ServiceRepositoryInterface $serviceRepository,
         UsersRepositoryInterface $usersRepository,
-        RoomMaintenanceRepositoryInterface $roomMaintenanceRepository
+        RoomMaintenanceRepositoryInterface $roomMaintenanceRepository,
+        ConflictChecker $conflictChecker,
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->bookingRepository = $bookingRepository;
@@ -38,6 +45,7 @@ final class DashboardService
         $this->serviceRepository = $serviceRepository;
         $this->usersRepository = $usersRepository;
         $this->roomMaintenanceRepository = $roomMaintenanceRepository;
+        $this->conflictChecker = $conflictChecker;
     }
 
     /**
@@ -106,7 +114,7 @@ final class DashboardService
                 "partner"
             );
             $partnerPending = (int) $this->usersRepository->countRecord([
-                "status" => Status::PENDING->value,
+                "status" => Status::PENDING_APPROVAL->value,
                 "role" => "partner",
             ]);
             $partnerBlock = (int) $this->usersRepository->countRecord([
@@ -257,6 +265,69 @@ final class DashboardService
     }
 
     /**
+     * Booking volume trend by day within the selected range (fills zero days).
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getBookingsTrend($request): array
+    {
+        try {
+            $startDate = $request->input(
+                'start_date',
+                now()->subDays(29)->format('Y-m-d')
+            );
+            $endDate = $request->input('end_date', now()->format('Y-m-d'));
+
+            $start = Carbon::parse($startDate)->startOfDay();
+            $end = Carbon::parse($endDate)->startOfDay();
+
+            if ($start->gt($end)) {
+                $start = $end->copy();
+            }
+
+            if ($start->diffInDays($end) > 90) {
+                $start = $end->copy()->subDays(89);
+                $startDate = $start->toDateString();
+            }
+
+            $countsByDate = $this->bookingRepository
+                ->getBookingsPerDay($startDate, $endDate)
+                ->keyBy('date');
+
+            $points = [];
+            foreach (CarbonPeriod::create($start, $end) as $day) {
+                $dateString = $day->toDateString();
+                $points[] = [
+                    'date' => $dateString,
+                    'total' => (int) ($countsByDate[$dateString]['total'] ?? 0),
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => [
+                    'points' => $points,
+                    'granularity' => 'day',
+                    'dateRange' => [
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+                    ],
+                ],
+                'message' => __('dashboard.messages.bookings_trend_fetched'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching bookings trend: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => __('dashboard.messages.bookings_trend_fetch_failed'),
+            ];
+        }
+    }
+
+    /**
      * Get revenue per month
      *
      * @param \Illuminate\Http\Request $request
@@ -313,12 +384,15 @@ final class DashboardService
     /**
      * Get bookings count grouped by property (admin).
      *
+     * @param \Illuminate\Http\Request $request
      * @return array
      */
-    public function getAllPropertiesBookingsCount(): array
+    public function getAllPropertiesBookingsCount($request): array
     {
         try {
-            $bookingsByProperty = $this->bookingRepository->getBookingsByProperty();
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            $bookingsByProperty = $this->bookingRepository->getBookingsByProperty($startDate, $endDate);
 
             return [
                 "success" => true,
@@ -339,6 +413,130 @@ final class DashboardService
                 "message" => __(
                     "dashboard.messages.all_properties_bookings_count_fetch_failed"
                 ),
+            ];
+        }
+    }
+
+    /**
+     * Booking status breakdown for admin analytics (by start_date range).
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getBookingStatusBreakdown($request): array
+    {
+        try {
+            $startDate = $request->input(
+                'start_date',
+                now()->subDays(30)->format('Y-m-d')
+            );
+            $endDate = $request->input('end_date', now()->format('Y-m-d'));
+
+            $breakdown = $this->bookingRepository->getBookingStatusBreakdown($startDate, $endDate);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'breakdown' => $breakdown,
+                    'dateRange' => [
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+                    ],
+                ],
+                'message' => __('dashboard.messages.booking_status_breakdown_fetched'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching booking status breakdown: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => __('dashboard.messages.booking_status_breakdown_fetch_failed'),
+            ];
+        }
+    }
+
+    /**
+     * System-wide occupancy trend for admin analytics.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function getOccupancyChartForAdmin($request): array
+    {
+        try {
+            $rangeEnd = Carbon::parse(
+                $request->input('end_date', now()->format('Y-m-d')),
+                'Asia/Ho_Chi_Minh'
+            )->startOfDay();
+            $rangeStart = Carbon::parse(
+                $request->input('start_date', $rangeEnd->copy()->subDays(29)->format('Y-m-d')),
+                'Asia/Ho_Chi_Minh'
+            )->startOfDay();
+
+            if ($rangeStart->gt($rangeEnd)) {
+                $rangeStart = $rangeEnd->copy();
+            }
+
+            if ($rangeStart->diffInDays($rangeEnd) > 90) {
+                $rangeStart = $rangeEnd->copy()->subDays(89);
+            }
+
+            $totalRooms = (int) $this->roomsRepository->countRecord();
+
+            $activeBookings = DB::table('bookings')
+                ->whereIn('bookings.status', [
+                    BookingStatus::CONFIRMED->value,
+                    BookingStatus::COMPLETED->value,
+                    BookingStatus::PENDING_CANCELLATION->value,
+                ])
+                ->where('bookings.start_date', '<=', $rangeEnd->toDateString())
+                ->where('bookings.end_date', '>', $rangeStart->toDateString())
+                ->get([
+                    'bookings.room_id',
+                    'bookings.start_date',
+                    'bookings.end_date',
+                ]);
+
+            $series = [];
+            for ($cursor = $rangeStart->copy(); $cursor->lte($rangeEnd); $cursor->addDay()) {
+                $dateString = $cursor->toDateString();
+                $occupiedRooms = $activeBookings
+                    ->filter(
+                        static fn ($booking): bool => $booking->start_date <= $dateString
+                            && $booking->end_date > $dateString,
+                    )
+                    ->pluck('room_id')
+                    ->unique()
+                    ->count();
+
+                $series[] = [
+                    'date' => $dateString,
+                    'occupancyRate' => $totalRooms > 0
+                        ? round(($occupiedRooms / $totalRooms) * 100, 2)
+                        : 0.0,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => [
+                    'points' => $series,
+                    'dateRange' => [
+                        'startDate' => $rangeStart->toDateString(),
+                        'endDate' => $rangeEnd->toDateString(),
+                    ],
+                    'totalRooms' => $totalRooms,
+                ],
+                'message' => __('dashboard.messages.occupancy_chart_fetched'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error fetching admin occupancy chart: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => __('dashboard.messages.occupancy_chart_fetch_failed'),
             ];
         }
     }
@@ -528,12 +726,17 @@ final class DashboardService
      * @param int $partnerId
      * @return array
      */
-    public function getStatsForPartner(int $partnerId): array
+    public function getStatsForPartner(int $partnerId, ?int $propertyId = null): array
     {
         try {
-            $totalProperties = $this->propertyRepository->countRecord(['user_id' => $partnerId]);
-            $totalRooms = $this->roomsRepository->countRoomsForPartner($partnerId);
-            $vacantRooms = $this->roomsRepository->getEmptyRoomsForPartner($partnerId);
+            $propertyFilter = $propertyId !== null ? ['property_id' => $propertyId] : [];
+            $roomFilters = $propertyId !== null ? ['rooms.property_id' => $propertyId] : [];
+
+            $totalProperties = $propertyId !== null
+                ? 1
+                : (int) $this->propertyRepository->countRecord(['user_id' => $partnerId]);
+            $totalRooms = $this->roomsRepository->countRoomsForPartner($partnerId, $roomFilters);
+            $vacantRooms = $this->roomsRepository->getEmptyRoomsForPartner($partnerId, $propertyId);
 
             $occupancyRate = $totalRooms > 0 ? round((($totalRooms - $vacantRooms) / $totalRooms) * 100, 1) : 0;
 
@@ -543,26 +746,18 @@ final class DashboardService
             $revenueData = $this->bookingRepository->getRevenueByMonthForPartner(
                 $partnerId,
                 $currentMonthStart,
-                $currentMonthEnd
+                $currentMonthEnd,
+                $propertyId,
             );
 
             $estimatedRevenue = $revenueData->sum('revenue');
 
-            $pendingBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
-                'status' => 0 // Pending
-            ]);
-            $confirmedBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
-                'status' => 1 // Confirmed
-            ]);
-            $cancelledBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
-                'status' => 2 // Cancelled
-            ]);
-            $completedBookingsCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
-                'status' => 3 // Completed
-            ]);
-            $pendingCancellationCount = $this->bookingRepository->countBookingsForPartner($partnerId, [
-                'status' => 4 // Pending Cancellation
-            ]);
+            $countWithScope = function (array $filters) use ($partnerId, $propertyFilter): int {
+                return (int) $this->bookingRepository->countBookingsForPartner(
+                    $partnerId,
+                    array_merge($filters, $propertyFilter),
+                );
+            };
 
             return [
                 "success" => true,
@@ -572,24 +767,26 @@ final class DashboardService
                     "vacantRooms" => (int) $vacantRooms,
                     "occupancyRate" => (float) $occupancyRate,
                     "estimatedRevenue" => (float) $estimatedRevenue,
-                    "pendingBookingsCount" => (int) $pendingBookingsCount,
-                    "confirmedBookingsCount" => (int) $confirmedBookingsCount,
-                    "cancelledBookingsCount" => (int) $cancelledBookingsCount,
-                    "completedBookingsCount" => (int) $completedBookingsCount,
-                    "pendingCancellationCount" => (int) $pendingCancellationCount,
-                    "todayCheckInCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
+                    "pendingBookingsCount" => $countWithScope(['status' => 0]),
+                    "confirmedBookingsCount" => $countWithScope(['status' => 1]),
+                    "cancelledBookingsCount" => $countWithScope(['status' => 2]),
+                    "completedBookingsCount" => $countWithScope(['status' => 3]),
+                    "pendingCancellationCount" => $countWithScope(['status' => 4]),
+                    "todayCheckInCount" => $countWithScope([
                         'start_date' => now()->format('Y-m-d'),
-                        'status' => 1 // Confirmed
+                        'status' => 1,
+                        'stay_status' => 'pending',
                     ]),
-                    "todayCheckOutCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
+                    "todayCheckOutCount" => $countWithScope([
                         'end_date' => now()->format('Y-m-d'),
-                        'status' => 1 // Confirmed
+                        'status' => 1,
+                        'stay_status' => 'checked_in',
                     ]),
-                    "inStayCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
-                        'status' => 1, // Confirmed
-                        'stay_status' => 'checked_in'
+                    "inStayCount" => $countWithScope([
+                        'status' => 1,
+                        'stay_status' => 'checked_in',
                     ]),
-                    "totalBookingsCount" => (int) $this->bookingRepository->countBookingsForPartner($partnerId),
+                    "totalBookingsCount" => $countWithScope([]),
                 ],
                 "message" => __("dashboard.messages.stats_fetched_successfully"),
             ];
@@ -604,19 +801,85 @@ final class DashboardService
     }
 
     /**
+     * Get dashboard operational stats for admin (system-wide).
+     *
+     * @return array{success: bool, data: array<string, int|float>|null, message: string}
+     */
+    public function getStatsForAdmin(): array
+    {
+        try {
+            $totalRooms = (int) $this->roomsRepository->countRecord();
+            $vacantRooms = (int) $this->roomsRepository->getEmptyRooms();
+            $occupancyRate = $totalRooms > 0
+                ? round((($totalRooms - $vacantRooms) / $totalRooms) * 100, 1)
+                : 0.0;
+
+            $today = now()->format('Y-m-d');
+
+            $count = fn (array $filters): int => (int) $this->bookingRepository->countBookingsForAdmin($filters);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'totalRooms' => $totalRooms,
+                    'vacantRooms' => $vacantRooms,
+                    'occupancyRate' => (float) $occupancyRate,
+                    'pendingBookingsCount' => $count(['status' => 0]),
+                    'pendingCancellationCount' => $count(['status' => 4]),
+                    'todayCheckInCount' => $count([
+                        'start_date' => $today,
+                        'status' => 1,
+                        'stay_status' => 'pending',
+                    ]),
+                    'todayCheckOutCount' => $count([
+                        'end_date' => $today,
+                        'status' => 1,
+                        'stay_status' => 'checked_in',
+                    ]),
+                    'inStayCount' => $count([
+                        'status' => 1,
+                        'stay_status' => 'checked_in',
+                    ]),
+                    'totalBookingsCount' => $count([]),
+                ],
+                'message' => __('dashboard.messages.stats_fetched_successfully'),
+            ];
+        } catch (Exception $e) {
+            Log::error('Admin get dashboard stats fail: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => __('dashboard.messages.stats_fetch_failed'),
+            ];
+        }
+    }
+
+    /**
      * Get pending bookings for partner
      *
      * @param int $partnerId
      * @return array
      */
-    public function getPendingBookingsForPartner(int $partnerId): array
+    public function getPendingBookingsForPartner(int $partnerId, int $limit = 10, ?int $propertyId = null): array
     {
         try {
-            $bookings = $this->bookingRepository->getPendingBookingsForPartner($partnerId);
+            $bookings = $this->bookingRepository
+                ->getPendingBookingsForPartner($partnerId, $limit, $propertyId)
+                ->map(function (object $booking): object {
+                    $booking->has_conflict = $this->conflictChecker->hasConflict(
+                        (int) $booking->room_id,
+                        (string) $booking->start_date,
+                        (string) $booking->end_date,
+                        (int) $booking->id,
+                    );
+
+                    return $booking;
+                });
 
             return [
                 "success" => true,
-                "data" => $bookings,
+                "data" => $bookings->values(),
                 "message" => __("dashboard.messages.pending_bookings_fetched"),
             ];
         } catch (Exception $e) {

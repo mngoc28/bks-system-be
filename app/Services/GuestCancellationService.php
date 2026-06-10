@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\BookingStatus;
 use App\Events\BookingCancelled;
 use App\Events\CancellationRequestUpdated;
+use App\Events\RoomInventoryReleased;
 use App\Models\Booking;
 use App\Models\BookingCancellationRequest;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
@@ -88,6 +89,8 @@ final class GuestCancellationService
                     : sprintf('[%s]', $reasonCode);
 
                 $now = Carbon::now();
+                $roomId = (int) $booking->room_id;
+                $this->roomsRepository->update($roomId, ['status' => true]);
                 $this->bookingRepository->update($bookingId, [
                     'status'              => BookingStatus::CANCELLED->value,
                     'cancelled_at'        => $now,
@@ -106,6 +109,9 @@ final class GuestCancellationService
                     ],
                 );
 
+                DB::afterCommit(static function () use ($roomId): void {
+                    event(new RoomInventoryReleased($roomId));
+                });
                 $this->maybeDispatchBookingCancelled($fresh, $userId, $reasonDisplay);
 
                 return [

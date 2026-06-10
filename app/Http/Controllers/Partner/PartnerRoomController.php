@@ -130,21 +130,7 @@ final class PartnerRoomController extends Controller
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        // Build request-compatible data merging defaults for required fields
-        $request->merge([
-            'property_id' => (int) $propertyId,
-            'title'       => $title,
-            'room_number' => $title, // use title as room number if not provided
-            'floor_number'=> $request->input('floor_number', 1),
-            'people'      => $request->input('people', 1),
-            'room_type'   => $request->input('room_type', 1),
-            'status'      => $request->input('status', true),
-            'area'        => $request->input('area', 0),
-            'amenities'   => $request->input('amenities', []),
-            'services'    => $request->input('services', []),
-            'prices'      => $this->normalizePrices($request->input('prices', [])),
-            'utility_fees'=> $request->input('utility_fees', []),
-        ]);
+        $request->replace($this->buildPartnerRoomPayload($request, (int) $propertyId, (string) $title));
 
         $result = $this->roomsService->createRoom($request);
 
@@ -179,18 +165,10 @@ final class PartnerRoomController extends Controller
             return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
         }
 
-        // Normalize title field
-        if (!$request->has('title') && $request->has('name')) {
-            $request->merge(['title' => $request->input('name')]);
-        }
+        $title = (string) ($request->input('title') ?? $request->input('name') ?? '');
+        $propertyId = (int) ($request->input('property_id') ?? $request->input('propertyId') ?? 0);
 
-        // Ensure amenities/services/prices are arrays (can be empty for update)
-        $request->merge([
-            'amenities' => $request->input('amenities', []),
-            'services'  => $request->input('services', []),
-            'prices'    => $this->normalizePrices($request->input('prices', [])),
-            'utility_fees' => $request->input('utility_fees', []),
-        ]);
+        $request->replace($this->buildPartnerRoomPayload($request, $propertyId, $title));
 
         $result = $this->roomsService->updateRoom($request, (int) $id);
 
@@ -329,6 +307,64 @@ final class PartnerRoomController extends Controller
     }
 
     /**
+     * Whitelist partner portal room payload — strip camelCase / non-column keys.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildPartnerRoomPayload(Request $request, int $propertyId, string $title): array
+    {
+        return [
+            'property_id' => $propertyId,
+            'title' => $title,
+            'room_number' => (string) ($request->input('room_number') ?? $title),
+            'floor_number' => (int) $request->input('floor_number', 1),
+            'people' => (int) $request->input('people', 1),
+            'room_type' => (int) $request->input('room_type', 1),
+            'status' => $request->boolean('status', true),
+            'area' => (float) $request->input('area', 0),
+            'description' => $request->input('description'),
+            'amenities' => $this->normalizeAmenityIds($request->input('amenities', [])),
+            'services' => $this->normalizeServiceIds($request->input('services', [])),
+            'prices' => $this->normalizePrices($request->input('prices', [])),
+            'utility_fees' => is_array($request->input('utility_fees')) ? $request->input('utility_fees') : [],
+        ];
+    }
+
+    /**
+     * Partner form may send amenity names; only numeric ids are persisted.
+     *
+     * @param mixed $amenities
+     * @return array<int, int>
+     */
+    private function normalizeAmenityIds(mixed $amenities): array
+    {
+        if (!is_array($amenities)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn ($id) => (int) $id, $amenities),
+            static fn (int $id) => $id > 0
+        ));
+    }
+
+    /**
+     * @param mixed $services
+     * @return array<int, int>
+     */
+    private function normalizeServiceIds(mixed $services): array
+    {
+        if (!is_array($services)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn ($id) => (int) $id, $services),
+            static fn (int $id) => $id > 0
+        ));
+    }
+
+    /**
      * Normalize frontend prices to RoomPriceService schema.
      * Accepts both new format (price_package_id, unit, unit_price)
      * and legacy partner form format (packageName, price, duration).
@@ -342,10 +378,6 @@ final class PartnerRoomController extends Controller
             return [];
         }
 
-        $defaultPackageId = (int) PricePackage::query()
-            ->where('status', true)
-            ->value('id');
-
         $normalized = [];
 
         foreach ($prices as $item) {
@@ -353,22 +385,10 @@ final class PartnerRoomController extends Controller
                 continue;
             }
 
-            $packageId = isset($item['price_package_id'])
-                ? (int) $item['price_package_id']
-                : 0;
-
-            if ($packageId <= 0 && !empty($item['packageName'])) {
-                $matched = PricePackage::query()
-                    ->where('status', true)
-                    ->where('name', $item['packageName'])
-                    ->value('id');
-
-                $packageId = (int) ($matched ?? 0);
-            }
-
-            if ($packageId <= 0) {
-                $packageId = $defaultPackageId;
-            }
+            $packageId = PricePackage::resolveId(
+                isset($item['price_package_id']) ? (int) $item['price_package_id'] : null,
+                isset($item['packageName']) ? (string) $item['packageName'] : null
+            );
 
             if ($packageId <= 0) {
                 continue;
@@ -386,7 +406,7 @@ final class PartnerRoomController extends Controller
                 'unit' => $unit,
                 'unit_price' => (float) $unitPrice,
                 'deposit_amount' => (float) ($item['deposit_amount'] ?? 0),
-                'minimum_stay' => (int) ($item['minimum_stay'] ?? 1),
+                'minimum_stay' => (int) ($item['minimum_stay'] ?? $item['duration'] ?? 1),
             ];
         }
 

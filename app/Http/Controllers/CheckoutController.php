@@ -9,6 +9,7 @@ use App\Services\DepositService;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Events\BookingConfirmed;
 use App\Jobs\SendBooking;
+use App\Enums\PaymentStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,7 +41,19 @@ final class CheckoutController extends Controller
             return response('Không tìm thấy đơn đặt phòng', 404);
         }
 
+        $redirectTo = $request->query('redirect_to');
+        if ($redirectTo) {
+            $request->session()->put('payment_redirect_to', $redirectTo);
+        } else {
+            $redirectTo = $request->session()->get('payment_redirect_to');
+        }
+
         if ($booking->status === 1) {
+            if ($redirectTo) {
+                $request->session()->forget('payment_redirect_to');
+                $separator = str_contains($redirectTo, '?') ? '&' : '?';
+                return redirect($redirectTo . $separator . 'confirmed=true');
+            }
             $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
             $redirectUrl = $frontendUrl . '?' . http_build_query([
                 'bookingId'     => $booking->id,
@@ -195,6 +208,7 @@ HTML;
         <form method="POST" action="/api/v1/payments/checkout" class="space-y-3">
             <!-- CSRF Protection in Laravel requires token -->
             <input type="hidden" name="booking_id" value="{$booking->id}">
+            <input type="hidden" name="redirect_to" value="{$redirectTo}">
             <input type="hidden" name="_token" value="{$request->session()->token()}">
             
             <button type="submit" name="status" value="check_payment" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-sky-500/10 flex items-center justify-center gap-2">
@@ -229,6 +243,7 @@ HTML;
     {
         $bookingId = $request->input('booking_id');
         $status = $request->input('status');
+        $redirectTo = $request->input('redirect_to') ?? $request->session()->get('payment_redirect_to');
 
         $booking = Booking::with(['user', 'room'])->find((int)$bookingId);
         if (!$booking) {
@@ -237,25 +252,30 @@ HTML;
 
         $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
 
-        // 1. Handle Cancel / Fail status
-        if ($status === 'cancel') {
+        // Helper function for redirection
+        $redirectFn = function ($isSuccess) use ($frontendUrl, $booking, $redirectTo, $request) {
+            $request->session()->forget('payment_redirect_to');
+            if ($redirectTo) {
+                $separator = str_contains($redirectTo, '?') ? '&' : '?';
+                return redirect($redirectTo . $separator . ($isSuccess ? 'confirmed=true' : 'payment_failed=true'));
+            }
             return redirect($frontendUrl . '?' . http_build_query([
                 'bookingId'     => $booking->id,
                 'bookingCode'   => $booking->booking_code,
                 'email'         => $booking->user?->email,
-                'paymentStatus' => 'failed',
+                'paymentStatus' => $isSuccess ? 'success' : 'failed',
             ]));
+        };
+
+        // 1. Handle Cancel / Fail status
+        if ($status === 'cancel') {
+            return $redirectFn(false);
         }
 
         // 2. Handle SePay Verification Check
         if ($status === 'check_payment') {
             if ($booking->status === 1) {
-                return redirect($frontendUrl . '?' . http_build_query([
-                    'bookingId'     => $booking->id,
-                    'bookingCode'   => $booking->booking_code,
-                    'email'         => $booking->user?->email,
-                    'paymentStatus' => 'success',
-                ]));
+                return $redirectFn(true);
             }
 
             return redirect()->back()->with('error', 'Hệ thống chưa ghi nhận được thanh toán chuyển khoản của bạn qua SePay. Vui lòng quét mã VietQR để chuyển khoản và đợi từ 10-30 giây để hệ thống đồng bộ.');
@@ -271,9 +291,10 @@ HTML;
             try {
                 $now = Carbon::now();
 
-                // Update booking payment timestamp and confirm
+                // Update booking status, payment_status and timestamp
                 $booking->update([
                     'status'               => 1, // CONFIRMED
+                    'payment_status'       => PaymentStatus::PAID->value,
                     'payment_collected_at' => $now,
                 ]);
 
@@ -295,12 +316,7 @@ HTML;
                     Log::error('Payment simulation: Failed to send confirmation email: ' . $mailEx->getMessage());
                 }
 
-                return redirect($frontendUrl . '?' . http_build_query([
-                    'bookingId'     => $booking->id,
-                    'bookingCode'   => $booking->booking_code,
-                    'email'         => $booking->user?->email,
-                    'paymentStatus' => 'success',
-                ]));
+                return $redirectFn(true);
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Payment failed to process simulation: ' . $e->getMessage());
@@ -309,7 +325,7 @@ HTML;
         }
 
         // Fallback for unexpected status values
-        return redirect()->back()->with('error', 'Yêu cầu không hợp lệ.');
+        return $redirectFn(false);
     }
 
     private function formatPrice($amount): string
@@ -393,6 +409,7 @@ HTML;
                 'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => '',
+                'is_paid'            => true,
             ];
 
             SendBooking::dispatch($user->email, $user->name, $emailInfo);

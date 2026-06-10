@@ -16,6 +16,7 @@ use App\Http\Controllers\PricePackageController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\GeminiChatController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\WardsController;
 use App\Http\Controllers\UserReportController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Stay\StayServiceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Admin\AdminSettlementController;
+use App\Http\Controllers\Admin\NewsletterSubscriptionController;
 use App\Http\Controllers\Partner\PartnerSettlementController;
 use Illuminate\Support\Facades\Route;
 
@@ -138,6 +140,7 @@ Route::group([
             Route::post('create', [UserController::class, 'store']);
             Route::get('{id}', [UserController::class, 'show']);
             Route::put('{id}', [UserController::class, 'update']);
+            Route::put('{id}/status', [UserController::class, 'updateStatus']);
             Route::post('/reset-password/{id}', [UserController::class, 'resetPassword']);
             Route::delete('{id}', [UserController::class, 'destroy']);
             Route::get('/', [UserController::class, 'index']);
@@ -253,6 +256,16 @@ Route::group([
             Route::post('create', [CouponController::class, 'store']);
             Route::put('update/{id}', [CouponController::class, 'update']);
             Route::delete('delete/{id}', [CouponController::class, 'destroy']);
+        });
+
+        /**
+         * Newsletter Subscription API
+         * Base Url /api/v1/admin/newsletter-subscriptions/
+         */
+        Route::middleware(['jwt.auth', 'role:admin'])->prefix('newsletter-subscriptions')->group(function () {
+            Route::get('/', [NewsletterSubscriptionController::class, 'index']);
+            Route::put('{id}/status', [NewsletterSubscriptionController::class, 'updateStatus'])->whereNumber('id');
+            Route::delete('{id}', [NewsletterSubscriptionController::class, 'destroy'])->whereNumber('id');
         });
 
         /**
@@ -395,8 +408,13 @@ Route::group([
             Route::get('/system-property', [DashboardController::class, 'getSystemProperty']);
             Route::get('/system-room', [DashboardController::class, 'getSystemRoom']);
             Route::get('/bookings-per-month', [DashboardController::class, 'bookingsPerMonth']);
+            Route::get('/bookings-trend', [DashboardController::class, 'getBookingsTrend']);
             Route::get('/revenue-per-month', [DashboardController::class, 'revenuePerMonth']);
             Route::get('/properties-bookings-count', [DashboardController::class, 'getAllPropertiesBookingsCount']);
+            Route::get('/booking-status-breakdown', [DashboardController::class, 'getBookingStatusBreakdown']);
+            Route::get('/charts/occupancy', [DashboardController::class, 'getOccupancyChart']);
+            Route::get('/revenue-performance', [DashboardController::class, 'getRevenuePerformance']);
+            Route::get('/stats', [DashboardController::class, 'getStats']);
         });
 
         /**
@@ -827,6 +845,7 @@ Route::group([
         Route::get('chatbot/start-question', [ChatbotController::class, 'startQuestion']);
         Route::get('chatbot/next-question/{id}', [ChatbotController::class, 'nextQuestion'])
             ->whereNumber('id');
+        Route::post('ai-chatbot/chat', [GeminiChatController::class, 'chat'])->middleware('throttle:10,1');
     });
 
     // Home public APIs
@@ -845,6 +864,8 @@ Route::group([
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);
         Route::get('/reviews', [ReviewController::class, 'getLandingPageReviews']);
         Route::post('/coupons/register', [HomeController::class, 'registerCoupon']);
+        Route::get('/amenities', [AmenityController::class, 'getAllAmenities']);
+        Route::get('/services', [ServiceController::class, 'getAllServices']);
     });
 
     // Rooms public APIs
@@ -860,6 +881,7 @@ Route::group([
         Route::post('lookup', [BookingController::class, 'publicLookupBooking'])
             ->middleware('throttle:30,1');
         Route::post('{roomId}/user-create', [BookingController::class, 'userCreateBooking'])->whereNumber('roomId');
+        Route::post('update-email', [BookingController::class, 'publicUpdateBookingEmail']);
     });
     Route::post('set-password/{token}', [AuthController::class, 'setPassword']);
 
@@ -900,6 +922,8 @@ Route::group([
         Route::get('bookings/{id}', [StayController::class, 'show']);
         Route::post('bookings/{id}/extend', [StayController::class, 'extend']);
         Route::post('bookings/{id}/submit-receipt', [StayController::class, 'submitReceipt'])->whereNumber('id');
+        Route::patch('bookings/{id}/payment-method', [StayController::class, 'changePaymentMethod'])->whereNumber('id');
+
 
         Route::middleware(['bcp.cancellation'])->group(function () {
             Route::get('cancellation-reasons', [StayBookingCancellationController::class, 'cancellationReasons']);

@@ -350,4 +350,35 @@ final class BookingController extends Controller
             $result['message']
         );
     }
+
+    /**
+     * Public update guest email (before paid).
+     */
+    public function publicUpdateBookingEmail(Request $request): JsonResponse
+    {
+        $validator = $this->bookingValidation->publicUpdateBookingEmailValidation($request);
+
+        if ($validator->fails()) {
+            return $this->validateError(
+                $validator->errors(),
+                null,
+                HttpStatus::VALIDATION_ERROR
+            );
+        }
+
+        $result = $this->bookingService->handlePublicUpdateBookingEmail($request);
+
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+
+        return $this->successResponse(
+            null,
+            $result['message']
+        );
+    }
 }

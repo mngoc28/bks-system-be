@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\HttpStatus;
+use App\Enums\Status;
 use App\Repositories\UsersRepository\UsersRepositoryInterface;
 use App\Http\Validations\UserValidation;
 use App\Services\CloudinaryService;
@@ -194,6 +195,71 @@ class UserService
         } catch (Exception $e) {
             Log::error('Update user error: ' . $e->getMessage());
             return [false, __('user.get_user_error')];
+        }
+    }
+
+    /**
+     * Update account status (activate / block / unblock) — admin only.
+     *
+     * @return array{0: bool, 1: array<string, mixed>|string}
+     */
+    public function handleUpdateStatus(int $id, int $status): array
+    {
+        try {
+            if (! in_array($status, [Status::ACTIVE->value, Status::BLOCKED->value], true)) {
+                return [false, __('user.status_invalid')];
+            }
+
+            $user = $this->userRepository->find($id);
+            if (! $user) {
+                return [false, __('user.not_found')];
+            }
+
+            $actor = Auth::user();
+            if ($actor && (int) $actor->id === $id) {
+                return [false, __('user.cannot_update_own_status')];
+            }
+
+            if ($user->role === 'admin') {
+                return [false, __('user.cannot_change_admin_status')];
+            }
+
+            $currentStatus = (int) $user->status;
+
+            if ($user->role === 'partner' && $currentStatus === Status::PENDING_APPROVAL->value) {
+                return [false, __('user.partner_use_approval_flow')];
+            }
+
+            $allowed = match ($status) {
+                Status::ACTIVE->value => in_array($currentStatus, [Status::PENDING->value, Status::BLOCKED->value], true),
+                Status::BLOCKED->value => $currentStatus === Status::ACTIVE->value,
+            };
+
+            if (! $allowed) {
+                return [false, __('user.status_transition_invalid')];
+            }
+
+            $this->userRepository->update($id, [
+                'status' => $status,
+                'updated_by' => $actor?->id,
+            ]);
+
+            $updatedUser = $this->userRepository->find($id);
+
+            return [
+                true,
+                [
+                    'id' => $updatedUser->id,
+                    'name' => $updatedUser->name,
+                    'email' => $updatedUser->email,
+                    'role' => $updatedUser->role,
+                    'status' => (int) $updatedUser->status,
+                ],
+            ];
+        } catch (Exception $e) {
+            Log::error('Update user status error: ' . $e->getMessage());
+
+            return [false, __('user.update_error')];
         }
     }
 

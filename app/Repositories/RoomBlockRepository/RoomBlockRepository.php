@@ -47,8 +47,8 @@ final class RoomBlockRepository extends BaseRepository implements RoomBlockRepos
     ): Collection {
         $query = $this->model
             ->where('room_id', $roomId)
-            ->where('start_date', '<=', $endDate)
-            ->where('end_date', '>=', $startDate);
+            ->where('start_date', '<', $endDate)
+            ->where('end_date', '>', $startDate);
 
         if ($excludeBlockId !== null) {
             $query->where('id', '!=', $excludeBlockId);

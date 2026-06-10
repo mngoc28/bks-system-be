@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Stay;
 
 use App\Enums\BookingStatus;
 use App\Enums\HttpStatus;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Services\StayService;
 use Illuminate\Http\JsonResponse;
@@ -110,9 +111,19 @@ final class StayContractController extends Controller
                 'signature_date' => \Carbon\Carbon::now(),
             ]);
 
-            // Cập nhật trạng thái Booking sang Đã xác nhận (Status 1)
+            // Cập nhật trạng thái Booking sang Đã xác nhận (Status 1) và set payment_status tương ứng
             if ($contract->booking) {
-                $contract->booking->update(['status' => 1]);
+                $paymentStatus = PaymentStatus::UNPAID->value;
+                if ($contract->booking->payment_method === 'online') {
+                    $paymentStatus = PaymentStatus::PAID->value;
+                } elseif ($contract->booking->deposit_amount > 0 && $contract->booking->deposit_status === 'confirmed_by_partner') {
+                    $paymentStatus = PaymentStatus::PARTIALLY_PAID->value;
+                }
+
+                $contract->booking->update([
+                    'status'         => 1,
+                    'payment_status' => $paymentStatus,
+                ]);
             }
 
             return $this->successResponse($contract, 'Contract signed successfully');

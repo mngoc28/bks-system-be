@@ -48,6 +48,30 @@ final class DashboardValidation
      * @param Request $request
      * @return \Illuminate\Validation\Validator
      */
+    /**
+     * Optional scope for partner dashboard endpoints (property filter, list limit).
+     *
+     * @param Request $request
+     * @return \Illuminate\Validation\Validator
+     */
+    public function validateDashboardScope(Request $request): \Illuminate\Validation\Validator
+    {
+        return Validator::make(
+            $request->all(),
+            [
+                'property_id' => ['nullable', 'integer', 'min:1'],
+                'limit'       => ['nullable', 'integer', 'min:1', 'max:20'],
+            ],
+            [
+                'property_id.integer' => __('dashboard.validation.property_id.integer'),
+                'property_id.min'   => __('dashboard.validation.property_id.min'),
+                'limit.integer'     => __('dashboard.validation.limit.integer'),
+                'limit.min'         => __('dashboard.validation.limit.min'),
+                'limit.max'         => __('dashboard.validation.limit.max'),
+            ],
+        );
+    }
+
     public function validateLimit(Request $request): \Illuminate\Validation\Validator
     {
         return Validator::make(

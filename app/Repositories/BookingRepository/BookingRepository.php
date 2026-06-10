@@ -77,12 +77,24 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             $query->where('rooms.property_id', $request->property_id);
         }
 
+        if ($request->filled('stay_status')) {
+            $query->where('bookings.stay_status', $request->stay_status);
+        }
+
         if ($request->filled('start_date')) {
-            $query->whereDate('bookings.start_date', '>=', $request->start_date);
+            if ($request->input('start_date_mode') === 'exact') {
+                $query->whereDate('bookings.start_date', '=', $request->start_date);
+            } else {
+                $query->whereDate('bookings.start_date', '>=', $request->start_date);
+            }
         }
 
         if ($request->filled('end_date')) {
-            $query->whereDate('bookings.end_date', '<=', $request->end_date);
+            if ($request->input('end_date_mode') === 'exact') {
+                $query->whereDate('bookings.end_date', '=', $request->end_date);
+            } else {
+                $query->whereDate('bookings.end_date', '<=', $request->end_date);
+            }
         }
 
         if ($request->filled('status')) {
@@ -139,12 +151,11 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      */
     public function checkRoomConflict(int $roomId, string $startDate, ?string $endDate = null): bool
     {
-        return $this->model->where('room_id', $roomId)
-            ->where(function ($query) use ($startDate, $endDate): void {
-                $query->where('start_date', '<=', $endDate ?? $startDate)
-                    ->where('end_date', '>=', $startDate);
-            })
-            ->exists();
+        $query = $this->model->newQuery()->where('room_id', $roomId);
+        $this->applyConflictActiveBookingsFilter($query);
+        $this->applyDateRangeOverlapFilter($query, $startDate, $endDate);
+
+        return $query->exists();
     }
 
     /**
@@ -162,14 +173,38 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
         string $startDate,
         ?string $endDate = null
     ): bool {
-        return $this->model->where('id', '!=', $bookingId)
-            ->where('room_id', $roomId)
-            ->whereNotIn('status', ['cancelled', 'completed'])
-            ->where(function ($query) use ($startDate, $endDate): void {
-                $query->where('start_date', '<', $endDate ?? $startDate)
-                    ->where('end_date', '>', $startDate);
-            })
-            ->exists();
+        $query = $this->model->newQuery()
+            ->where('id', '!=', $bookingId)
+            ->where('room_id', $roomId);
+        $this->applyConflictActiveBookingsFilter($query);
+        $this->applyDateRangeOverlapFilter($query, $startDate, $endDate);
+
+        return $query->exists();
+    }
+
+    /**
+     * Bookings đang giữ slot ngày — đồng bộ với ConflictChecker.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     */
+    private function applyConflictActiveBookingsFilter($query): void
+    {
+        $query->whereNotIn('status', [
+            BookingStatus::CANCELLED->value,
+            BookingStatus::COMPLETED->value,
+        ])->where('stay_status', '!=', 'no_show');
+    }
+
+    /**
+     * Giao khoảng [start_date, end_date) exclusive với booking đã lưu.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     */
+    private function applyDateRangeOverlapFilter($query, string $startDate, ?string $endDate): void
+    {
+        $rangeEnd = $endDate ?? $startDate;
+        $query->where('start_date', '<', $rangeEnd)
+            ->where('end_date', '>', $startDate);
     }
 
     /**
@@ -196,12 +231,37 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw('DATE_FORMAT(start_date, "%Y-%m") as month'),
                 DB::raw('COUNT(*) as total')
             )
-            ->groupBy(DB::raw('DATE_FORMAT(start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
                 'month' => $b->month,
                 'total' => (int) $b->total,
+            ]);
+    }
+
+    /**
+     * Count non-cancelled bookings grouped by start_date (day).
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection<int, array{date: string, total: int}>
+     */
+    public function getBookingsPerDay(string $startDate, string $endDate): Collection
+    {
+        return $this->model
+            ->where('status', '!=', BookingStatus::CANCELLED->value)
+            ->whereBetween('start_date', [$startDate, $endDate])
+            ->select(
+                DB::raw('DATE(start_date) as date'),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupByRaw('DATE(start_date)')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => [
+                'date' => (string) $row->getAttribute('date'),
+                'total' => (int) $row->getAttribute('total'),
             ]);
     }
 
@@ -283,25 +343,71 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     /**
      * Get bookings grouped by property
      *
+     * @param string|null $startDate
+     * @param string|null $endDate
      * @return Collection
      */
-    public function getBookingsByProperty(): Collection
+    public function getBookingsByProperty(?string $startDate = null, ?string $endDate = null): Collection
     {
-        return $this->model
+        $query = $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->join('users', 'properties.user_id', '=', 'users.id')
+            ->leftJoin('partner_info as pi', 'pi.user_id', '=', 'users.id')
+            ->leftJoin('provinces', 'properties.province_id', '=', 'provinces.id')
             ->select(
                 'properties.id as property_id',
                 'properties.name as property_name',
+                DB::raw('COALESCE(NULLIF(pi.company_name, ""), users.name) as partner_name'),
+                'provinces.name as province_name',
                 DB::raw('COUNT(*) as total')
             )
-            ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
-            ->groupBy('properties.id', 'properties.name')
+            ->where('bookings.status', '!=', BookingStatus::CANCELLED->value);
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('bookings.start_date', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->whereDate('bookings.start_date', '>=', $startDate);
+        } elseif ($endDate) {
+            $query->whereDate('bookings.start_date', '<=', $endDate);
+        }
+
+        return $query
+            ->groupBy(
+                'properties.id',
+                'properties.name',
+                'provinces.name',
+            )
+            ->groupByRaw('COALESCE(NULLIF(pi.company_name, ""), users.name)')
+            ->orderByDesc('total')
             ->get()
             ->map(fn ($b) => [
                 'property_id'   => (int) $b->getAttribute('property_id'),
                 'property_name' => (string) $b->getAttribute('property_name'),
+                'partner_name'  => (string) ($b->getAttribute('partner_name') ?? ''),
+                'province_name' => (string) ($b->getAttribute('province_name') ?? ''),
                 'total'         => (int) $b->getAttribute('total'),
+            ]);
+    }
+
+    /**
+     * Count bookings grouped by status within a start_date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return Collection<int, array{status: int, total: int}>
+     */
+    public function getBookingStatusBreakdown(string $startDate, string $endDate): Collection
+    {
+        return $this->model
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->whereBetween('start_date', [$startDate, $endDate])
+            ->groupBy('status')
+            ->orderBy('status')
+            ->get()
+            ->map(fn ($row) => [
+                'status' => (int) $row->getAttribute('status'),
+                'total'  => (int) $row->getAttribute('total'),
             ]);
     }
 
@@ -343,7 +449,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                    ) as revenue
                 ")
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -441,7 +547,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
     public function getBookingDetailByUserId(int $bookingId, int $userId): ?\App\Models\Booking
     {
         /** @var \App\Models\Booking|null $booking */
-        $booking = $this->model->with(['room.property.propertyType', 'room.property.user', 'price', 'services', 'contracts', 'bookingDeposit'])
+        $booking = $this->model->with(['user', 'room.property.propertyType', 'room.property.user', 'price', 'services', 'contracts', 'bookingDeposit'])
             ->where('id', $bookingId)
             ->where('user_id', $userId)
             ->first();
@@ -480,6 +586,10 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.stay_status',
             'bookings.deposit_amount',
             'bookings.deposit_status',
+            'bookings.payment_status',
+            'bookings.cancellation_reason',
+            'bookings.cancelled_at',
+            'bookings.no_show_at',
         )->with('bookingDeposit');
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
@@ -495,6 +605,17 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
 
         if ($request->filled('stay_status')) {
             $query->where('bookings.stay_status', $request->stay_status);
+        }
+
+        if ($request->filled('deposit_status')) {
+            $query->where('bookings.deposit_status', $request->deposit_status);
+            if ($request->deposit_status === 'pending') {
+                $query->where('bookings.deposit_amount', '>', 0);
+            }
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('bookings.payment_status', $request->payment_status);
         }
 
         if ($request->filled('keyword')) {
@@ -557,7 +678,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m") as month'),
                 DB::raw('COUNT(*) as total')
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -601,14 +722,22 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      * @param string $endDate
      * @return Collection
      */
-    public function getRevenueByMonthForPartner(int $partnerId, string $startDate, string $endDate): Collection
-    {
+    public function getRevenueByMonthForPartner(
+        int $partnerId,
+        string $startDate,
+        string $endDate,
+        ?int $propertyId = null,
+    ): Collection {
         $query = $this->model
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('room_prices', 'bookings.price_id', '=', 'room_prices.id')
             ->where('properties.user_id', $partnerId)
             ->whereIn('bookings.status', [BookingStatus::CONFIRMED->value, BookingStatus::COMPLETED->value]);
+
+        if ($propertyId !== null) {
+            $query->where('properties.id', $propertyId);
+        }
 
         if ($startDate && $endDate) {
             $query->whereBetween('bookings.start_date', [$startDate, $endDate]);
@@ -631,7 +760,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                    ) as revenue
                 ")
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -646,21 +775,42 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
      * @param int $limit
      * @return Collection
      */
-    public function getPendingBookingsForPartner(int $partnerId, int $limit = 5): Collection
+    public function getPendingBookingsForPartner(int $partnerId, int $limit = 10, ?int $propertyId = null): Collection
     {
-        return $this->model->select(
+        $query = $this->model->select(
             'bookings.id',
+            'bookings.room_id',
             'users.name as user_name',
+            'properties.name as property_name',
+            'properties.id as property_id',
             'rooms.room_number as room_number',
             'bookings.start_date as start_date',
-            'bookings.status'
+            'bookings.end_date as end_date',
+            'bookings.created_at as created_at',
+            'bookings.status',
+            DB::raw('
+                CASE
+                    WHEN room_prices.unit = \'day\' THEN
+                        room_prices.price * GREATEST(DATEDIFF(bookings.end_date, bookings.start_date), 1)
+                    WHEN room_prices.unit = \'month\' THEN
+                        room_prices.price * GREATEST(DATEDIFF(bookings.end_date, bookings.start_date), 1) / 30
+                    ELSE COALESCE(room_prices.price, 0)
+                END as total_amount
+            '),
         )
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
             ->where('properties.user_id', $partnerId)
-            ->where('bookings.status', BookingStatus::PENDING->value)
-            ->orderBy('bookings.created_at', 'desc')
+            ->where('bookings.status', BookingStatus::PENDING->value);
+
+        if ($propertyId !== null) {
+            $query->where('properties.id', $propertyId);
+        }
+
+        return $query
+            ->orderBy('bookings.created_at', 'asc')
             ->limit($limit)
             ->get();
     }
@@ -687,11 +837,43 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 $query->whereDate('bookings.start_date', $value);
             } elseif ($key === 'end_date') {
                 $query->whereDate('bookings.end_date', $value);
+            } elseif ($key === 'property_id') {
+                $query->where('properties.id', $value);
             } else {
                 $query->where($key, $value);
             }
         }
 
         return $query->count();
+    }
+
+    /**
+     * Count bookings matching criteria for admin (system-wide).
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function countBookingsForAdmin(array $filters = []): int
+    {
+        $query = $this->model->newQuery();
+
+        foreach ($filters as $key => $value) {
+            if ($key === 'status') {
+                $query->where('bookings.status', $value);
+            } elseif ($key === 'stay_status') {
+                $query->where('bookings.stay_status', $value);
+            } elseif ($key === 'start_date') {
+                $query->whereDate('bookings.start_date', $value);
+            } elseif ($key === 'end_date') {
+                $query->whereDate('bookings.end_date', $value);
+            } elseif ($key === 'property_id') {
+                $query->whereHas('room.property', static function ($q) use ($value): void {
+                    $q->where('properties.id', $value);
+                });
+            } else {
+                $query->where($key, $value);
+            }
+        }
+
+        return (int) $query->count();
     }
 }

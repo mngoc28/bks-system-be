@@ -37,11 +37,13 @@ final class Booking extends Model
     protected $casts = [
         'status'                      => 'integer',
         'stay_status'                 => 'string',
+        'payment_status'              => 'string',
         'start_date'                  => 'date',
         'end_date'                    => 'date',
         'created_at'                  => 'datetime',
         'updated_at'                  => 'datetime',
         'pending_cancellation_since'  => 'datetime',
+        'payment_method_changed_at'   => 'datetime',
         'cancellation_policy_version' => 'string',
         'client_local_id'             => 'string',
         'client_fingerprint'          => 'string',
