@@ -274,6 +274,11 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         if ($request->boolean('with_details')) {
             $selectColumns[] = 'rooms.description';
             $selectColumns[] = DB::raw('(SELECT GROUP_CONCAT(DISTINCT a.name) FROM room_amenities ra JOIN amenities a ON ra.amenity_id = a.id WHERE ra.room_id = rooms.id) as amenities');
+            if (DB::getDriverName() === 'sqlite') {
+                $selectColumns[] = DB::raw('(SELECT GROUP_CONCAT(s.name || " (" || CAST(s.price AS TEXT) || "đ)") FROM room_services rs JOIN services s ON rs.service_id = s.id WHERE rs.room_id = rooms.id) as services');
+            } else {
+                $selectColumns[] = DB::raw('(SELECT GROUP_CONCAT(DISTINCT CONCAT(s.name, " (", s.price, "đ)")) FROM room_services rs JOIN services s ON rs.service_id = s.id WHERE rs.room_id = rooms.id) as services');
+            }
             $groupByColumns[] = 'rooms.description';
         }
 
@@ -295,6 +300,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 \App\QueryFilters\Rooms\Keyword::class,
                 \App\QueryFilters\Rooms\PartnerId::class,
                 \App\QueryFilters\Rooms\TouristSpotSlug::class,
+                \App\QueryFilters\Rooms\AmenityIds::class,
+                \App\QueryFilters\Rooms\ServiceIds::class,
             ])
             ->thenReturn();
 
@@ -333,7 +340,38 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             || $request->filled('property_type_id')
             || $request->filled('keyword')
             || $request->filled('partner_id')
-            || $request->filled('tourist_spot_slug');
+            || $request->filled('tourist_spot_slug')
+            || $request->filled('price_min')
+            || $request->filled('price_max')
+            || $request->filled('guests')
+            || $request->filled('rent_type');
+
+        if ($request->filled('price_min')) {
+            $roomsQueryForExecution->where('cheapest_daily_price', '>=', floatval($request->input('price_min')));
+        }
+        if ($request->filled('price_max')) {
+            $roomsQueryForExecution->where('cheapest_daily_price', '<=', floatval($request->input('price_max')));
+        }
+        if ($request->filled('guests')) {
+            $roomsQueryForExecution->where('people', '>=', intval($request->input('guests')));
+        }
+        if ($request->filled('rating_min')) {
+            $roomsQueryForExecution->where('reviews_avg_rating', '>=', floatval($request->input('rating_min')));
+        }
+        if ($request->filled('rent_type')) {
+            $rentType = $request->input('rent_type');
+            if ($rentType === 'daily') {
+                $roomsQueryForExecution->where(function ($q) {
+                    $q->whereNotNull('cheapest_daily_price')
+                      ->where('cheapest_daily_price', '>', 0);
+                });
+            } elseif ($rentType === 'monthly') {
+                $roomsQueryForExecution->where(function ($q) {
+                    $q->whereNotNull('cheapest_monthly_price')
+                      ->where('cheapest_monthly_price', '>', 0);
+                });
+            }
+        }
 
         if (!$hasSpecificFilter && !$shouldPaginate) {
             $limitPerProvince = $request->input('limit') ?: $request->input('per_page') ?: config('const.DEFAULT_PER_PAGE');
@@ -631,12 +669,18 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      * @param int $partnerId
      * @return int
      */
-    public function getEmptyRoomsForPartner(int $partnerId): int
+    public function getEmptyRoomsForPartner(int $partnerId, ?int $propertyId = null): int
     {
         $today = now()->toDateString();
-        return $this->model->join('properties', 'rooms.property_id', '=', 'properties.id')
+        $query = $this->model->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->where('properties.user_id', $partnerId)
-            ->where('rooms.status', RoomStatus::PUBLIC)
+            ->where('rooms.status', RoomStatus::PUBLIC);
+
+        if ($propertyId !== null) {
+            $query->where('properties.id', $propertyId);
+        }
+
+        return $query
             ->whereDoesntHave('bookings', function ($query) use ($today) {
                 $query->whereIn('status', [
                     BookingStatus::PENDING->value,
@@ -812,6 +856,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.room_type',
             'rooms.people',
             'rooms.area',
+            'rooms.deposit as deposit',
+            'rooms.floor_number as floor_number',
+            'pi.phone as partner_phone',
+            'u.name as partner_name',
             'p.id as province_id',
             'p.name as province_name',
             'p.name_en as province_name_en',
@@ -838,6 +886,10 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.room_type',
             'rooms.people',
             'rooms.area',
+            'rooms.deposit',
+            'rooms.floor_number',
+            'pi.phone',
+            'u.name',
             'p.name',
             'p.name_en',
             'p.id',

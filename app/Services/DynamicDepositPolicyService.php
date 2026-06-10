@@ -38,75 +38,87 @@ final class DynamicDepositPolicyService
             $isLongTerm = $roomPrice->unit === 'month';
         }
 
-        // Long term always requires a deposit
-        if ($isLongTerm) {
-            $amount = 0.0;
-            if ($roomPrice && $roomPrice->deposit_amount !== null) {
-                $amount = (float) $roomPrice->deposit_amount;
-            } elseif ($room->deposit !== null) {
-                $amount = (float) $room->deposit;
-            }
-            return [
-                'required' => true,
-                'amount' => $amount,
-            ];
-        }
+        // Check if last-minute (< 24h from now to checkin time)
+        $checkInDateTime = Carbon::parse($startDate)->setTime(14, 0, 0);
+        $isLastMinute = !$isLongTerm && (Carbon::now()->diffInHours($checkInDateTime, false) <= 24);
 
         // Short term (daily): check if any date falls on weekend (Sat/Sun) or high season/holiday.
         // High season/holiday is indicated if there's a markup PriceRule active for that date.
         $hasWeekendOrHoliday = false;
 
-        // Fetch active markup price rules
-        $markupRules = PriceRule::where(function ($query) use ($room) {
-            $query->where('room_id', $room->id)
-                  ->orWhere(function ($q) use ($room) {
-                      $q->where('property_id', $room->property_id)
-                        ->whereNull('room_id');
-                  });
-        })
-        ->where('is_active', true)
-        ->where('type', 'markup')
-        ->where(function ($query) use ($startDate, $endDate) {
-            $query->where('start_date', '<=', $endDate)
-                  ->where('end_date', '>=', $startDate);
-        })
-        ->get();
+        if (!$isLongTerm) {
+            // Fetch active markup price rules
+            $markupRules = PriceRule::where(function ($query) use ($room) {
+                $query->where('room_id', $room->id)
+                      ->orWhere(function ($q) use ($room) {
+                          $q->where('property_id', $room->property_id)
+                            ->whereNull('room_id');
+                      });
+            })
+            ->where('is_active', true)
+            ->where('type', 'markup')
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->where('start_date', '<=', $endDate)
+                      ->where('end_date', '>=', $startDate);
+            })
+            ->get();
 
-        foreach ($period as $date) {
-            // Check weekend (0 = Sunday, 6 = Saturday)
-            if (in_array($date->dayOfWeek, [0, 6], true)) {
-                $hasWeekendOrHoliday = true;
-                break;
-            }
-
-            // Check if matches a markup rule
-            $hasMarkup = $markupRules->first(function ($rule) use ($date) {
-                $isInDateRange = $date->between($rule->start_date, $rule->end_date);
-                if (!$isInDateRange) {
-                    return false;
+            foreach ($period as $date) {
+                // Check weekend (0 = Sunday, 6 = Saturday)
+                if (in_array($date->dayOfWeek, [0, 6], true)) {
+                    $hasWeekendOrHoliday = true;
+                    break;
                 }
-                if ($rule->days_of_week) {
-                    return in_array($date->dayOfWeek, $rule->days_of_week);
-                }
-                return true;
-            });
 
-            if ($hasMarkup) {
-                $hasWeekendOrHoliday = true;
-                break;
+                // Check if matches a markup rule
+                $hasMarkup = $markupRules->first(function ($rule) use ($date) {
+                    $isInDateRange = $date->between($rule->start_date, $rule->end_date);
+                    if (!$isInDateRange) {
+                        return false;
+                    }
+                    if ($rule->days_of_week) {
+                        return in_array($date->dayOfWeek, $rule->days_of_week);
+                    }
+                    return true;
+                });
+
+                if ($hasMarkup) {
+                    $hasWeekendOrHoliday = true;
+                    break;
+                }
             }
         }
 
-        if ($hasWeekendOrHoliday) {
+        $isRequired = $isLongTerm || $isLastMinute || $hasWeekendOrHoliday;
+
+        if ($isRequired) {
+            $roomStayTotal = BookingStayAmountCalculator::computeRoomStayTotal(
+                $startDate,
+                $endDate,
+                (float) ($roomPrice ? $roomPrice->price : 0.0),
+                (string) ($roomPrice ? $roomPrice->unit : 'day')
+            );
+
             $amount = 0.0;
-            if ($roomPrice && $roomPrice->deposit_amount !== null) {
+            if ($roomPrice && $roomPrice->deposit_amount !== null && (float) $roomPrice->deposit_amount > 0) {
                 $amount = (float) $roomPrice->deposit_amount;
-            } elseif ($room->deposit !== null) {
+            } elseif ($room->deposit !== null && (float) $room->deposit > 0) {
                 $amount = (float) $room->deposit;
             } else {
-                // Default fallback: 50% of base price if no deposit amount specified
-                $basePrice = $roomPrice ? (float) $roomPrice->price : 0.0;
-                $amount = $basePrice * 0.5;
+                if ($isLastMinute) {
+                    $amount = $roomStayTotal;
+                } else {
+                    $amount = round($roomStayTotal * 0.5, 2);
+                }
+            }
+
+            // Force minimums if required but amount is 0 or negative
+            if ($amount <= 0.0) {
+                if ($isLastMinute) {
+                    $amount = $roomStayTotal;
+                } else {
+                    $amount = round($roomStayTotal * 0.5, 2);
+                }
             }
 
             return [

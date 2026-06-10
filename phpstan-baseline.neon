@@ -416,8 +416,8 @@ parameters:
 			path: app/Repositories/BookingRepository/BookingRepository.php
 
 		-
-			message: "#^Parameter \\#1 \\.\\.\\.\\$groups of method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>\\:\\:groupBy\\(\\) expects array\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
-			count: 4
+			message: "#^Parameter \\#[1-9] \\.\\.\\.\\$groups of method Illuminate\\\\Database\\\\Eloquent\\\\Builder\\<Illuminate\\\\Database\\\\Eloquent\\\\Model\\>\\:\\:groupBy\\(\\) expects array\\|string, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 6
 			path: app/Repositories/BookingRepository/BookingRepository.php
 
 		-

@@ -365,4 +365,68 @@ final class StayService
             return ['success' => false, 'message' => 'Internal server error'];
         }
     }
+
+    /**
+     * Change payment method for a booking.
+     * Business rules:
+     *   - Booking must belong to this user.
+     *   - Booking status must be 0 (pending) or 1 (confirmed).
+     *   - New method must differ from current method.
+     *   - online → pay_at_counter is blocked when status = 1 (already confirmed).
+     *   - Cannot change if check-in is less than 12 hours away.
+     *   - Can only change once (payment_method_changed_at must be null).
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @param string $newMethod
+     * @return array{success: bool, message: string}
+     */
+    public function changePaymentMethod(int $bookingId, int $userId, string $newMethod): array
+    {
+        try {
+            $booking = Booking::where('id', $bookingId)
+                ->where('user_id', $userId)
+                ->first();
+
+            if (!$booking) {
+                return ['success' => false, 'message' => 'Không tìm thấy đơn đặt phòng.'];
+            }
+
+            // Chỉ cho phép khi đơn đang chờ (0) hoặc đã xác nhận (1)
+            if (!in_array($booking->status, [0, 1])) {
+                return ['success' => false, 'message' => 'Không thể đổi phương thức thanh toán cho đơn này.'];
+            }
+
+            // Phương thức mới phải khác phương thức hiện tại
+            if ($booking->payment_method === $newMethod) {
+                return ['success' => false, 'message' => 'Phương thức thanh toán không thay đổi.'];
+            }
+
+            // online → pay_at_counter bị chặn khi đơn đã được Partner xác nhận
+            if ($booking->payment_method === 'online' && $newMethod === 'pay_at_counter' && $booking->status === 1) {
+                return ['success' => false, 'message' => 'Không thể chuyển sang thanh toán tại quầy khi đơn đã được xác nhận.'];
+            }
+
+            // Kiểm tra check-in còn hơn 12 giờ
+            $checkIn = \Carbon\Carbon::parse($booking->start_date)->startOfDay();
+            if ($checkIn->diffInHours(now(), false) >= -12) {
+                return ['success' => false, 'message' => 'Không thể đổi phương thức khi check-in còn dưới 12 giờ.'];
+            }
+
+            // Chỉ được đổi 1 lần
+            if (!is_null($booking->getRawOriginal('payment_method_changed_at'))) {
+                return ['success' => false, 'message' => 'Bạn đã đổi phương thức thanh toán một lần. Vui lòng liên hệ lễ tân nếu cần hỗ trợ thêm.'];
+            }
+
+            $booking->payment_method = $newMethod;
+            $booking->payment_method_changed_at = now();
+            $booking->save();
+
+            $label = $newMethod === 'online' ? 'thanh toán trực tuyến' : 'thanh toán tại quầy';
+            return ['success' => true, 'message' => "Đã đổi sang {$label} thành công."];
+        } catch (Exception $e) {
+            Log::error('Error in StayService@changePaymentMethod: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'Lỗi hệ thống. Vui lòng thử lại.'];
+        }
+    }
 }

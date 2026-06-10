@@ -19,10 +19,12 @@ use Carbon\Carbon;
 use App\Enums\UserType;
 use App\Enums\Status as EnumsStatus;
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
 use App\Events\BookingCancelled;
 use App\Events\BookingConfirmed;
 use App\Events\BookingCreated;
 use App\Events\BookingNoShow;
+use App\Events\RoomInventoryReleased;
 use App\Jobs\SendBooking;
 use App\Jobs\SendBookingCancelled;
 use App\Jobs\VerifyMail;
@@ -713,9 +715,17 @@ final class BookingService
             }
 
             $now = Carbon::now();
+            $paymentStatus = PaymentStatus::UNPAID->value;
+            if ($booking->payment_method === 'online') {
+                $paymentStatus = PaymentStatus::PAID->value;
+            } elseif ($booking->deposit_amount > 0 && $booking->deposit_status === 'confirmed_by_partner') {
+                $paymentStatus = PaymentStatus::PARTIALLY_PAID->value;
+            }
+
             $this->bookingRepository->update($id, [
-                'status'       => BookingStatus::CONFIRMED->value,
-                'confirmed_at' => $now,
+                'status'         => BookingStatus::CONFIRMED->value,
+                'confirmed_at'   => $now,
+                'payment_status' => $paymentStatus,
             ]);
             $updated = $this->bookingRepository->find($id);
 
@@ -1303,6 +1313,152 @@ final class BookingService
     }
 
     /**
+     * Public update email of a pending booking when the user entered wrong email.
+     *
+     * @param Request $request
+     * @return array{success: bool, message: string}
+     */
+    public function handlePublicUpdateBookingEmail(Request $request): array
+    {
+        try {
+            DB::beginTransaction();
+
+            $oldEmail = mb_strtolower(trim((string) $request->input('old_email')));
+            $newEmail = mb_strtolower(trim((string) $request->input('new_email')));
+            $rawCode  = preg_replace('/\s+/', '', (string) $request->input('booking_code'));
+
+            $booking = Booking::query()
+                ->with(['user', 'room.property', 'services', 'price'])
+                ->whereRaw('LOWER(booking_code) = ?', [mb_strtolower($rawCode)])
+                ->first();
+
+            if ($booking === null || $booking->user === null) {
+                return [
+                    'success' => false,
+                    'message' => 'Không tìm thấy đặt phòng tương ứng.',
+                ];
+            }
+
+            // Only allow email updates for PENDING bookings
+            if ((int) $booking->status !== \App\Enums\BookingStatus::PENDING->value) {
+                return [
+                    'success' => false,
+                    'message' => 'Không thể thay đổi email do đơn đặt phòng này đã được xác nhận hoặc hủy bỏ.',
+                ];
+            }
+
+            if (mb_strtolower((string) $booking->user->email) !== $oldEmail) {
+                return [
+                    'success' => false,
+                    'message' => 'Email hiện tại của đơn đặt phòng không khớp với thông tin cung cấp.',
+                ];
+            }
+
+            // Check if the user is a pending user (not verified yet)
+            $oldUser = $booking->user;
+            $token = Str::random(20) . time();
+
+            // Look up if a user already exists with the new email
+            $newUser = $this->usersRepository->findOneBy(['email' => $newEmail], false);
+
+            if ($newUser) {
+                // Link booking to the existing user
+                $booking->update(['user_id' => $newUser->id]);
+            } else {
+                // Create a new pending user for the correct email
+                $newUser = $this->usersRepository->create([
+                    'name'               => $oldUser->name,
+                    'email'              => $newEmail,
+                    'phone'              => $oldUser->phone,
+                    'password'           => bcrypt(Str::random(16)),
+                    'role'               => \App\Enums\UserType::USER,
+                    'status'             => \App\Enums\Status::PENDING->value,
+                    'verification_token' => $token,
+                    'is_email_verified'  => 0,
+                    'token_expires_at'   => Carbon::now()->addMinutes(
+                        config('const.TIME_TOKEN_CHECK_VERIFY_EMAIL', 1440)
+                    ),
+                ]);
+
+                $this->usersRepository->update($newUser->id, [
+                    'created_by' => $newUser->id,
+                    'updated_by' => $newUser->id,
+                ]);
+
+                $booking->update(['user_id' => $newUser->id]);
+            }
+
+            $booking->refresh();
+
+            // If the old user was a pending guest user (unverified) and has no other bookings, we clean it up
+            $hasOtherBookings = Booking::query()->where('user_id', $oldUser->id)->where('id', '!=', $booking->id)->exists();
+            if (!$oldUser->is_email_verified && !$hasOtherBookings) {
+                $oldUser->delete();
+            }
+
+            // Prepare email information for resend
+            $room = $this->roomsRepository->getRoomInfoSendMail($booking->room_id);
+            $roomPrice = $booking->price;
+            $totalDays = BookingStayAmountCalculator::countStayDays(
+                $booking->start_date,
+                $booking->end_date
+            );
+            $roomStayTotal = $this->computeRoomStayTotalForBooking($booking);
+            $servicesTotal = $this->computeServicesTotalForBooking($booking);
+            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
+
+            $selectedServices = $booking->services()->select('name', 'price')->get();
+            $services = $selectedServices->map(fn ($service) => [
+                'name'   => $service->name,
+                'amount' => (float) ($service->price ?? 0),
+            ])->toArray();
+
+            $emailInfo = [
+                'booking_id'         => (int) $booking->id,
+                'booking_code'       => (string) $booking->booking_code,
+                'room_title'         => (string) ($room->title ?? ''),
+                'property_name'      => (string) ($room->property_name ?? ''),
+                'property_address'   => (string) ($room->property_address ?? ''),
+                'start_time'         => Carbon::parse($booking->start_date)->format('d/m/Y'),
+                'end_time'           => Carbon::parse($booking->end_date)->format('d/m/Y'),
+                'total_days'         => $totalDays,
+                'room_stay_amount'   => $roomStayTotal,
+                'services_total'     => $servicesTotal,
+                'unit_price'         => (float) ($roomPrice?->price ?? 0),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'deposit_deadline'   => $this->computeDepositDeadline(Carbon::parse($booking->start_date), Carbon::now()),
+                'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
+                'total_amount'       => $grandTotal,
+                'goline_phone'       => '0243 795 7250',
+                'token'              => $newUser->verification_token,
+                'is_first_time'      => !$newUser->is_email_verified,
+                'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
+                'room_url'           => config('app.url_frontend') . '/rooms/' . $booking->room_id,
+            ];
+
+            DB::commit();
+
+            // Send booking email to the new address
+            SendBooking::dispatch($newUser->email, $newUser->name, $emailInfo);
+
+            return [
+                'success' => true,
+                'message' => 'Thay đổi email nhận thông tin đặt phòng thành công. Email kích hoạt mới đã được gửi đi.',
+            ];
+        } catch (Throwable $e) {
+            DB::rollBack();
+            Log::error('Public booking email update failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật email: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function buildPublicBookingLookupPayload(
@@ -1585,6 +1741,8 @@ final class BookingService
             ]);
             DB::commit();
 
+            event(new RoomInventoryReleased($booking->room_id));
+
             $updated = $this->bookingRepository->find($id);
             $scope = $this->resolveBroadcastScope($updated);
             if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
@@ -1826,6 +1984,7 @@ final class BookingService
                 'Vui lòng liên hệ hỗ trợ để biết chi tiết chính sách hủy phòng.</p>';
         }
 
+        $ref = $start->copy()->startOfDay();
         $rows = '';
         foreach ($tiers as $tier) {
             $minH   = (int) $tier->hours_before_checkin_min;
@@ -1835,11 +1994,15 @@ final class BookingService
                 : 'N/A';
 
             if ($maxH === null) {
-                $when = 'Hủy trước ' . $minH . 'h so với giờ nhận phòng';
+                $dt = '00:00 ngày ' . $ref->copy()->subHours($minH)->format('d/m/Y');
+                $when = 'Hủy trước ' . $dt . ' (≥ ' . (int)($minH / 24) . ' ngày trước check-in)';
             } elseif ($minH === 0) {
-                $when = 'Hủy trong vòng ' . $maxH . 'h trước giờ nhận phòng';
+                $dtStart = '00:00 ngày ' . $ref->copy()->subHours($maxH + 1)->format('d/m/Y');
+                $when = 'Hủy từ ' . $dtStart . ' trở đi (dưới ' . (int)(($maxH + 1) / 24) . ' ngày trước check-in)';
             } else {
-                $when = 'Hủy trong ' . $minH . 'h – ' . $maxH . 'h trước giờ nhận phòng';
+                $dtStart = '00:00 ngày ' . $ref->copy()->subHours($maxH + 1)->format('d/m/Y');
+                $dtEnd   = '00:00 ngày ' . $ref->copy()->subHours($minH)->format('d/m/Y');
+                $when = 'Hủy từ ' . $dtStart . ' đến trước ' . $dtEnd . ' (' . (int)($minH / 24) . ' đến dưới ' . (int)(($maxH + 1) / 24) . ' ngày trước check-in)';
             }
 
             $color = ($refund === '100%') ? '#10b981' : '#dc2626';
@@ -1863,6 +2026,9 @@ final class BookingService
             . '<tbody>' . $rows . '</tbody>'
             . '</table>'
             . '<p style="font-size:11px;color:#9ca3af;margin:8px 0 0 0;">'
-            . '* Thời gian tính từ 00:00 ngày nhận phòng theo múi giờ Việt Nam (GMT+7).</p>';
+            . '* Thời gian tính từ 00:00 ngày nhận phòng theo múi giờ Việt Nam (GMT+7).</p>'
+            . '<div style="margin-top:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:11px;color:#6b7280;line-height:1.5;font-style:italic;">'
+            . '<strong>Lưu ý về quy định hoàn trả:</strong> Các mốc thời gian hoàn cọc trên được thiết lập nhằm đảm bảo sự cân bằng giữa quyền lợi giữ phòng của quý khách và kế hoạch chuẩn bị đón tiếp từ phía chủ nhà. Kính mong quý khách hàng thông cảm và cân nhắc kỹ kế hoạch di chuyển trước khi thực hiện đặt phòng.'
+            . '</div>';
     }
 }

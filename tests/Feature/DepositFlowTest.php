@@ -27,6 +27,7 @@ final class DepositFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        \DB::table('booking_deposits')->truncate();
     }
 
     private function getPartnerToken(): string

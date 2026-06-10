@@ -140,7 +140,6 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
     public function getAllProvinces(): array
     {
         return $this->model
-            ->with('wards:id,name,province_id')
             ->select('provinces.id', 'provinces.name', 'provinces.name_en')
             ->get()
             ->toArray();

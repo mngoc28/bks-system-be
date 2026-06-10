@@ -37,10 +37,15 @@ class BookingMail extends Mailable
      */
     public function build()
     {
+        $subject = !empty($this->data['is_paid'])
+            ? 'Xác nhận thanh toán thành công và hoàn tất đặt phòng - BKS Stay'
+            : 'Welcome to BKS - Xác nhận đặt phòng STAY';
+
         return $this->from(
             env('MAIL_FROM_ADDRESS'),
             env('MAIL_FROM_NAME')
         )
+            ->subject($subject)
             ->view('room-bookings.room-booking')
             ->with([
                 'name' => $this->name,

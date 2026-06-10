@@ -28,12 +28,12 @@ final class CancellationPolicyBaselineSeeder extends Seeder
         DB::table('cancellation_policy_tiers')->where('version', $version)->delete();
 
         $tierRows = [
-            ['stay_kind' => 'short', 'hours_before_checkin_min' => 168, 'hours_before_checkin_max' => null, 'fee_percent' => 10.00, 'refund_percent' => 90.00],
-            ['stay_kind' => 'short', 'hours_before_checkin_min' => 48, 'hours_before_checkin_max' => 167, 'fee_percent' => 25.00, 'refund_percent' => 75.00],
-            ['stay_kind' => 'short', 'hours_before_checkin_min' => 0, 'hours_before_checkin_max' => 47, 'fee_percent' => 50.00, 'refund_percent' => 50.00],
-            ['stay_kind' => 'long', 'hours_before_checkin_min' => 720, 'hours_before_checkin_max' => null, 'fee_percent' => 5.00, 'refund_percent' => 95.00],
-            ['stay_kind' => 'long', 'hours_before_checkin_min' => 168, 'hours_before_checkin_max' => 719, 'fee_percent' => 15.00, 'refund_percent' => 85.00],
-            ['stay_kind' => 'long', 'hours_before_checkin_min' => 0, 'hours_before_checkin_max' => 167, 'fee_percent' => 40.00, 'refund_percent' => 60.00],
+            ['stay_kind' => 'short', 'hours_before_checkin_min' => 168, 'hours_before_checkin_max' => null, 'fee_percent' => 0.00, 'refund_percent' => 100.00],
+            ['stay_kind' => 'short', 'hours_before_checkin_min' => 48, 'hours_before_checkin_max' => 167, 'fee_percent' => 50.00, 'refund_percent' => 50.00],
+            ['stay_kind' => 'short', 'hours_before_checkin_min' => 0, 'hours_before_checkin_max' => 47, 'fee_percent' => 100.00, 'refund_percent' => 0.00],
+            ['stay_kind' => 'long', 'hours_before_checkin_min' => 720, 'hours_before_checkin_max' => null, 'fee_percent' => 0.00, 'refund_percent' => 100.00],
+            ['stay_kind' => 'long', 'hours_before_checkin_min' => 168, 'hours_before_checkin_max' => 719, 'fee_percent' => 50.00, 'refund_percent' => 50.00],
+            ['stay_kind' => 'long', 'hours_before_checkin_min' => 0, 'hours_before_checkin_max' => 167, 'fee_percent' => 100.00, 'refund_percent' => 0.00],
         ];
 
         foreach ($tierRows as $row) {

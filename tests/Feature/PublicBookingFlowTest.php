@@ -29,12 +29,12 @@ final class PublicBookingFlowTest extends TestCase
 
         $start = now()->addMonths(6)->startOfMonth()->addDays(5)->format('Y-m-d');
         $end = now()->addMonths(6)->startOfMonth()->addDays(8)->format('Y-m-d');
-        $email = 'public-flow-'.uniqid('', true).'@example.com';
+        $email = 'public-flow-' . uniqid('', true) . '@example.com';
 
         $response = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
             'name'           => 'Nguyen Van Test',
             'email'          => $email,
-            'phone'          => '0909123456',
+            'phone'          => '0333 494 850',
             'start_date'     => $start,
             'end_date'       => $end,
             'note'           => 'PHPUnit',
@@ -74,7 +74,7 @@ final class PublicBookingFlowTest extends TestCase
 
         $start = now()->addMonths(7)->startOfMonth()->addDays(5)->format('Y-m-d');
         $end = now()->addMonths(7)->startOfMonth()->addDays(8)->format('Y-m-d');
-        $email = 'lookup-flow-'.uniqid('', true).'@example.com';
+        $email = 'lookup-flow-' . uniqid('', true) . '@example.com';
 
         $create = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
             'name'           => 'Tran Thi Lookup',
@@ -110,7 +110,7 @@ final class PublicBookingFlowTest extends TestCase
 
         $start = now()->addMonths(8)->startOfMonth()->addDays(5)->format('Y-m-d');
         $end = now()->addMonths(8)->startOfMonth()->addDays(8)->format('Y-m-d');
-        $email = 'lookup-other-'.uniqid('', true).'@example.com';
+        $email = 'lookup-other-' . uniqid('', true) . '@example.com';
 
         $create = $this->postJson("/api/v1/bookings/{$room->id}/user-create", [
             'name'           => 'Le Van Other',

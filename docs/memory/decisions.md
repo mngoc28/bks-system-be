@@ -1,5 +1,27 @@
 # Repository Decisions Log
 
+## 2026-06-08 - Partner Dashboard overbooking count (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260608-DASH-001 |
+| Context | Alert Center hardcode `overbookingCount={0}`; Calendar FE đã có logic đếm overlap client-side nhưng Dashboard cần số liệu server-side cho CTA và filter property |
+| Decision | Tính `overbookingCount` trên BE bằng cách quét booking active trong cửa sổ 30 ngày, group theo `room_id`, đếm cặp interval overlap với semantics `ConflictChecker::intervalsOverlap` (end_date exclusive). Expose qua payload `GET /partner/dashboard/kpis` (field mới) thay vì endpoint riêng — giảm round-trip |
+| Rationale | Đồng bộ semantics với confirm conflict và Calendar; tái sử dụng service hiện có; không cần migration |
+| Related artifact | `docs/plans/plan_012_partner_dashboard_redesign.md`, `docs/ui-designs/partner-dashboard/ui_design_v1.md`, `app/Services/ConflictChecker.php` |
+| Status | Planned |
+
+## 2026-06-08 - Partner Dashboard property filter (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260608-DASH-002 |
+| Context | SRS PP360-DASH-003/006 yêu cầu filter theo property; KPI/chart hiện aggregate toàn partner |
+| Decision | Thêm query param optional `property_id` trên `stats`, `kpis`, `charts/*`, `pending-bookings`; validate ownership; cache key KPI bao gồm property scope |
+| Rationale | Backward-compatible (không param = all); align Calendar filter pattern |
+| Related artifact | `docs/plans/plan_012_partner_dashboard_redesign.md`, `app/Services/PartnerKpiService.php` |
+| Status | Planned |
+
 ## 2026-05-31 - Đối soát doanh thu Admin
 
 | Field | Decision |

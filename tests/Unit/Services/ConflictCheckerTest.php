@@ -14,8 +14,8 @@ use PHPUnit\Framework\TestCase;
  * Chỉ cover phần `intervalsOverlap` thuần — phần query Eloquent đã được
  * verify gián tiếp qua RoomBlockServiceTest và feature tests sau này.
  *
- * BCP (Phase B1): `findConflicts` loại trừ chỉ CANCELLED/COMPLETED — status 4
- * (`PENDING_CANCELLATION`) vẫn conflict-active; test dưới khóa contract tập loại trừ.
+ * BCP (Phase B1): `findConflicts` loại trừ CANCELLED/COMPLETED và `stay_status=no_show` —
+ * status 4 (`PENDING_CANCELLATION`) vẫn conflict-active; test dưới khóa contract tập loại trừ.
  *
  * Quy tắc business: `end_date` exclusive — back-to-back (a.end == b.start)
  * KHÔNG được tính là conflict.

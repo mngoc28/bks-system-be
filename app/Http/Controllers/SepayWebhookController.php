@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Services\DepositService;
 use App\Events\BookingConfirmed;
 use App\Jobs\SendBooking;
+use App\Enums\PaymentStatus;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -95,9 +96,10 @@ final class SepayWebhookController extends Controller
         try {
             $now = Carbon::now();
 
-            // Update booking payment timestamp and confirm
+            // Update booking payment timestamp, status and payment_status
             $booking->update([
                 'status'               => 1, // CONFIRMED
+                'payment_status'       => PaymentStatus::PAID->value,
                 'payment_collected_at' => $now,
             ]);
 
@@ -202,6 +204,7 @@ final class SepayWebhookController extends Controller
                 'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => '',
+                'is_paid'            => true,
             ];
 
             SendBooking::dispatch($user->email, $user->name, $emailInfo);

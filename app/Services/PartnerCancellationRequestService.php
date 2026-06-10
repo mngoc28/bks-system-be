@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\BookingStatus;
 use App\Events\BookingCancelled;
 use App\Events\CancellationRequestUpdated;
+use App\Events\RoomInventoryReleased;
 use App\Models\Booking;
 use App\Models\BookingCancellationRequest;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
@@ -128,6 +129,8 @@ final class PartnerCancellationRequestService
                     $cancellationReason .= ' guest_reason=' . mb_substr($guestReason, 0, 500);
                 }
 
+                $roomId = (int) $booking->room_id;
+                $this->roomsRepository->update($roomId, ['status' => true]);
                 $this->bookingRepository->update((int) $booking->id, [
                     'status'                      => BookingStatus::CANCELLED->value,
                     'cancelled_at'                => $now,
@@ -156,7 +159,8 @@ final class PartnerCancellationRequestService
                     return $this->fail(__('booking.messages.update_failed'), 'INTERNAL', 500);
                 }
 
-                DB::afterCommit(function () use ($fresh, $scope, $partnerUserId, $req, $cancellationReason): void {
+                DB::afterCommit(function () use ($fresh, $scope, $partnerUserId, $req, $cancellationReason, $roomId): void {
+                    event(new RoomInventoryReleased($roomId));
                     $this->dispatchCancellationRequestUpdated(
                         (int) $req->id,
                         (int) $fresh->id,

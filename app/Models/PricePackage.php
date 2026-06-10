@@ -66,4 +66,56 @@ final class PricePackage extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    /**
+     * Default package id (medium → first row fallback).
+     */
+    public static function defaultId(): int
+    {
+        $mediumId = self::query()->where('name', 'medium')->value('id');
+
+        return (int) ($mediumId ?? self::query()->orderBy('id')->value('id') ?? 0);
+    }
+
+    /**
+     * Resolve price package id from explicit id or legacy label.
+     */
+    public static function resolveId(?int $packageId, ?string $label = null): int
+    {
+        if ($packageId !== null && $packageId > 0 && self::query()->where('id', $packageId)->exists()) {
+            return $packageId;
+        }
+
+        if ($label !== null && trim($label) !== '') {
+            $trimmed = trim($label);
+            $byName = self::query()->where('name', $trimmed)->value('id');
+            if ($byName) {
+                return (int) $byName;
+            }
+
+            $aliases = [
+                'gói chuẩn' => 'medium',
+                'goi chuan' => 'medium',
+                'chuẩn' => 'medium',
+                'chuan' => 'medium',
+                'siêu nhỏ' => 'super small',
+                'sieu nho' => 'super small',
+                'nhỏ' => 'small',
+                'nho' => 'small',
+                'trung bình' => 'medium',
+                'trung binh' => 'medium',
+                'lớn' => 'large',
+                'lon' => 'large',
+            ];
+            $key = mb_strtolower($trimmed);
+            if (isset($aliases[$key])) {
+                $aliasId = self::query()->where('name', $aliases[$key])->value('id');
+                if ($aliasId) {
+                    return (int) $aliasId;
+                }
+            }
+        }
+
+        return self::defaultId();
+    }
 }

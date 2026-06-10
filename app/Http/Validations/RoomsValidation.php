@@ -38,6 +38,10 @@ final class RoomsValidation
                 'sort_by' => ['nullable', 'in:cheapest_daily_price,people'],
                 'sort_direction' => ['nullable', 'in:asc,desc'],
                 'tourist_spot_slug' => ['nullable', 'string', 'max:255', 'exists:tourist_spots,slug'],
+                'price_min' => ['nullable', 'numeric', 'min:0'],
+                'price_max' => ['nullable', 'numeric', 'min:0'],
+                'guests' => ['nullable', 'integer', 'min:1'],
+                'rent_type' => ['nullable', 'string', 'in:daily,monthly'],
             ],
             [
                 'property_id.exists' => __('room.validation.property_id.exists'),

@@ -137,11 +137,21 @@ final class RoomsService
         try {
             DB::beginTransaction();
 
-            // 1. Create room with basic info
-            $roomData = $request->except(["amenities", "services", "prices"]);
-
-            $roomData["created_by"] = Auth::id();
-            $roomData["updated_by"] = Auth::id();
+            // 1. Create room with basic info (whitelist columns only)
+            $roomData = $request->only([
+                'property_id',
+                'title',
+                'room_number',
+                'deposit',
+                'area',
+                'floor_number',
+                'people',
+                'room_type',
+                'status',
+                'description',
+            ]);
+            $roomData['created_by'] = Auth::id();
+            $roomData['updated_by'] = Auth::id();
             $room = $this->roomsRepository->create($roomData);
 
             // 2. Save room amenities
@@ -222,9 +232,19 @@ final class RoomsService
     {
         DB::beginTransaction();
         try {
-            // not update amenities, services, prices into rooms table
-            $roomData = $request->except(["amenities", "services", "prices"]);
-            $roomData["updated_by"] = Auth::id();
+            $roomData = $request->only([
+                'property_id',
+                'title',
+                'room_number',
+                'deposit',
+                'area',
+                'floor_number',
+                'people',
+                'room_type',
+                'status',
+                'description',
+            ]);
+            $roomData['updated_by'] = Auth::id();
             $room = $this->roomsRepository->update($id, $roomData);
 
             // Handle relationships separately
@@ -620,7 +640,7 @@ final class RoomsService
     public function handleGetPricePackages(): array
     {
         try {
-            $packages = \App\Models\PricePackage::where('status', true)->get();
+            $packages = \App\Models\PricePackage::query()->orderBy('id')->get();
             return [
                 "success" => true,
                 "data" => $packages,

@@ -294,6 +294,7 @@
 
 - Backend dùng Laravel với route group `/api/v1/partner`, middleware `jwt.auth` và `role:partner`.
 - Frontend Partner Portal dùng React, các màn hình chính gồm `Dashboard.tsx`, `Bookings.tsx`, `Calendar.tsx`.
+- Partner Dashboard redesign (2026-06-08): UI spec `docs/ui-designs/partner-dashboard/ui_design_v1.md`; plan `docs/plans/plan_012_partner_dashboard_redesign.md`. API `GET /partner/dashboard/stats` đã trả `todayCheckInCount`, `todayCheckOutCount`, `inStayCount`, `pendingCancellationCount` nhưng FE chưa render. Overbooking alert cần field mới trên KPI payload (DEC-260608-DASH-001).
 - Dữ liệu ownership của Partner đi qua quan hệ `users -> properties -> rooms -> bookings`.
 - Booking status hiện dùng `0 pending`, `1 confirmed`, `2 cancelled`, `3 completed`.
 - Stay status hiện dùng `pending`, `checked_in`, `checked_out`, `no_show`.

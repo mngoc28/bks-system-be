@@ -156,6 +156,19 @@ class UserValidation
     }
 
     /**
+     * Validate admin status update (activate / block / unblock).
+     */
+    public function validateUpdateStatus(Request $request): \Illuminate\Validation\Validator
+    {
+        return Validator::make($request->all(), [
+            'status' => 'required|integer|in:1,2',
+        ], [
+            'status.required' => __('user.status_required'),
+            'status.in' => __('user.status_in'),
+        ]);
+    }
+
+    /**
      * Validate filters for getting all users
      *
      * @param Request $request

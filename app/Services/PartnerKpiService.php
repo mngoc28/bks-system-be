@@ -60,21 +60,22 @@ class PartnerKpiService
      *         commissionRate: float,
      *         avgConfirmSeconds: int|null,
      *         pendingCount: int,
+     *         overbookingCount: int,
      *         calculatedAt: string
      *     }|null,
      *     message: string
      * }
      */
-    public function getDashboardKpis(int $partnerId): array
+    public function getDashboardKpis(int $partnerId, ?int $propertyId = null): array
     {
-        $cacheKey = $this->key($partnerId, 'dashboard');
-
         try {
-            $payload = Cache::remember(
-                $cacheKey,
-                self::CACHE_TTL_SECONDS,
-                fn (): array => $this->computeDashboard($partnerId),
-            );
+            $payload = $propertyId === null
+                ? Cache::remember(
+                    $this->key($partnerId, 'dashboard'),
+                    self::CACHE_TTL_SECONDS,
+                    fn (): array => $this->computeDashboard($partnerId, null),
+                )
+                : $this->computeDashboard($partnerId, $propertyId);
 
             return [
                 'success' => true,
@@ -100,14 +101,16 @@ class PartnerKpiService
      *
      * @return array{success: bool, data: array<int, array{date: string, occupancyRate: float}>|null, message: string}
      */
-    public function getOccupancyChart(int $partnerId): array
+    public function getOccupancyChart(int $partnerId, ?int $propertyId = null): array
     {
         try {
-            $payload = Cache::remember(
-                $this->key($partnerId, 'charts:occupancy'),
-                self::CACHE_TTL_SECONDS,
-                fn (): array => $this->computeOccupancyChart($partnerId),
-            );
+            $payload = $propertyId === null
+                ? Cache::remember(
+                    $this->key($partnerId, 'charts:occupancy'),
+                    self::CACHE_TTL_SECONDS,
+                    fn (): array => $this->computeOccupancyChart($partnerId, null),
+                )
+                : $this->computeOccupancyChart($partnerId, $propertyId);
 
             return [
                 'success' => true,
@@ -137,14 +140,16 @@ class PartnerKpiService
      *     message: string
      * }
      */
-    public function getGmvChart(int $partnerId): array
+    public function getGmvChart(int $partnerId, ?int $propertyId = null): array
     {
         try {
-            $payload = Cache::remember(
-                $this->key($partnerId, 'charts:gmv'),
-                self::CACHE_TTL_SECONDS,
-                fn (): array => $this->computeGmvChart($partnerId),
-            );
+            $payload = $propertyId === null
+                ? Cache::remember(
+                    $this->key($partnerId, 'charts:gmv'),
+                    self::CACHE_TTL_SECONDS,
+                    fn (): array => $this->computeGmvChart($partnerId, null),
+                )
+                : $this->computeGmvChart($partnerId, $propertyId);
 
             return [
                 'success' => true,
@@ -193,13 +198,15 @@ class PartnerKpiService
      *     commissionRate: float,
      *     avgConfirmSeconds: int|null,
      *     pendingCount: int,
+     *     overbookingCount: int,
      *     calculatedAt: string
      * }
      */
-    public function computeDashboard(int $partnerId): array
+    public function computeDashboard(int $partnerId, ?int $propertyId = null): array
     {
-        $totalRooms = (int) $this->roomsRepository->countRoomsForPartner($partnerId);
-        $vacantRooms = (int) $this->roomsRepository->getEmptyRoomsForPartner($partnerId);
+        $roomFilters = $propertyId !== null ? ['rooms.property_id' => $propertyId] : [];
+        $totalRooms = (int) $this->roomsRepository->countRoomsForPartner($partnerId, $roomFilters);
+        $vacantRooms = (int) $this->roomsRepository->getEmptyRoomsForPartner($partnerId, $propertyId);
         $occupiedRooms = max(0, $totalRooms - $vacantRooms);
         $occupancyRate = $totalRooms > 0
             ? round(($occupiedRooms / $totalRooms) * 100, 2)
@@ -212,6 +219,7 @@ class PartnerKpiService
             $partnerId,
             $monthStart,
             $monthEnd,
+            $propertyId,
         );
         $gmvMtd = (float) $revenueRows->sum('revenue');
         $netRevenueMtd = round($gmvMtd * (1 - self::COMMISSION_RATE), 2);
@@ -223,8 +231,9 @@ class PartnerKpiService
             'gmvMtd'             => round($gmvMtd, 2),
             'netRevenueMtd'      => $netRevenueMtd,
             'commissionRate'     => self::COMMISSION_RATE,
-            'avgConfirmSeconds'  => $this->computeAvgConfirmSeconds($partnerId),
-            'pendingCount'       => $this->computePendingCount($partnerId),
+            'avgConfirmSeconds'  => $this->computeAvgConfirmSeconds($partnerId, $propertyId),
+            'pendingCount'       => $this->computePendingCount($partnerId, $propertyId),
+            'overbookingCount'   => $this->computeOverbookingCount($partnerId, $propertyId),
             'calculatedAt'       => Carbon::now('Asia/Ho_Chi_Minh')->toIso8601String(),
         ];
     }
@@ -238,13 +247,14 @@ class PartnerKpiService
      *
      * @return array<int, array{date: string, occupancyRate: float}>
      */
-    public function computeOccupancyChart(int $partnerId): array
+    public function computeOccupancyChart(int $partnerId, ?int $propertyId = null): array
     {
-        $totalRooms = (int) $this->roomsRepository->countRoomsForPartner($partnerId);
+        $roomFilters = $propertyId !== null ? ['rooms.property_id' => $propertyId] : [];
+        $totalRooms = (int) $this->roomsRepository->countRoomsForPartner($partnerId, $roomFilters);
         $rangeEnd = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
         $rangeStart = $rangeEnd->copy()->subDays(29);
 
-        $activeBookings = DB::table('bookings')
+        $activeBookingsQuery = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->where('properties.user_id', $partnerId)
@@ -254,8 +264,13 @@ class PartnerKpiService
                 BookingStatus::PENDING_CANCELLATION->value,
             ])
             ->where('bookings.start_date', '<=', $rangeEnd->toDateString())
-            ->where('bookings.end_date', '>', $rangeStart->toDateString())
-            ->get([
+            ->where('bookings.end_date', '>', $rangeStart->toDateString());
+
+        if ($propertyId !== null) {
+            $activeBookingsQuery->where('properties.id', $propertyId);
+        }
+
+        $activeBookings = $activeBookingsQuery->get([
                 'bookings.room_id',
                 'bookings.start_date',
                 'bookings.end_date',
@@ -289,18 +304,24 @@ class PartnerKpiService
      *
      * @return array<int, array{date: string, gmv: float, netRevenue: float}>
      */
-    public function computeGmvChart(int $partnerId): array
+    public function computeGmvChart(int $partnerId, ?int $propertyId = null): array
     {
         $rangeEnd = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
         $rangeStart = $rangeEnd->copy()->subDays(29);
 
-        $revenueByDate = DB::table('bookings')
+        $revenueQuery = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
             ->where('properties.user_id', $partnerId)
             ->where('bookings.status', '!=', BookingStatus::CANCELLED->value)
-            ->whereBetween('bookings.start_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->whereBetween('bookings.start_date', [$rangeStart->toDateString(), $rangeEnd->toDateString()]);
+
+        if ($propertyId !== null) {
+            $revenueQuery->where('properties.id', $propertyId);
+        }
+
+        $revenueByDate = $revenueQuery
             ->selectRaw('DATE(bookings.start_date) as date, COALESCE(SUM(room_prices.price), 0) as gmv')
             ->groupByRaw('DATE(bookings.start_date)')
             ->pluck('gmv', 'date');
@@ -330,11 +351,11 @@ class PartnerKpiService
      *
      * Marked `protected` so unit tests can override it without touching the DB.
      */
-    protected function computeAvgConfirmSeconds(int $partnerId): ?int
+    protected function computeAvgConfirmSeconds(int $partnerId, ?int $propertyId = null): ?int
     {
         $since = Carbon::now('Asia/Ho_Chi_Minh')->subDays(30)->toDateTimeString();
 
-        $value = DB::table('bookings')
+        $query = DB::table('bookings')
             ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
             ->where('properties.user_id', $partnerId)
@@ -349,20 +370,97 @@ class PartnerKpiService
             })
             ->select(DB::raw(
                 'AVG(TIMESTAMPDIFF(SECOND, bookings.created_at, bookings.confirmed_at)) as __avg_confirm_seconds',
-            ))
-            ->value('__avg_confirm_seconds');
+            ));
+
+        if ($propertyId !== null) {
+            $query->where('properties.id', $propertyId);
+        }
+
+        $value = $query->value('__avg_confirm_seconds');
 
         return $value === null ? null : (int) round((float) $value);
     }
 
     /**
+     * Count overlapping active booking pairs in the next 30 days (calendar semantics).
+     */
+    public function computeOverbookingCount(int $partnerId, ?int $propertyId = null): int
+    {
+        $rangeStart = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay()->toDateString();
+        $rangeEnd = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay()->addDays(30)->toDateString();
+
+        $bookingsQuery = DB::table('bookings')
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
+            ->whereIn('bookings.status', [
+                BookingStatus::PENDING->value,
+                BookingStatus::CONFIRMED->value,
+                BookingStatus::PENDING_CANCELLATION->value,
+            ])
+            ->where('bookings.start_date', '<', $rangeEnd)
+            ->where('bookings.end_date', '>', $rangeStart);
+
+        if ($propertyId !== null) {
+            $bookingsQuery->where('properties.id', $propertyId);
+        }
+
+        $bookings = $bookingsQuery->get([
+            'bookings.id',
+            'bookings.room_id',
+            'bookings.start_date',
+            'bookings.end_date',
+        ]);
+
+        $total = 0;
+        foreach ($bookings->groupBy('room_id') as $roomBookings) {
+            $total += self::countOverlapPairs($roomBookings->values()->all());
+        }
+
+        return $total;
+    }
+
+    /**
+     * @param array<int, object{start_date: string, end_date: string}> $bookings
+     */
+    public static function countOverlapPairs(array $bookings): int
+    {
+        usort($bookings, static fn (object $a, object $b): int => strcmp($a->start_date, $b->start_date));
+
+        $count = 0;
+        $length = count($bookings);
+
+        for ($i = 0; $i < $length; $i++) {
+            for ($j = $i + 1; $j < $length; $j++) {
+                if (
+                    ConflictChecker::intervalsOverlap(
+                        $bookings[$i]->start_date,
+                        $bookings[$i]->end_date,
+                        $bookings[$j]->start_date,
+                        $bookings[$j]->end_date,
+                    )
+                ) {
+                    $count++;
+                } elseif ($bookings[$j]->start_date >= $bookings[$i]->end_date) {
+                    break;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * Count of bookings still waiting on the partner.
      */
-    private function computePendingCount(int $partnerId): int
+    private function computePendingCount(int $partnerId, ?int $propertyId = null): int
     {
-        return (int) $this->bookingRepository->countBookingsForPartner($partnerId, [
-            'status' => BookingStatus::PENDING->value,
-        ]);
+        $filters = ['status' => BookingStatus::PENDING->value];
+        if ($propertyId !== null) {
+            $filters['property_id'] = $propertyId;
+        }
+
+        return (int) $this->bookingRepository->countBookingsForPartner($partnerId, $filters);
     }
 
     /**

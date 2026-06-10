@@ -58,4 +58,9 @@ return [
         'oauth_url' => env('ZOOM_OAUTH_URL', 'https://zoom.us/oauth/token'),
         'api_url' => env('ZOOM_API_URL', 'https://api.zoom.us/v2'),
     ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
+    ],
 ];

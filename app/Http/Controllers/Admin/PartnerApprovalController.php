@@ -30,10 +30,23 @@ final class PartnerApprovalController extends Controller
     public function pendingList(): JsonResponse
     {
         try {
-            $pendingPartners = User::where('role', 'partner')
+            $pendingPartners = User::query()
+                ->select(['id', 'name', 'email', 'phone', 'status', 'created_at', 'updated_at'])
+                ->where('role', 'partner')
                 ->whereIn('status', [Status::PENDING_APPROVAL->value, Status::REJECTED->value])
-                ->with(['partnerInfo.province', 'partnerInfo.ward'])
-                ->orderBy('updated_at', 'desc')
+                ->with([
+                    'partnerInfo' => static function ($query): void {
+                        $query->select([
+                            'id',
+                            'user_id',
+                            'company_name',
+                            'partner_type',
+                            'representative_name',
+                            'phone',
+                        ]);
+                    },
+                ])
+                ->orderByDesc('updated_at')
                 ->get();
 
             return $this->successResponse($pendingPartners, 'Lấy danh sách hồ sơ chờ duyệt thành công.');

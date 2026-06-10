@@ -81,6 +81,10 @@ class Handler extends ExceptionHandler
                 return $this->jsonError(__('auth.unauthenticated'), HttpStatus::UNAUTHORIZED);
             }
 
+            if ($exception instanceof \Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException) {
+                return $this->jsonError($exception->getMessage() ?: __('auth.unauthenticated'), HttpStatus::UNAUTHORIZED);
+            }
+
             if ($exception instanceof RouteNotFoundException || $exception instanceof NotFoundHttpException) {
                 return $this->jsonError($exception->getMessage() ?: __('auth.route_not_found'), HttpStatus::NOT_FOUND);
             }

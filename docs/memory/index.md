@@ -79,6 +79,13 @@
 | 2026-05-21 | Landing page prominence docs moved back to BE repo and renamed for BE conventions; lead/SRS/design/plan now capture the timeline from initial homepage prominence to grouped-by-province suggestions and FE fallback | `docs/leads/lead_260521_landing-page-prominence.md`, `docs/SRC/srs_landing_page_prominence.md`, `docs/designs/design_003.md`, `docs/plans/plan_003.md` |
 | 2026-05-21 | Landing page testcase TC003 added for homepage prominence / city priorities / grouped suggestions / fallback / CTA / responsive | `docs/test-cases/testcase_003.md`, `docs/SRC/srs_landing_page_prominence.md`, `docs/plans/plan_003.md` |
 
+## Partner Dashboard redesign
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-06-08 | UI design v1 Partner Dashboard (operations-first): tái cấu trúc KPI 2 tầng, alert 4 loại, work queue SLA/conflict, property filter, gỡ chart tháng trùng | `docs/ui-designs/partner-dashboard/ui_design_v1.md`, `canvases/partner-dashboard-ui-v1.canvas.tsx` |
+| 2026-06-08 | Plan PLAN-PP360-DASH-012: 4 phase (FE quick wins → BE API → FE integration → QA), ~7–10 dev-days, không migration DB; overbooking count qua logic interval overlap | `docs/plans/plan_012_partner_dashboard_redesign.md`, `docs/SRC/srs_partner_portal_360.md` |
+
 ## Quick Links
 
 - Core domain facts: `docs/memory/knowledge_base.md`

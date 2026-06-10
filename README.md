@@ -177,6 +177,21 @@ npm run build
 
 # Code formatting
 npm run prettier
+
+# Khởi chạy tunnel webhook qua localtunnel (Lưu ý: SePay có thể gặp lỗi 511 do trang cảnh báo của localtunnel)
+npm run tunnel
+
+# Khởi chạy tunnel webhook qua localhost.run SSH (URL thay đổi ngẫu nhiên mỗi lần restart)
+npm run tunnel:ssh
+
+# Khởi chạy tunnel webhook qua ngrok với Static Domain cố định (Khuyên dùng)
+npm run tunnel:ngrok
+
+# Tự động khởi động Soketi Docker, Laravel Server (php artisan serve) và ngrok tunnel cùng lúc (Khuyên dùng)
+npm run dev:tunnel
+
+# Tự động khởi động Soketi Docker, Laravel Server (php artisan serve) và localhost.run SSH tunnel cùng lúc
+npm run dev:ssh
 ```
 
 ### Composer Scripts
@@ -212,6 +227,55 @@ php artisan migrate
 ```bash
 php artisan db:seed
 ```
+
+## ☁️ Cấu hình Webhook Tunnel (SePay)
+
+Để có thể nhận callback Webhook từ cổng thanh toán SePay về môi trường phát triển cục bộ (local/127.0.0.1:8000), bạn cần mở một đường truyền tunnel bảo mật ra internet.
+
+> [!TIP]
+> **Khởi động nhanh trọn bộ môi trường phát triển cục bộ (Backend, Soketi & Tunnel):**
+> Thay vì khởi động riêng lẻ Soketi Docker, server Backend và đường truyền Tunnel ở nhiều terminal khác nhau, bạn có thể dùng một lệnh duy nhất ở thư mục Backend để khởi động tất cả (lưu ý cần bật ứng dụng Docker Desktop trước):
+> - Sử dụng ngrok tĩnh cố định: `npm run dev:tunnel` (Khuyên dùng)
+> - Sử dụng SSH localhost.run động: `npm run dev:ssh`
+> 
+> *Lưu ý về Docker:* Script `scripts/check-docker.js` sẽ tự động kiểm tra Docker Daemon:
+> - Nếu Docker chưa khởi động, script sẽ in ra dòng cảnh báo màu vàng bằng tiếng Anh (`WARNING: Docker daemon is not running!...`) tại terminal để nhắc nhở và tự động bỏ qua Soketi WebSocket, nhưng **vẫn tiếp tục** khởi động Laravel server và Webhook Tunnel.
+
+### Phương án 1: Sử dụng ngrok với Static Domain (Khuyên dùng - Đang dùng - Cố định URL)
+*Nguyên nhân khuyên dùng:* ngrok hỗ trợ cấu hình 1 Static Domain miễn phí, giúp URL webhook của bạn không bị thay đổi mỗi khi khởi động lại máy/restart tunnel, đồng thời không bị lỗi `511 Network Authentication Required` như `localtunnel`.
+
+1. **Đăng ký tài khoản ngrok miễn phí** tại [ngrok.com](https://ngrok.com).
+2. **Đăng ký Static Domain miễn phí:** Vào tab **Domains** trên trang quản lý ngrok, đăng ký nhận 1 Free Static Domain (ví dụ: `foam-proximity-unraveled.ngrok-free.dev`).
+3. **Cấu hình Authtoken trên máy cá nhân:**
+   ```bash
+   npx ngrok config add-authtoken <TOKEN_CỦA_BẠN>
+   ```
+4. **Cập nhật Domain vào `package.json`** (nếu dùng domain khác với domain mặc định có sẵn trong code):
+   Mở file `package.json` sửa script `tunnel:ngrok` trỏ tới domain của bạn:
+   ```json
+   "tunnel:ngrok": "npx ngrok http 8000 --domain=your-domain.ngrok-free.dev"
+   ```
+5. **Khởi chạy Tunnel:**
+   ```bash
+   npm run tunnel:ngrok
+   ```
+6. **Cấu hình trên SePay:** Copy URL webhook của bạn và lưu trên dashboard SePay:
+   `https://your-domain.ngrok-free.dev/api/v1/payments/sepay-webhook`
+
+---
+
+### Phương án 2: Sử dụng localhost.run SSH Tunnel (Dự phòng nhanh)
+*Ưu điểm:* Không cần cài đặt, không cần đăng ký tài khoản ngrok.
+*Nhược điểm:* Mỗi lần khởi chạy lại, URL sẽ bị thay đổi ngẫu nhiên, bạn phải vào SePay Dashboard cập nhật lại URL Webhook mới.
+
+1. **Khởi chạy Tunnel:**
+   ```bash
+   npm run tunnel:ssh
+   ```
+2. **Cấu hình trên SePay:** Copy URL public (ví dụ: `https://xxx.lhr.life`) hiển thị trên terminal và lưu trên dashboard SePay:
+   `https://xxx.lhr.life/api/v1/payments/sepay-webhook`
+
+---
 
 ## 🔐 Authentication
 
