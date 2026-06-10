@@ -231,7 +231,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw('DATE_FORMAT(start_date, "%Y-%m") as month'),
                 DB::raw('COUNT(*) as total')
             )
-            ->groupBy(DB::raw('DATE_FORMAT(start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -256,7 +256,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw('DATE(start_date) as date'),
                 DB::raw('COUNT(*) as total')
             )
-            ->groupBy(DB::raw('DATE(start_date)'))
+            ->groupByRaw('DATE(start_date)')
             ->orderBy('date')
             ->get()
             ->map(fn ($row) => [
@@ -376,9 +376,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             ->groupBy(
                 'properties.id',
                 'properties.name',
-                DB::raw('COALESCE(NULLIF(pi.company_name, ""), users.name)'),
                 'provinces.name',
             )
+            ->groupByRaw('COALESCE(NULLIF(pi.company_name, ""), users.name)')
             ->orderByDesc('total')
             ->get()
             ->map(fn ($b) => [
@@ -449,7 +449,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                    ) as revenue
                 ")
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -678,7 +678,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m") as month'),
                 DB::raw('COUNT(*) as total')
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [
@@ -760,7 +760,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                    ) as revenue
                 ")
             )
-            ->groupBy(DB::raw('DATE_FORMAT(bookings.start_date, "%Y-%m")'))
+            ->groupByRaw('DATE_FORMAT(bookings.start_date, "%Y-%m")')
             ->orderBy('month')
             ->get()
             ->map(fn($b) => [

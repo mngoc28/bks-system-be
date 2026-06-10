@@ -1431,7 +1431,7 @@ final class BookingService
                 'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => $newUser->verification_token,
-                'is_first_time'      => !$newUser->is_email_verified,
+                'is_first_time'      => (bool) ($newUser->is_email_verified === 0),
                 'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $booking->room_id,
             ];

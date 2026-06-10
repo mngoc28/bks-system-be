@@ -98,18 +98,7 @@ final class PublicRoomSearchPaginationTest extends TestCase
                 $filteredRooms = $responseFiltered->json('data');
 
                 foreach ($filteredRooms as $r) {
-                    $this->assertLessThanOrEqual(
-                        $midPrice,
-                        (float) ($r['cheapest_daily_price'] ?? 0),
-                        sprintf(
-                            "Room ID %d has cheapest_daily_price %s which is > midPrice %s. All rooms in search: %s. Filtered rooms: %s",
-                            $r['id'] ?? 0,
-                            $r['cheapest_daily_price'] ?? 'null',
-                            $midPrice,
-                            json_encode($allRooms),
-                            json_encode($filteredRooms)
-                        )
-                    );
+                    $this->assertLessThanOrEqual($midPrice, (float) ($r['cheapest_daily_price'] ?? 0));
                 }
 
                 $responseFilteredMin = $this->getJson("/api/v1/rooms/search?price_min={$midPrice}");

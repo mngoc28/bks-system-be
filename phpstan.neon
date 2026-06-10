@@ -4,10 +4,6 @@ includes:
 
 parameters:
 
-    parallel:
-        maximumNumberOfProcesses: 1
-        minimumNumberOfJobsPerProcess: 999999
-
     paths:
         - app
 

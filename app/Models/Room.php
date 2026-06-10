@@ -184,15 +184,15 @@ final class Room extends Model
     public static function cheapestDailyPriceSql(): string
     {
         return 'ROUND(CASE
-            WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
-                AND MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) IS NOT NULL
-            THEN (CASE WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
-                    < MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
-                THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
-                ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END) END)
-            WHEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END) IS NOT NULL
-            THEN MIN(CASE WHEN rp.unit = "day" THEN rp.price END)
-            ELSE MIN(CASE WHEN rp.unit = "month" THEN rp.price / 30 END)
+            WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END) IS NOT NULL
+                AND MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END) IS NOT NULL
+            THEN (CASE WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+                    < MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END)
+                THEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+                ELSE MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END) END)
+            WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END) IS NOT NULL
+            THEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+            ELSE MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END)
         END, 0)';
     }
 
