@@ -403,7 +403,7 @@ HTML;
                 'room_stay_amount'   => $roomStayTotal,
                 'services_total'     => $servicesTotal,
                 'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => Carbon::now()->addHours(2)->toIso8601String(), // Mock deadline
                 'cancellation_policy' => 'Refundable up to 24 hours before check-in',
                 'total_amount'       => $grandTotal,

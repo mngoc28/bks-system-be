@@ -51,6 +51,7 @@ final class BookingService
     protected ConflictChecker $conflictChecker;
     protected DepositService $depositService;
     protected DynamicDepositPolicyService $policyService;
+    protected ChatService $chatService;
 
     /**
      * Constructor
@@ -67,6 +68,7 @@ final class BookingService
         ConflictChecker $conflictChecker,
         DepositService $depositService,
         DynamicDepositPolicyService $policyService,
+        ChatService $chatService,
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->roomsRepository = $roomsRepository;
@@ -77,6 +79,7 @@ final class BookingService
         $this->conflictChecker = $conflictChecker;
         $this->depositService = $depositService;
         $this->policyService = $policyService;
+        $this->chatService = $chatService;
     }
 
     /**
@@ -208,6 +211,8 @@ final class BookingService
 
             // Create deposit if required by policy
             $this->depositService->createDeposit($booking);
+
+            $this->bootstrapChatConversation($booking);
 
             // Realtime: broadcast booking mới đến partner sở hữu room (Phase 2).
             $scope = $this->resolveBroadcastScope($booking);
@@ -567,6 +572,18 @@ final class BookingService
         ];
     }
 
+    private function bootstrapChatConversation(Booking $booking): void
+    {
+        try {
+            $this->chatService->bootstrapFromBooking($booking);
+        } catch (Throwable $e) {
+            Log::warning('Chat conversation bootstrap failed', [
+                'booking_id' => $booking->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Dispatch broadcast event với try/catch để lỗi network/queue không phá
      * flow nghiệp vụ (booking đã commit). Lỗi chỉ ghi log warning để ops
@@ -733,9 +750,18 @@ final class BookingService
             $room = $this->roomsRepository->find($booking->room_id);
             if ($room && $room->property) {
                 $propertyType = $room->property->propertyType;
-                $propertySlug = $propertyType ? strtolower($propertyType->slug) : '';
+                $propertySlug = $propertyType ? (string) $propertyType->slug : '';
+                $priceUnit = (string) ($booking->price?->unit ?? 'night');
+                $stayNights = BookingStayAmountCalculator::countStayNights(
+                    $booking->start_date,
+                    $booking->end_date,
+                );
 
-                $isLongTerm = in_array($propertySlug, ['can-ho', 'apartment', 'can-ho-dich-vu']);
+                $isLongTerm = StayClassificationService::isLongTermLeaseBooking(
+                    $propertySlug,
+                    $stayNights,
+                    $priceUnit,
+                );
 
                 $contractType = $isLongTerm ? 'LEASE_AGREEMENT' : 'TERMS_AND_CONDITIONS';
                 $contractStatus = $isLongTerm ? 0 : 1; // 0: Pending signature, 1: Auto-signed
@@ -1036,6 +1062,16 @@ final class BookingService
             // create new user only if user doesn't exist
             if ($user) {
                 $createUser = $user;
+                // If user exists but is not verified, regenerate token so they can set password and activate account
+                if (!$createUser->is_email_verified) {
+                    $this->usersRepository->update($createUser->id, [
+                        'verification_token' => $token,
+                        'token_expires_at'   => Carbon::now()->addMinutes(
+                            config('const.TIME_TOKEN_CHECK_VERIFY_EMAIL', 1440)
+                        ),
+                    ]);
+                    $createUser = $this->usersRepository->find($createUser->id);
+                }
             } else {
                 $createUser = $this->usersRepository->create([
                     'name'               => $request->input('name'),
@@ -1095,6 +1131,22 @@ final class BookingService
             $roomModel = $this->roomsRepository->find($roomId);
             if (!$roomModel) {
                 throw new \Exception("Room not found");
+            }
+
+            // Check minimum stay requirement
+            if ($roomPrice !== null && $roomPrice->minimum_stay > 0) {
+                $unit = strtolower(trim((string) $roomPrice->unit));
+                $nights = BookingStayAmountCalculator::countStayNights($startDateInput, $endDateInput);
+
+                $minNights = (int) $roomPrice->minimum_stay;
+                if ($unit === 'month') {
+                    $minNights = (int) $roomPrice->minimum_stay * 30;
+                }
+
+                if ($nights < $minNights) {
+                    $unitLabel = $unit === 'month' ? 'tháng' : 'đêm';
+                    throw new \Exception("Thời gian lưu trú tối thiểu cho gói này là {$roomPrice->minimum_stay} {$unitLabel} ({$minNights} ngày). Quý khách đã chọn {$nights} đêm.");
+                }
             }
 
             // Check dynamic deposit requirements
@@ -1185,7 +1237,7 @@ final class BookingService
                 'room_stay_amount'   => $roomStayTotal,
                 'services_total'     => $servicesTotal,
                 'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'room_title'         => (string) ($room->title ?? ''),
                 'property_address'   => (string) ($room->property_address ?? ''),
             ];
@@ -1206,7 +1258,7 @@ final class BookingService
                 'services'           => $services,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $roomId,
                 'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
-                'is_first_time'      => $user ? false : true,
+                'is_first_time'      => ($user && $user->is_email_verified) ? false : true,
                 'company_name'       => $room->company_name ?? '',
                 'company_phone'      => $room->company_phone ?? '',
                 'partner_address'    => $room->address ?? '',
@@ -1218,7 +1270,7 @@ final class BookingService
                 'room_stay_amount'   => $roomStayTotal,
                 'services_total'     => $servicesTotal,
                 'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => $this->computeDepositDeadline($startDate, Carbon::now()),
                 'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
                 'total_amount'       => $grandTotal,
@@ -1226,6 +1278,8 @@ final class BookingService
                 'token'              => $token,
             ];
             DB::commit();
+
+            $this->bootstrapChatConversation($booking);
 
             // Realtime: broadcast booking mới đến partner sở hữu room (Phase 2).
             $scope = $this->resolveBroadcastScope($booking);
@@ -1364,6 +1418,16 @@ final class BookingService
             if ($newUser) {
                 // Link booking to the existing user
                 $booking->update(['user_id' => $newUser->id]);
+                // If user exists but is not verified, regenerate token so they can set password and activate account
+                if (!$newUser->is_email_verified) {
+                    $this->usersRepository->update($newUser->id, [
+                        'verification_token' => $token,
+                        'token_expires_at'   => Carbon::now()->addMinutes(
+                            config('const.TIME_TOKEN_CHECK_VERIFY_EMAIL', 1440)
+                        ),
+                    ]);
+                    $newUser = $this->usersRepository->find($newUser->id);
+                }
             } else {
                 // Create a new pending user for the correct email
                 $newUser = $this->usersRepository->create([
@@ -1425,7 +1489,7 @@ final class BookingService
                 'room_stay_amount'   => $roomStayTotal,
                 'services_total'     => $servicesTotal,
                 'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'day'),
+                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => $this->computeDepositDeadline(Carbon::parse($booking->start_date), Carbon::now()),
                 'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
                 'total_amount'       => $grandTotal,

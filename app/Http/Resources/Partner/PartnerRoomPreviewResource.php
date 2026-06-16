@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Partner;
 
+use App\Models\Room;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Room
+ */
 final class PartnerRoomPreviewResource extends JsonResource
 {
     /**
@@ -22,6 +26,8 @@ final class PartnerRoomPreviewResource extends JsonResource
             'status'             => $this->status,
             'area'               => $this->area,
             'people'             => $this->people,
+            'bedrooms_count'     => $this->bedrooms_count,
+            'beds_count'         => $this->beds_count,
             'reviews_count'      => (int) ($this->reviews_count ?? 0),
             'reviews_avg_rating' => $this->reviews_avg_rating !== null
                 ? round((float) $this->reviews_avg_rating, 1)

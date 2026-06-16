@@ -9,6 +9,7 @@ use App\Enums\RoomStatus;
 use App\Enums\Status;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Repositories\PropertyRepository\PropertyRepositoryInterface;
@@ -56,30 +57,38 @@ final class DashboardService
     public function getTotalUsers($request): array
     {
         try {
-            $totalUsers = (int) $this->usersRepository->countRecord([
-                "role" => "user",
-            ]);
-            $newUserThisMonth = (int) $this->usersRepository->countNewUserInCurrentMonth(
-                $request,
-                "user"
-            );
-            $userPending = (int) $this->usersRepository->countRecord([
-                "status" => Status::PENDING->value,
-                "role" => "user",
-            ]);
-            $userBlock = (int) $this->usersRepository->countRecord([
-                "status" => Status::BLOCKED->value,
-                "role" => "user",
-            ]);
+            $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+            $endDate   = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+            $cacheKey  = "admin_dashboard_total_users_{$startDate}_{$endDate}";
 
-            return [
-                "success" => true,
-                "data" => [
+            $data = Cache::remember($cacheKey, 60, function () use ($request) {
+                $totalUsers = (int) $this->usersRepository->countRecord([
+                    "role" => "user",
+                ]);
+                $newUserThisMonth = (int) $this->usersRepository->countNewUserInCurrentMonth(
+                    $request,
+                    "user"
+                );
+                $userPending = (int) $this->usersRepository->countRecord([
+                    "status" => Status::PENDING->value,
+                    "role" => "user",
+                ]);
+                $userBlock = (int) $this->usersRepository->countRecord([
+                    "status" => Status::BLOCKED->value,
+                    "role" => "user",
+                ]);
+
+                return [
                     "totalUsers" => $totalUsers,
                     "newUserThisMonth" => $newUserThisMonth,
                     "userPending" => $userPending,
                     "userBlock" => $userBlock,
-                ],
+                ];
+            });
+
+            return [
+                "success" => true,
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.stats_fetched_successfully"
                 ),
@@ -106,30 +115,38 @@ final class DashboardService
     public function getTotalPartner($request): array
     {
         try {
-            $totalPartners = (int) $this->usersRepository->countRecord([
-                "role" => "partner",
-            ]);
-            $newUPartnerThisMonth = (int) $this->usersRepository->countNewUserInCurrentMonth(
-                $request,
-                "partner"
-            );
-            $partnerPending = (int) $this->usersRepository->countRecord([
-                "status" => Status::PENDING_APPROVAL->value,
-                "role" => "partner",
-            ]);
-            $partnerBlock = (int) $this->usersRepository->countRecord([
-                "status" => Status::BLOCKED->value,
-                "role" => "partner",
-            ]);
+            $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+            $endDate   = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+            $cacheKey  = "admin_dashboard_total_partners_{$startDate}_{$endDate}";
 
-            return [
-                "success" => true,
-                "data" => [
+            $data = Cache::remember($cacheKey, 60, function () use ($request) {
+                $totalPartners = (int) $this->usersRepository->countRecord([
+                    "role" => "partner",
+                ]);
+                $newUPartnerThisMonth = (int) $this->usersRepository->countNewUserInCurrentMonth(
+                    $request,
+                    "partner"
+                );
+                $partnerPending = (int) $this->usersRepository->countRecord([
+                    "status" => Status::PENDING_APPROVAL->value,
+                    "role" => "partner",
+                ]);
+                $partnerBlock = (int) $this->usersRepository->countRecord([
+                    "status" => Status::BLOCKED->value,
+                    "role" => "partner",
+                ]);
+
+                return [
                     "totalPartners" => $totalPartners,
                     "newUPartnerThisMonth" => $newUPartnerThisMonth,
                     "partnerPending" => $partnerPending,
                     "partnerBlock" => $partnerBlock,
-                ],
+                ];
+            });
+
+            return [
+                "success" => true,
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.stats_fetched_successfully"
                 ),
@@ -152,12 +169,15 @@ final class DashboardService
     public function getSystemProperty(): array
     {
         try {
-            $totalProperties = $this->propertyRepository->countRecord();
+            $data = Cache::remember('admin_dashboard_system_property', 60, function () {
+                $totalProperties = $this->propertyRepository->countRecord();
+                return [
+                    "totalProperties" => $totalProperties,
+                ];
+            });
             return [
                 "success" => true,
-                "data" => [
-                    "totalProperties" => $totalProperties,
-                ],
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.stats_fetched_successfully"
                 ),
@@ -179,22 +199,25 @@ final class DashboardService
     public function getSystemRoom(): array
     {
         try {
-            $totalRooms = $this->roomsRepository->countRecord();
-            $totalPrivateRooms = $this->roomsRepository->countRecord([
-                "status" => RoomStatus::PRIVATE,
-            ]);
-            $totalPublicRooms = $this->roomsRepository->countRecord([
-                "status" => RoomStatus::PUBLIC,
-            ]);
-            $totalAvailableRooms = $this->roomsRepository->getEmptyRooms();
-            return [
-                "success" => true,
-                "data" => [
+            $data = Cache::remember('admin_dashboard_system_room', 60, function () {
+                $totalRooms = $this->roomsRepository->countRecord();
+                $totalPrivateRooms = $this->roomsRepository->countRecord([
+                    "status" => RoomStatus::PRIVATE,
+                ]);
+                $totalPublicRooms = $this->roomsRepository->countRecord([
+                    "status" => RoomStatus::PUBLIC,
+                ]);
+                $totalAvailableRooms = $this->roomsRepository->getEmptyRooms();
+                return [
                     "totalRooms" => $totalRooms,
                     "totalPrivateRooms" => $totalPrivateRooms,
                     "totalPublicRooms" => $totalPublicRooms,
                     "totalAvailableRooms" => $totalAvailableRooms,
-                ],
+                ];
+            });
+            return [
+                "success" => true,
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.stats_fetched_successfully"
                 ),

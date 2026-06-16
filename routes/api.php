@@ -46,6 +46,7 @@ use App\Http\Controllers\Stay\StayBookingCancellationController;
 use App\Http\Controllers\BookingCancellationReportController;
 use App\Http\Controllers\Stay\StayContractController;
 use App\Http\Controllers\Stay\StayServiceController;
+use App\Http\Controllers\Stay\StayChatController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Admin\AdminSettlementController;
@@ -435,6 +436,7 @@ Route::group([
         Route::prefix('provinces')->middleware(['jwt.auth', 'role:admin'])->group(function () {
             Route::get('{id}', [ProvincesController::class, 'show']);
             Route::get('/', [ProvincesController::class, 'index']);
+            Route::put('{id}', [ProvincesController::class, 'update']);
         });
 
         /**
@@ -712,7 +714,7 @@ Route::group([
         Route::prefix('chat')->group(function () {
             Route::get('/', [PartnerChatController::class, 'index']);
             Route::get('{id}', [PartnerChatController::class, 'show'])->whereNumber('id');
-            Route::post('/', [PartnerChatController::class, 'store']);
+            Route::post('/', [PartnerChatController::class, 'store'])->middleware('throttle:30,1');
         });
 
         /**
@@ -962,6 +964,20 @@ Route::group([
             Route::put('{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
             Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
             Route::delete('{id}', [NotificationController::class, 'destroy'])->whereNumber('id');
+        });
+
+        Route::prefix('cloudinary')->group(function () {
+            Route::post('/upload-image', [CloudinaryController::class, 'uploadImage']);
+        });
+
+        /**
+         * Chat API
+         * Base Url /api/v1/stay/chat/
+         */
+        Route::prefix('chat')->group(function () {
+            Route::get('/', [StayChatController::class, 'index']);
+            Route::get('{id}', [StayChatController::class, 'show'])->whereNumber('id');
+            Route::post('/', [StayChatController::class, 'store'])->middleware('throttle:30,1');
         });
     });
 

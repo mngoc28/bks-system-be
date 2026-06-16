@@ -5,7 +5,7 @@
     },
     "playwright": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@playwright/mcp@latest"]
+      "args": ["/c", "npx", "-y", "@playwright/mcp@latest", "--headed"]
     },
     "chrome-devtools": {
       "command": "cmd",

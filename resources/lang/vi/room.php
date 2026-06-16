@@ -138,7 +138,7 @@ return [
             'unit' => [
                 'required' => 'Đơn vị tính là bắt buộc',
                 'string'   => 'Đơn vị tính phải là chuỗi ký tự',
-                'in'       => 'Đơn vị tính phải là ngày, tuần, tháng hoặc năm',
+                'in'       => 'Đơn vị tính phải là đêm, tuần, tháng hoặc năm',
             ],
             'unit_price' => [
                 'required' => 'Đơn giá là bắt buộc',

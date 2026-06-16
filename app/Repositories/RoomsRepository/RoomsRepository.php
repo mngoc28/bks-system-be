@@ -73,8 +73,6 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
     {
         // Eager load relationships to avoid N+1 problem
         $query = $this->model->with([
-            'amenities:id,name',
-            'services:id,name',
             'prices:id,room_id,price_package_id,unit,price',
             'images' => function ($q) {
                 $q->where('sort', 1)->select('id', 'room_id', 'image_url');
@@ -93,7 +91,9 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.room_type',
                 'rooms.status',
                 'rooms.area',
-                'rooms.people'
+                'rooms.people',
+                'rooms.bedrooms_count',
+                'rooms.beds_count'
             );
 
         // Filter for partner: only show rooms from properties they manage
@@ -190,11 +190,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.status',
             'rooms.area',
             'rooms.people',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.description',
             'rooms.created_at',
             'rooms.updated_at',
             'properties.name as property_name',
-            'properties.province_id as province_id'
+            'properties.province_id as province_id',
+            'properties.property_type_id as property_type_id'
         ];
     }
 
@@ -251,10 +254,6 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('COALESCE(rev.reviews_count, 0) as reviews_count'),
                 DB::raw('COALESCE(rev.reviews_avg_rating, 0) as reviews_avg_rating')
             ]))
-            ->groupBy(array_merge($this->getBaseGroupByColumns(), [
-                'rev.reviews_count',
-                'rev.reviews_avg_rating'
-            ]))
             ->orderByRaw('reviews_avg_rating DESC')
             ->orderByRaw('reviews_count DESC')
             ->orderBy('rooms.updated_at', 'desc');
@@ -288,8 +287,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
-            ]))
-            ->groupBy($groupByColumns);
+            ]));
 
         $roomsQuery = app(Pipeline::class)
             ->send($roomsQuery)
@@ -362,13 +360,13 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $rentType = $request->input('rent_type');
             if ($rentType === 'daily') {
                 $roomsQueryForExecution->where(function ($q) {
-                    $q->whereNotNull('cheapest_daily_price')
-                      ->where('cheapest_daily_price', '>', 0);
+                    $q->where('property_type_name', 'NOT LIKE', '%căn hộ%')
+                      ->where('property_type_name', 'NOT LIKE', '%apartment%');
                 });
             } elseif ($rentType === 'monthly') {
                 $roomsQueryForExecution->where(function ($q) {
-                    $q->whereNotNull('cheapest_monthly_price')
-                      ->where('cheapest_monthly_price', '>', 0);
+                    $q->where('property_type_name', 'LIKE', '%căn hộ%')
+                      ->orWhere('property_type_name', 'LIKE', '%apartment%');
                 });
             }
         }
@@ -457,10 +455,26 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.title',
             'rooms.room_type',
             'rooms.people',
+            'rooms.base_people',
+            'rooms.extra_people_fee',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.description',
             'rooms.area',
             'ri.image_url as room_image',
             'b.address_detail as property_address',
+            'b.pet_policy',
+            'b.pet_policy_note',
+            'b.standard_checkin_start',
+            'b.standard_checkout_end',
+            'b.checkin_method',
+            'b.smoking_allowed',
+            'b.parties_allowed',
+            'b.quiet_hours_start',
+            'b.quiet_hours_end',
+            'b.has_elevator',
+            'b.has_step_free_access',
+            'b.is_ground_floor',
             'p.name as province_name',
             'pt.name as property_type_name',
             'b.property_type_id',
@@ -499,10 +513,26 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.title',
             'rooms.room_type',
             'rooms.people',
+            'rooms.base_people',
+            'rooms.extra_people_fee',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.description',
             'rooms.area',
             'ri.image_url',
             'b.address_detail',
+            'b.pet_policy',
+            'b.pet_policy_note',
+            'b.standard_checkin_start',
+            'b.standard_checkout_end',
+            'b.checkin_method',
+            'b.smoking_allowed',
+            'b.parties_allowed',
+            'b.quiet_hours_start',
+            'b.quiet_hours_end',
+            'b.has_elevator',
+            'b.has_step_free_access',
+            'b.is_ground_floor',
             'rooms.updated_at',
             'p.name',
             'pt.name',
@@ -551,6 +581,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 'rooms.status',
                 'rooms.area',
                 'rooms.people',
+                'rooms.bedrooms_count',
+                'rooms.beds_count',
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
             ])
@@ -634,11 +666,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.status',
             'rooms.area',
             'rooms.people',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.description',
             'rooms.created_at',
             'rooms.updated_at',
             'properties.name as property_name',
             'properties.province_id as province_id',
+            'properties.property_type_id as property_type_id',
             DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
             DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
         ];
@@ -772,8 +807,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
                 DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
-            ]))
-            ->groupBy($this->getBaseGroupByColumns());
+            ]));
 
         $executionQuery = DB::table(DB::raw("({$roomsQuery->toSql()}) as ranked_rooms"))
             ->mergeBindings($roomsQuery->getQuery())
@@ -801,6 +835,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->whereIn('ts.id', $touristSpotIds)
             ->whereNotNull('ts.province_id')
             ->whereColumn('b.province_id', 'ts.province_id')
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('room_prices')
+                    ->whereColumn('room_prices.room_id', 'rooms.id')
+                    ->where('room_prices.unit', 'night');
+            })
             ->select(array_merge($this->getBaseSelectColumns(), [
                 'ts.id as tourist_spot_id',
                 'ts.name as tourist_spot_name',
@@ -809,15 +849,6 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
                 DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
                 DB::raw("ROW_NUMBER() OVER (PARTITION BY ts.id ORDER BY {$rowNumberOrder}) as tourist_spot_row_num"),
-            ]))
-            ->groupBy(array_merge($this->getBaseGroupByColumns(), [
-                'ts.id',
-                'ts.name',
-                'ts.slug',
-                'ts.region_label',
-                'rtsm.is_primary',
-                'rtsm.travel_time_minutes',
-                'rtsm.priority_order',
             ]));
 
         $executionQuery = DB::table(DB::raw("({$roomsQuery->toSql()}) as ranked_rooms"))
@@ -855,6 +886,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.title',
             'rooms.room_type',
             'rooms.people',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.area',
             'rooms.deposit as deposit',
             'rooms.floor_number as floor_number',
@@ -868,8 +901,9 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'pt.name as property_type_name',
             'pi.company_name as partner_company_name',
             'pi.id as partner_id',
-            DB::raw($this->getCheapestDailyPriceExpression() . ' as cheapest_daily_price'),
-            DB::raw('MIN(CASE WHEN rp.unit = "month" THEN rp.price END) as cheapest_monthly_price'),
+            'rp.cheapest_daily_price as cheapest_daily_price',
+            'rp.cheapest_monthly_price as cheapest_monthly_price',
+            'rp.cheapest_nightly_price as cheapest_nightly_price',
         ];
     }
 
@@ -885,6 +919,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.title',
             'rooms.room_type',
             'rooms.people',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
             'rooms.area',
             'rooms.deposit',
             'rooms.floor_number',

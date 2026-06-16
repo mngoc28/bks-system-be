@@ -109,4 +109,44 @@ class ProvincesService
             ];
         }
     }
+
+    /**
+     * Update a province's details
+     * @param int $id
+     * @param array $data
+     * @return array
+     */
+    public function updateProvince(int $id, array $data): array
+    {
+        try {
+            $province = $this->provincesRepository->find($id);
+            if (!$province) {
+                return [
+                    'success' => false,
+                    'data' => null,
+                    'message' => __('province.messages.not_found'),
+                ];
+            }
+
+            $this->provincesRepository->update($id, $data);
+            \Illuminate\Support\Facades\Cache::forget('all_provinces');
+
+            return [
+                'success' => true,
+                'data' => $this->provincesRepository->detailProvince($id),
+                'message' => __('province.messages.update_success'),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error updating province: ' . $e->getMessage(), [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => __('province.messages.update_error'),
+            ];
+        }
+    }
 }

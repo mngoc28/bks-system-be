@@ -29,9 +29,14 @@ final class Property extends Model
         'year_built'        => 'integer',
         'property_type_id'  => 'integer',
         'rent_category'     => 'integer',
-        'area'              => 'decimal:2',
-        'created_at'        => 'datetime',
-        'updated_at'        => 'datetime',
+        'area'                  => 'decimal:2',
+        'smoking_allowed'       => 'boolean',
+        'parties_allowed'       => 'boolean',
+        'has_elevator'          => 'boolean',
+        'has_step_free_access'  => 'boolean',
+        'is_ground_floor'       => 'boolean',
+        'created_at'            => 'datetime',
+        'updated_at'            => 'datetime',
     ];
 
     public function user(): BelongsTo

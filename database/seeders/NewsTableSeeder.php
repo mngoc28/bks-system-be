@@ -320,82 +320,107 @@ final class NewsTableSeeder extends Seeder
             $adminPartnerIds = [1];
         }
 
-        $titles = [
-            'Hướng dẫn đặt phòng trực tuyến nhanh chóng và tiện lợi',
-            'Top 10 địa điểm du lịch gần các tòa nhà của chúng tôi',
-            'Chính sách hủy phòng và hoàn tiền mới nhất',
-            'Khuyến mãi đặc biệt tháng này - Giảm 30% cho khách đặt sớm',
-            'Tiện ích và dịch vụ mới được bổ sung tại các tòa nhà',
-            'Cảm nhận của khách hàng về dịch vụ của chúng tôi',
-            'Hướng dẫn sử dụng các tiện ích trong phòng',
-            'Lịch sự kiện và hoạt động trong tháng',
-            'Chính sách bảo mật thông tin khách hàng',
-            'Cách tiết kiệm chi phí khi lưu trú dài hạn',
-            'Những điều cần biết khi check-in và check-out',
-            'Dịch vụ đưa đón sân bay - Đặt trước để tiết kiệm',
-            'Hướng dẫn sử dụng hệ thống đặt phòng online',
-            'Chương trình khách hàng thân thiết - Tích điểm đổi quà',
-            'Cập nhật giá mới cho các gói phòng',
-            'Hệ thống thanh toán an toàn và tiện lợi',
-            'Dịch vụ dọn phòng và giặt ủi chuyên nghiệp',
-            'Hướng dẫn sử dụng WiFi và các tiện ích công nghệ',
-            'Chính sách đối với khách có trẻ em',
-            'Dịch vụ hỗ trợ 24/7 - Luôn sẵn sàng phục vụ',
+        $articles = [
+            [
+                'title' => 'Ăn sập Đà Lạt: Top 10 quán ăn địa phương không thể bỏ qua',
+                'summary' => 'Khám phá danh sách các quán ăn truyền thống và độc đáo tại Đà Lạt được người bản địa đánh giá cao nhất.',
+                'content' => 'Không chỉ nổi tiếng với khí hậu mát mẻ và ngàn hoa, Đà Lạt còn sở hữu nền ẩm thực vô cùng đa dạng. Cùng BKSStay điểm qua các món ăn sáng ấm nóng như bánh căn lòng gà, lẩu gà lá é, hay nem nướng nổi tiếng. Bài viết cung cấp chi tiết địa chỉ, mức giá và khung giờ mở cửa để bạn lên lịch trình hoàn hảo nhất.',
+                // Vietnamese street food / Asian noodle bowl
+                'image_url' => 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Lịch trình du lịch Vũng Tàu 2 ngày 1 đêm tự túc siêu tiết kiệm',
+                'summary' => 'Gợi ý chi tiết lịch trình ăn chơi, check-in các điểm hot nhất tại Vũng Tàu từ thứ Bảy đến Chủ Nhật.',
+                'content' => 'Vũng Tàu là lựa chọn hoàn hảo cho kỳ nghỉ cuối tuần ngắn ngày. Bài viết này hướng dẫn bạn tối ưu thời gian từ khâu di chuyển, ghé thăm Đồi Con Heo, ngắm hoàng hôn tại Mũi Nghinh Phong, thưởng thức bánh khọt Gốc Vú Sữa và gợi ý đặt phòng Homestay gần biển để di chuyển dễ dàng.',
+                // Tropical beach clear turquoise water
+                'image_url' => 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Hà Nội 36 phố phường: Khám phá những góc check-in cổ kính',
+                'summary' => 'Gợi ý những góc chụp ảnh phong cách retro và cổ điển mang đậm hơi thở Tràng An giữa lòng thủ đô.',
+                'content' => 'Dành cho những tâm hồn yêu Hà Nội, đây là hành trình đi qua những ngõ nhỏ cổ kính, Nhà thờ Lớn, phố bích họa Phùng Hưng và thưởng thức cà phê trứng trứ danh. Khám phá ngay các studio homestay mang phong cách Indochine độc đáo mà bạn có thể trải nghiệm khi đặt phòng tại BKSStay.',
+                // Hanoi / Asian old town street with lanterns
+                'image_url' => 'https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Đón hè rực rỡ: Combo Đặt phòng sớm giảm đến 25% kèm đưa đón',
+                'summary' => 'Ưu đãi đặc biệt cho mùa du lịch cao điểm khi đặt phòng trước 30 ngày trên toàn hệ thống BKSStay.',
+                'content' => 'Chào hè năng động, BKSStay mang đến chương trình "Early Bird" tri ân khách hàng. Khi lên kế hoạch sớm và đặt trước tối thiểu 30 ngày, bạn không chỉ nhận mức chiết khấu phòng tốt nhất mà còn được tặng kèm voucher xe limousine đưa đón miễn phí hoặc giảm giá 15% cho các dịch vụ ăn uống.',
+                // Summer tropical resort — sun loungers by the pool
+                'image_url' => 'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Ưu đãi ở dài hạn: Trải nghiệm "Workation" trọn gói giá tốt',
+                'summary' => 'Gói lưu trú từ 7 ngày trở lên dành cho người làm việc từ xa với nhiều đặc quyền hấp dẫn.',
+                'content' => 'Xu hướng Workation (làm việc kết hợp nghỉ dưỡng) đang ngày càng phổ biến. BKSStay cung cấp các căn hộ dịch vụ và phòng studio trang bị đầy đủ bàn làm việc, kết nối internet tốc độ cao và dịch vụ dọn dẹp hàng tuần với mức giá ưu đãi giảm đến 40% so với thuê lẻ ngày.',
+                // Laptop on table — remote work / workation
+                'image_url' => 'https://images.pexels.com/photos/4974914/pexels-photo-4974914.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Hành trình tái hiện nét kiến trúc Hội An trong căn Homestay hiện đại',
+                'summary' => 'Khám phá câu chuyện thiết kế của ngôi nhà gỗ truyền thống được cách tân giữa lòng phố cổ Hội An.',
+                'content' => 'Với tình yêu dành cho di sản, chủ nhà BKSStay tại Hội An đã dành hơn 1 năm để phục dựng lại ngôi nhà gỗ cũ kỹ thành không gian homestay ấm cúng nhưng vẫn đầy đủ tiện nghi hiện đại. Từng chi tiết đèn lồng, bức tường vàng cổ kính đến gạch bông lát nền đều mang một câu chuyện văn hóa thú vị đang chờ du khách khám phá.',
+                // Hoi An yellow walls / paper lanterns lit up
+                'image_url' => 'https://images.pexels.com/photos/3075993/pexels-photo-3075993.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Điểm danh 5 Villa hồ bơi riêng biệt cho kỳ nghỉ gia đình ấm cúng',
+                'summary' => 'Top những căn Villa có hồ bơi nước tràn, sân vườn BBQ rộng lớn cho gia đình tụ họp cuối tuần.',
+                'content' => 'Nếu bạn đang tìm kiếm sự riêng tư tuyệt đối cho gia đình, top 5 Villa giới thiệu trong bài viết này chính là câu trả lời. Với thiết kế mở, hồ bơi riêng sang trọng và không gian bếp đầy đủ tiện nghi, bạn có thể tự tay chuẩn bị tiệc nướng BBQ ngoài trời cùng những người thân yêu mà không lo bị làm phiền.',
+                // Private villa infinity pool surrounded by lush garden
+                'image_url' => 'https://images.pexels.com/photos/261169/pexels-photo-261169.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Kinh nghiệm du lịch tự túc Đà Nẵng - Hội An cho gia đình có trẻ nhỏ',
+                'summary' => 'Các lưu ý quan trọng về chọn phương tiện di chuyển, chuẩn bị hành lý và chọn phòng tiện nghi cho bé.',
+                'content' => 'Du lịch cùng trẻ nhỏ luôn cần sự chuẩn bị kỹ lưu hơn. BKSStay chia sẻ kinh nghiệm thực tế giúp gia đình bạn có chuyến đi Đà Nẵng trọn vẹn: từ việc chọn căn hộ có bếp riêng để nấu cháo cho bé, chuẩn bị xe đẩy gọn nhẹ đến các điểm tham quan thân thiện với trẻ em.',
+                // Da Nang — coastal city beach scene, family travel
+                'image_url' => 'https://images.pexels.com/photos/1007657/pexels-photo-1007657.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Mẹo chuẩn bị hành lý gọn nhẹ cho chuyến đi phượt bằng xe máy',
+                'summary' => 'Cách xếp đồ thông minh giúp chuyến đi phượt an toàn, nhẹ nhàng mà vẫn đầy đủ dụng cụ cần thiết.',
+                'content' => 'Một chuyến phượt bằng xe máy đòi hỏi sự tối giản tối đa trong hành lý. Hãy áp dụng phương pháp cuộn quần áo, mang theo đồ dùng đa năng và các vật dụng y tế cơ bản. Ngoài ra, việc chọn các điểm lưu trú dạng Homestay/Glamping của BKSStay có sẵn dịch vụ giặt là sẽ giúp bạn giảm đáng kể số lượng đồ mang theo.',
+                // Motorcycle on winding mountain road / road trip
+                'image_url' => 'https://images.pexels.com/photos/1157386/pexels-photo-1157386.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ],
+            [
+                'title' => 'Top 5 quán cà phê ngắm hoàng hôn siêu lãng mạn tại Phú Quốc',
+                'summary' => 'Danh sách những quán cà phê view biển đẹp nhất để ngắm trọn vẹn hoàng hôn rực rỡ của đảo ngọc.',
+                'content' => 'Ngắm hoàng hôn là trải nghiệm không thể bỏ lỡ khi đến Phú Quốc. Bài viết này giới thiệu 5 quán cà phê sát biển có thiết kế mở cực đẹp, đồ uống ngon và là điểm ngắm mặt trời lặn lý tưởng nhất. Cùng lưu lại danh sách và đặt phòng nghỉ BKSStay gần thị trấn Dương Đông.',
+                // Golden ocean sunset — warm amber tones
+                'image_url' => 'https://images.pexels.com/photos/1003436/pexels-photo-1003436.jpeg?auto=compress&cs=tinysrgb&w=800',
+            ]
         ];
 
-        $summaries = [
-            'Hướng dẫn chi tiết về cách đặt phòng trực tuyến một cách nhanh chóng và tiện lợi nhất, giúp bạn tiết kiệm thời gian và công sức.',
-            'Khám phá top 10 địa điểm du lịch hấp dẫn gần các tòa nhà của chúng tôi, từ các điểm tham quan nổi tiếng đến những nơi ẩn mình đầy thú vị.',
-            'Cập nhật chính sách hủy phòng và hoàn tiền mới nhất, đảm bảo quyền lợi tối đa cho khách hàng trong mọi tình huống.',
-            'Chương trình khuyến mãi đặc biệt tháng này với mức giảm giá lên đến 30% dành cho những khách hàng đặt phòng sớm.',
-            'Giới thiệu các tiện ích và dịch vụ mới được bổ sung tại các tòa nhà, nâng cao trải nghiệm của khách hàng.',
-            'Lắng nghe những cảm nhận chân thực của khách hàng về dịch vụ của chúng tôi, từ những trải nghiệm thực tế nhất.',
-            'Hướng dẫn chi tiết cách sử dụng các tiện ích trong phòng một cách hiệu quả và an toàn nhất.',
-            'Lịch sự kiện và hoạt động đặc biệt trong tháng, mang đến những trải nghiệm thú vị cho khách hàng.',
-            'Cam kết về chính sách bảo mật thông tin khách hàng, đảm bảo an toàn tuyệt đối cho dữ liệu cá nhân.',
-            'Bí quyết tiết kiệm chi phí khi lưu trú dài hạn, giúp bạn tối ưu hóa ngân sách một cách thông minh.',
-            'Những điều quan trọng cần biết khi check-in và check-out, giúp quá trình lưu trú diễn ra suôn sẻ.',
-            'Dịch vụ đưa đón sân bay tiện lợi, đặt trước để được hưởng mức giá ưu đãi và dịch vụ tốt nhất.',
-            'Hướng dẫn sử dụng hệ thống đặt phòng online từng bước, dễ hiểu và dễ thực hiện cho mọi người.',
-            'Chương trình khách hàng thân thiết với hệ thống tích điểm đổi quà hấp dẫn, mang lại nhiều lợi ích.',
-            'Cập nhật bảng giá mới cho các gói phòng, với nhiều lựa chọn phù hợp với mọi nhu cầu và ngân sách.',
-            'Hệ thống thanh toán an toàn và tiện lợi, hỗ trợ nhiều phương thức thanh toán hiện đại.',
-            'Dịch vụ dọn phòng và giặt ủi chuyên nghiệp, đảm bảo không gian sống luôn sạch sẽ và thoải mái.',
-            'Hướng dẫn sử dụng WiFi và các tiện ích công nghệ trong phòng, tối ưu hóa trải nghiệm sống.',
-            'Chính sách đặc biệt dành cho khách có trẻ em, tạo môi trường an toàn và thân thiện cho gia đình.',
-            'Dịch vụ hỗ trợ 24/7 luôn sẵn sàng phục vụ, đảm bảo mọi nhu cầu của khách hàng được đáp ứng kịp thời.',
-        ];
+        $count = 30;
+        for ($i = 1; $i <= $count; $i++) {
+            $article = $articles[($i - 1) % count($articles)];
+            $title = $article['title'];
 
-        $contentTemplates = [
-            'Trong bài viết này, chúng tôi sẽ hướng dẫn bạn cách đặt phòng trực tuyến một cách nhanh chóng và tiện lợi nhất. Hệ thống đặt phòng của chúng tôi được thiết kế đơn giản, dễ sử dụng, phù hợp với mọi đối tượng khách hàng. Bạn chỉ cần vài bước đơn giản là có thể hoàn tất việc đặt phòng. Hãy cùng khám phá những tính năng hữu ích của hệ thống này.',
-            'Việt Nam là một đất nước có nhiều điểm du lịch hấp dẫn, và các tòa nhà của chúng tôi tọa lạc tại những vị trí thuận tiện gần nhiều địa điểm nổi tiếng. Trong bài viết này, chúng tôi sẽ giới thiệu top 10 địa điểm du lịch gần các tòa nhà của chúng tôi, từ các di tích lịch sử đến các khu vui chơi giải trí hiện đại. Mỗi địa điểm đều có những nét đặc trưng riêng, hứa hẹn mang đến cho bạn những trải nghiệm khó quên.',
-            'Chính sách hủy phòng và hoàn tiền là một trong những vấn đề được khách hàng quan tâm nhất. Chúng tôi luôn cập nhật và cải thiện chính sách này để đảm bảo quyền lợi tối đa cho khách hàng. Trong bài viết này, chúng tôi sẽ giải thích chi tiết về các điều khoản hủy phòng, thời gian hoàn tiền, và các trường hợp đặc biệt. Chúng tôi cam kết minh bạch và công bằng trong mọi giao dịch.',
-            'Chương trình khuyến mãi đặc biệt tháng này mang đến cơ hội tiết kiệm lớn cho khách hàng. Với mức giảm giá lên đến 30%, đây là thời điểm lý tưởng để đặt phòng cho chuyến du lịch sắp tới. Chương trình áp dụng cho tất cả các loại phòng và gói dịch vụ. Hãy nhanh tay đặt phòng để không bỏ lỡ cơ hội này. Chúng tôi cũng có nhiều ưu đãi khác dành cho khách hàng thân thiết.',
-            'Chúng tôi không ngừng cải thiện và bổ sung các tiện ích, dịch vụ mới để nâng cao trải nghiệm của khách hàng. Trong tháng này, chúng tôi đã bổ sung nhiều tiện ích mới như phòng gym hiện đại, bể bơi ngoài trời, và khu vui chơi trẻ em. Tất cả các tiện ích này đều được thiết kế với tiêu chuẩn cao, đảm bảo an toàn và tiện nghi cho khách hàng.',
-            'Khách hàng là trung tâm của mọi hoạt động của chúng tôi. Chúng tôi luôn lắng nghe và tiếp thu những phản hồi từ khách hàng để không ngừng cải thiện dịch vụ. Trong bài viết này, chúng tôi chia sẻ những cảm nhận chân thực từ khách hàng đã sử dụng dịch vụ của chúng tôi. Những phản hồi tích cực là động lực để chúng tôi tiếp tục phấn đấu, còn những góp ý sẽ giúp chúng tôi hoàn thiện hơn.',
-            'Mỗi phòng đều được trang bị đầy đủ các tiện ích hiện đại để phục vụ nhu cầu của khách hàng. Trong bài viết này, chúng tôi sẽ hướng dẫn chi tiết cách sử dụng các tiện ích trong phòng một cách hiệu quả và an toàn. Từ hệ thống điều hòa, WiFi, đến các thiết bị điện tử, mỗi tiện ích đều có những lưu ý quan trọng mà bạn nên biết để tận dụng tối đa.',
-            'Tháng này, chúng tôi tổ chức nhiều sự kiện và hoạt động đặc biệt dành cho khách hàng. Từ các buổi workshop, hội thảo, đến các hoạt động giải trí, văn hóa, mỗi sự kiện đều mang đến những trải nghiệm thú vị và bổ ích. Lịch sự kiện được cập nhật thường xuyên trên website và fanpage của chúng tôi. Hãy theo dõi để không bỏ lỡ bất kỳ sự kiện nào.',
-            'Bảo mật thông tin khách hàng là ưu tiên hàng đầu của chúng tôi. Chúng tôi sử dụng các công nghệ mã hóa tiên tiến để bảo vệ dữ liệu cá nhân của khách hàng. Chính sách bảo mật của chúng tôi tuân thủ các tiêu chuẩn quốc tế về bảo vệ dữ liệu. Chúng tôi cam kết không chia sẻ thông tin khách hàng cho bên thứ ba mà không có sự đồng ý.',
-            'Lưu trú dài hạn có thể mang lại nhiều lợi ích về mặt tài chính nếu bạn biết cách tối ưu hóa. Trong bài viết này, chúng tôi chia sẻ những bí quyết tiết kiệm chi phí khi lưu trú dài hạn, từ việc chọn gói phù hợp đến tận dụng các ưu đãi đặc biệt. Với những mẹo này, bạn có thể tiết kiệm đáng kể chi phí mà vẫn được hưởng dịch vụ chất lượng cao.',
-        ];
+            // Append a suffix for repeated template articles to make them unique
+            $round = (int)(($i - 1) / count($articles));
+            if ($round > 0) {
+                $title .= ' - Phần ' . ($round + 1);
+            }
 
-        foreach (range(1, 30) as $i) {
-            $title = $faker->randomElement($titles);
             $slug = Str::slug($this->removeVietnameseAccents($title)) . '-' . $i;
             $userId = $faker->randomElement($userIds);
             $authorId = $faker->randomElement($adminPartnerIds);
-            $status = $faker->randomElement([0, 1]);
+            
+            // Ensure we have a deterministic mix of drafts (status 0) and published (status 1)
+            $status = $i % 3 === 0 ? 0 : 1;
             $publishedAt = $status === 1 ? Carbon::now()->subDays(rand(1, 30)) : null;
 
             DB::table('news')->insert([
                 'user_id' => $userId,
                 'title' => $title,
                 'slug' => $slug,
-                'summary' => $faker->randomElement($summaries),
-                'content' => $faker->randomElement($contentTemplates),
+                'summary' => $article['summary'],
+                'content' => $article['content'],
                 'status' => $status,
                 'published_at' => $publishedAt,
-                'image_url' => null,
+                'image_url' => $article['image_url'],
                 'id_image_cloudinary' => null,
                 'created_by' => $authorId,
                 'updated_by' => $faker->randomElement($adminPartnerIds),

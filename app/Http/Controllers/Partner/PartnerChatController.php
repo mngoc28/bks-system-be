@@ -6,59 +6,60 @@ namespace App\Http\Controllers\Partner;
 
 use App\Enums\HttpStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Chat\SendChatMessageRequest;
 use App\Services\ChatService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 final class PartnerChatController extends Controller
 {
-    protected ChatService $chatService;
-
-    public function __construct(ChatService $chatService)
-    {
-        $this->chatService = $chatService;
+    public function __construct(
+        private readonly ChatService $chatService,
+    ) {
     }
 
-    /**
-     * Get all conversations for the partner
-     */
     public function index(): JsonResponse
     {
-        $partnerId = Auth::id();
-        $conversations = $this->chatService->getUserConversations((int) $partnerId);
+        $partnerId = (int) Auth::id();
+        $conversations = $this->chatService->getConversationsForParticipant($partnerId);
+
         return $this->successResponse($conversations, 'Conversations retrieved successfully');
     }
 
-    /**
-     * Get messages for a specific conversation
-     */
     public function show(int $id): JsonResponse
     {
-        $messages = $this->chatService->getMessages($id);
-        return $this->successResponse($messages, 'Messages retrieved successfully');
+        try {
+            $partnerId = (int) Auth::id();
+            $messages = $this->chatService->getMessagesForParticipant($id, $partnerId);
+
+            return $this->successResponse($messages, 'Messages retrieved successfully');
+        } catch (HttpExceptionInterface $e) {
+            return $this->errorResponse($e->getMessage(), null, $this->mapHttpStatus($e->getStatusCode()));
+        }
     }
 
-    /**
-     * Send a message
-     */
-    public function store(Request $request): JsonResponse
+    public function store(SendChatMessageRequest $request): JsonResponse
     {
-        $partnerId = Auth::id();
-        $conversationId = $request->input('conversation_id');
-        $content = $request->input('content');
-        $metadata = $request->input('metadata');
-
         try {
+            $partnerId = (int) Auth::id();
             $message = $this->chatService->sendMessage(
-                (int) $conversationId,
-                (int) $partnerId,
-                $content,
-                $metadata
+                (int) $request->input('conversation_id'),
+                $partnerId,
+                (string) $request->input('content'),
+                $request->input('metadata'),
             );
+
             return $this->successResponse($message, 'Message sent successfully');
-        } catch (\Exception $e) {
+        } catch (HttpExceptionInterface $e) {
+            return $this->errorResponse($e->getMessage(), null, $this->mapHttpStatus($e->getStatusCode()));
+        } catch (\Throwable) {
             return $this->errorResponse('Failed to send message', null, HttpStatus::INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private function mapHttpStatus(int $statusCode): HttpStatus
+    {
+        return HttpStatus::tryFrom($statusCode) ?? HttpStatus::BAD_REQUEST;
     }
 }

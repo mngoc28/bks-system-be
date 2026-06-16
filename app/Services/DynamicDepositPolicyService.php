@@ -32,11 +32,15 @@ final class DynamicDepositPolicyService
         $end = Carbon::parse($endDate);
         $period = CarbonPeriod::create($start, $end);
 
-        // Determine if long term
-        $isLongTerm = false;
-        if ($roomPrice) {
-            $isLongTerm = $roomPrice->unit === 'month';
-        }
+        $room->loadMissing('property.propertyType');
+        $propertySlug = $room->property?->propertyType?->slug;
+        $priceUnit = (string) ($roomPrice?->unit ?? 'night');
+        $stayNights = StayClassificationService::countStayNights($startDate, $endDate);
+        $isLongTerm = StayClassificationService::isLongTermLeaseBooking(
+            $propertySlug,
+            $stayNights,
+            $priceUnit,
+        );
 
         // Check if last-minute (< 24h from now to checkin time)
         $checkInDateTime = Carbon::parse($startDate)->setTime(14, 0, 0);
@@ -96,7 +100,7 @@ final class DynamicDepositPolicyService
                 $startDate,
                 $endDate,
                 (float) ($roomPrice ? $roomPrice->price : 0.0),
-                (string) ($roomPrice ? $roomPrice->unit : 'day')
+                (string) ($roomPrice ? $roomPrice->unit : 'night')
             );
 
             $amount = 0.0;

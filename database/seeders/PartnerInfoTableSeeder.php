@@ -49,39 +49,60 @@ final class PartnerInfoTableSeeder extends Seeder
         }
 
         $companyNames = [
-            'Công ty TNHH Bất động sản ABC',
-            'Công ty CP Đầu tư và Phát triển XYZ',
-            'Công ty TNHH Dịch vụ Nhà ở DEF',
-            'Công ty CP Quản lý Tòa nhà GHI',
-            'Công ty TNHH Bất động sản JKL',
-            'Công ty CP Đầu tư Bất động sản MNO',
-            'Công ty TNHH Quản lý Chung cư PQR',
-            'Công ty CP Phát triển Đô thị STU',
-            'Công ty TNHH Dịch vụ Bất động sản VWX',
-            'Công ty CP Đầu tư Nhà ở YZ',
-            'Công ty TNHH Quản lý Tài sản Alpha',
-            'Công ty CP Bất động sản Beta',
-            'Công ty TNHH Đầu tư Gamma',
-            'Công ty CP Phát triển Delta',
-            'Công ty TNHH Dịch vụ Epsilon',
+            'Aman Resorts & Villas',
+            'Sapa Jade Hill Homestay',
+            'Eco Garden Lodge',
+            'Hanoi Old Quarter Retreats',
+            'Lagom Homestay & Studio',
+            'Riverside Villa Group',
+            'The Lanna Boutique Hotel',
+            'Hidden Gem Homestay Đà Nẵng',
+            'Bamboo House Hội An',
+            'Tropic Escape Nha Trang',
+            'Sunset Terrace Đà Lạt',
+            'Lotus Pond Boutique Stay',
+            'Heritage Corner Huế',
+            'Mekong Breeze Cần Thơ',
+            'Skyline Suite Hà Nội',
         ];
 
         $descriptions = [
-            'Chuyên cung cấp các dịch vụ bất động sản chất lượng cao, với đội ngũ nhân viên chuyên nghiệp và giàu kinh nghiệm. Cam kết mang đến những giải pháp tốt nhất cho khách hàng.',
-            'Công ty hàng đầu trong lĩnh vực đầu tư và phát triển bất động sản, với nhiều dự án thành công trên khắp cả nước. Luôn đặt uy tín và chất lượng lên hàng đầu.',
-            'Chuyên về dịch vụ quản lý nhà ở và chung cư, đảm bảo không gian sống an toàn, tiện nghi cho cư dân. Dịch vụ chăm sóc khách hàng 24/7.',
-            'Với hơn 10 năm kinh nghiệm trong ngành, chúng tôi tự hào là đối tác tin cậy của nhiều khách hàng. Chuyên về quản lý và vận hành tòa nhà cao cấp.',
-            'Công ty chuyên đầu tư và phát triển các dự án bất động sản quy mô lớn, tạo ra những không gian sống hiện đại và đẳng cấp cho cộng đồng.',
-            'Đội ngũ chuyên nghiệp với nhiều năm kinh nghiệm trong lĩnh vực bất động sản, cam kết mang đến dịch vụ tốt nhất và giá trị cao nhất cho khách hàng.',
-            'Chuyên về quản lý và vận hành các tòa nhà chung cư, đảm bảo môi trường sống an toàn, văn minh cho cư dân. Dịch vụ hỗ trợ tận tâm và chuyên nghiệp.',
-            'Công ty phát triển đô thị hàng đầu, chuyên về các dự án nhà ở và hạ tầng đô thị. Tạo ra những không gian sống hiện đại, tiện nghi cho cộng đồng.',
-            'Với phương châm "Khách hàng là trung tâm", chúng tôi luôn nỗ lực mang đến những dịch vụ bất động sản chất lượng cao, đáp ứng mọi nhu cầu của khách hàng.',
-            'Chuyên đầu tư và phát triển các dự án nhà ở với tiêu chuẩn quốc tế, tạo ra những không gian sống lý tưởng cho gia đình Việt Nam.',
-            'Công ty quản lý tài sản chuyên nghiệp, giúp khách hàng tối ưu hóa giá trị đầu tư bất động sản. Dịch vụ tư vấn và hỗ trợ toàn diện.',
-            'Với đội ngũ nhân viên giàu kinh nghiệm và nhiệt huyết, chúng tôi cam kết mang đến những giải pháp bất động sản tốt nhất, phù hợp với từng nhu cầu cụ thể.',
-            'Chuyên về đầu tư và phát triển các dự án bất động sản thương mại và nhà ở, tạo ra giá trị bền vững cho khách hàng và cộng đồng.',
-            'Công ty phát triển bất động sản với tầm nhìn dài hạn, tập trung vào các dự án chất lượng cao, đảm bảo lợi ích lâu dài cho khách hàng và nhà đầu tư.',
-            'Chuyên cung cấp các dịch vụ bất động sản toàn diện, từ tư vấn, mua bán, cho thuê đến quản lý tài sản. Đội ngũ chuyên nghiệp, dịch vụ tận tâm.',
+            'Chúng tôi tin rằng mỗi chuyến đi đều đáng được một chỗ nghỉ ngơi thực sự. Với không gian thiết kế riêng biệt, dịch vụ tận tâm và vị trí đắc địa, chúng tôi cam kết mang lại cảm giác "nhà thứ hai" cho từng vị khách.',
+            'Nestled among misty valleys and rice terraces, our homestay offers an authentic mountain experience. Wake up to birdsong, enjoy home-cooked Vietnamese breakfasts and end the day by the bonfire with local hosts who share their stories.',
+            'Từng góc nhỏ của chúng tôi được thiết kế để mang lại cảm giác bình yên tuyệt đối. Vườn cây xanh mát, tiếng suối róc rách, và những bữa sáng tự nấu bằng nguyên liệu địa phương tươi nhất — đây là nơi bạn thực sự được nghỉ ngơi.',
+            'Tọa lạc trong lòng phố cổ, chúng tôi mang đến không gian kết hợp hoàn hảo giữa nét cổ kính trăm năm và tiện nghi hiện đại. Mỗi phòng là một câu chuyện riêng về lịch sử và văn hóa Hà Nội.',
+            'A curated collection of studios and apartments designed for the mindful traveler. Clean Scandinavian aesthetics meet Vietnamese warmth — perfect for long stays, work-from-anywhere escapes, or romantic getaways.',
+            'Nestled beside a serene river, our villa collection is your private retreat from the world. Plunge pools, open-air pavilions, lush tropical gardens and a team dedicated to making your every wish come true.',
+            'Kết hợp kiến trúc Thái truyền thống với những tiện nghi hiện đại bậc nhất, khách sạn boutique của chúng tôi tạo ra không gian trú ẩn thực sự sang trọng giữa thiên nhiên xanh mát. Hãy để chúng tôi chăm sóc bạn như thượng khách.',
+            'Giấu mình sau những con phố nhỏ bình yên của Đà Nẵng, Hidden Gem là nơi dành cho những người tìm kiếm sự yên tĩnh và kết nối thực sự. Bể bơi tràn bờ, vườn nhiệt đới và những buổi chiều ngắm hoàng hôn bất tận.',
+            'Stepping into Bamboo House is stepping into the Hội An of a century ago. Handcrafted lanterns, fragrant jasmine courtyards, and hosts who treat every guest like a long-lost family member.',
+            'Kỳ nghỉ lý tưởng bên bờ biển Nha Trang bắt đầu từ đây. Thiết kế mở đón gió biển, hồ bơi vô cực nhìn ra đại dương, và dịch vụ nhà hàng hải sản tươi sống ngay tại chỗ cho bữa tối của bạn.',
+            'Trên độ cao 1.500m giữa thành phố mộng mơ, Sunset Terrace mang đến những buổi chiều thưởng trà ngắm mây và đêm ngủ trong không khí trong lành mát mẻ. Thiên đường cho những ai yêu sự lãng mạn.',
+            'A tranquil sanctuary surrounded by lotus ponds and swaying palms. Our boutique guesthouse blends traditional architecture with modern comfort, offering a peaceful escape for couples, solo travellers and families alike.',
+            'Ở đây, bạn sẽ sống giữa những rêu phong và hoàng tử đình làng. Di sản kiến trúc Huế được bảo tồn tỉ mỉ trong từng viên gạch, kết hợp với những dịch vụ cao cấp tận tâm để mang lại một trải nghiệm lưu trú không thể quên.',
+            'Trôi theo nhịp sông Mekong thong dong trên con thuyền nhỏ truyền thống, rồi về nhà nghỉ ngơi trong không gian mát mẻ bên sông. Chúng tôi mang cả hương vị miền Tây sông nước đến từng bữa ăn cho bạn.',
+            'Từ tầng cao nhìn xuống Hồ Tây lấp lánh trong buổi bình minh — đây là trải nghiệm mà Skyline Suite mang lại cho từng vị khách. Phòng suite rộng rãi, dịch vụ concierge 24/7, và ẩm thực fine-dining ngay tại tầng 30.',
+        ];
+
+        // High-quality Unsplash hospitality image pools
+        $imagePool1 = [
+            'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?auto=format&fit=crop&w=800&q=80',
+        ];
+        $imagePool2 = [
+            'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1464146072230-91cabc968266?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+        ];
+        $imagePool3 = [
+            'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80',
         ];
 
         $majorProvinceIds = DB::table('provinces')
@@ -89,20 +110,47 @@ final class PartnerInfoTableSeeder extends Seeder
             ->pluck('id')
             ->toArray();
 
-        foreach ($partnerUserIds as $userId) {
-            // 75% chance of placing the partner in a major city (Hanoi, HCMC, Da Nang)
-            if (rand(1, 100) <= 75 && !empty($majorProvinceIds)) {
-                $provinceId = $faker->randomElement($majorProvinceIds);
+        $provinces = DB::table('provinces')->get(['id', 'name'])->keyBy('name');
+
+        $companyProvinceMap = [
+            'Aman Resorts & Villas'       => 'Hồ Chí Minh',
+            'Sapa Jade Hill Homestay'     => 'Lào Cai',
+            'Eco Garden Lodge'            => 'Hồ Chí Minh',
+            'Hanoi Old Quarter Retreats'  => 'Hà Nội',
+            'Lagom Homestay & Studio'     => 'Hồ Chí Minh',
+            'Riverside Villa Group'       => 'Hồ Chí Minh',
+            'The Lanna Boutique Hotel'    => 'Hồ Chí Minh',
+            'Hidden Gem Homestay Đà Nẵng' => 'Đà Nẵng',
+            'Bamboo House Hội An'         => 'Đà Nẵng',
+            'Tropic Escape Nha Trang'     => 'Khánh Hòa',
+            'Sunset Terrace Đà Lạt'       => 'Lâm Đồng',
+            'Lotus Pond Boutique Stay'    => 'Hồ Chí Minh',
+            'Heritage Corner Huế'         => 'Huế',
+            'Mekong Breeze Cần Thơ'       => 'Cần Thơ',
+            'Skyline Suite Hà Nội'        => 'Hà Nội',
+        ];
+
+        $wardsByProvince = [];
+
+        foreach ($partnerUserIds as $index => $userId) {
+            $companyName = $companyNames[$index % count($companyNames)];
+            $provinceName = $companyProvinceMap[$companyName] ?? 'Hồ Chí Minh';
+
+            if (isset($provinces[$provinceName])) {
+                $provinceId = $provinces[$provinceName]->id;
             } else {
                 $provinceId = $faker->randomElement($provinceIds);
             }
 
-            $provinceWards = DB::table('wards')
-                ->where('province_id', $provinceId)
-                ->pluck('id')
-                ->toArray();
+            if (!isset($wardsByProvince[$provinceId])) {
+                $wardsByProvince[$provinceId] = DB::table('wards')
+                    ->where('province_id', $provinceId)
+                    ->pluck('id')
+                    ->toArray();
+            }
 
-            $wardId = ! empty($provinceWards)
+            $provinceWards = $wardsByProvince[$provinceId];
+            $wardId = !empty($provinceWards)
                 ? $faker->randomElement($provinceWards)
                 : $faker->randomElement($wardIds);
 
@@ -111,13 +159,13 @@ final class PartnerInfoTableSeeder extends Seeder
                 'province_id'  => $provinceId,
                 'ward_id'      => $wardId,
                 'address'      => $faker->streetAddress(),
-                'company_name' => $faker->randomElement($companyNames),
+                'company_name' => $companyName,
                 'phone'        => $faker->phoneNumber(),
                 'website'      => $faker->optional(0.9)->url(),
-                'description'  => $faker->randomElement($descriptions),
-                'image_1'      => null,
-                'image_2'      => null,
-                'image_3'      => null,
+                'description'  => $descriptions[$index % count($descriptions)],
+                'image_1'      => $faker->randomElement($imagePool1),
+                'image_2'      => $faker->randomElement($imagePool2),
+                'image_3'      => $faker->randomElement($imagePool3),
                 'created_by'   => $faker->randomElement($adminPartnerIds),
                 'updated_by'   => $faker->randomElement($adminPartnerIds),
                 'created_at'   => Carbon::now()->subDays(rand(1, 40)),
