@@ -131,7 +131,7 @@ return [
             'unit' => [
             'required' => 'Unit is required',
             'string'   => 'Unit must be a string',
-            'in'       => 'Unit must be day or month',
+            'in'       => 'Unit must be night or month',
             ],
             'unit_price' => [
             'required' => 'Unit price is required',

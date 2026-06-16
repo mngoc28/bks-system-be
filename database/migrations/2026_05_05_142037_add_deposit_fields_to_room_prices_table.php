@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::table('room_prices', function (Blueprint $table) {
             $table->decimal('deposit_amount', 15, 2)->nullable()->after('price')->comment('Số tiền cọc');
-            $table->integer('minimum_stay')->nullable()->after('deposit_amount')->comment('Thời hạn ở tối thiểu (theo đơn vị ngày/tháng của unit)');
+            $table->integer('minimum_stay')->nullable()->after('deposit_amount')->comment('Thời hạn ở tối thiểu (theo đơn vị đêm/tháng của unit)');
         });
     }
 

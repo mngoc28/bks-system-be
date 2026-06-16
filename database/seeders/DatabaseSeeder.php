@@ -24,11 +24,11 @@ final class DatabaseSeeder extends Seeder
             NewsTableSeeder::class,
             PropertiesTableSeeder::class,
             RoomsTableSeeder::class,
+            PropertyImagesTableSeeder::class,
+            RoomImagesTableSeeder::class,
             TouristSpotsTableSeeder::class,
             RoomTouristSpotMapsTableSeeder::class,
             ServicesTableSeeder::class,
-            // PropertyImagesTableSeeder::class,
-            // RoomImagesTableSeeder::class,
             RoomAmenitiesTableSeeder::class,
             RoomServiceTableSeeder::class,
             RoomPricesTableSeeder::class,
@@ -40,6 +40,10 @@ final class DatabaseSeeder extends Seeder
             CancellationPolicyBaselineSeeder::class,
             ReviewsTableSeeder::class,
             PartnerSettlementsSeeder::class,
+            HospitalityRulesUpdateSeeder::class,
         ]);
+
+        $this->command?->info('Đang khôi phục ảnh từ Cloudinary...');
+        \Illuminate\Support\Facades\Artisan::call('cloudinary:restore');
     }
 }

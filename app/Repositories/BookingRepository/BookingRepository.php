@@ -438,7 +438,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw("
                    SUM(
                     CASE
-                        WHEN room_prices.unit = 'day' THEN
+                        WHEN room_prices.unit = 'night' THEN
                             room_prices.price * (DATEDIFF(COALESCE(bookings.end_date, bookings.start_date),
                             bookings.start_date) + 1)
                         when room_prices.unit = 'month' THEN
@@ -749,7 +749,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
                 DB::raw("
                    SUM(
                     CASE
-                        WHEN room_prices.unit = 'day' THEN
+                        WHEN room_prices.unit = 'night' THEN
                             room_prices.price * (DATEDIFF(COALESCE(bookings.end_date, bookings.start_date),
                             bookings.start_date) + 1)
                         when room_prices.unit = 'month' THEN
@@ -790,7 +790,7 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.status',
             DB::raw('
                 CASE
-                    WHEN room_prices.unit = \'day\' THEN
+                    WHEN room_prices.unit = \'night\' THEN
                         room_prices.price * GREATEST(DATEDIFF(bookings.end_date, bookings.start_date), 1)
                     WHEN room_prices.unit = \'month\' THEN
                         room_prices.price * GREATEST(DATEDIFF(bookings.end_date, bookings.start_date), 1) / 30

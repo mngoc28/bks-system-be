@@ -35,14 +35,18 @@ final class Room extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'deposit'      => 'decimal:2',
-        'area'         => 'decimal:2',
-        'floor_number' => 'integer',
-        'people'       => 'integer',
-        'room_type'    => 'integer',
-        'status'       => 'boolean',
-        'created_at'   => 'datetime',
-        'updated_at'   => 'datetime',
+        'deposit'        => 'decimal:2',
+        'area'           => 'decimal:2',
+        'floor_number'   => 'integer',
+        'people'           => 'integer',
+        'base_people'      => 'integer',
+        'extra_people_fee' => 'decimal:2',
+        'bedrooms_count'   => 'integer',
+        'beds_count'     => 'integer',
+        'room_type'      => 'integer',
+        'status'         => 'boolean',
+        'created_at'     => 'datetime',
+        'updated_at'     => 'datetime',
     ];
 
     /**
@@ -163,13 +167,24 @@ final class Room extends Model
      */
     public function scopeWithBaseJoins($query)
     {
+        $cheapestDailySql = self::cheapestDailyPriceSql();
+        $allPricesSql = self::allPricesSql();
+
+        $pricesSubquery = DB::table('room_prices as rp')
+            ->select('rp.room_id')
+            ->selectRaw("MIN(CASE WHEN rp.unit = 'month' THEN rp.price END) as cheapest_monthly_price")
+            ->selectRaw("MIN(CASE WHEN rp.unit = 'night' THEN rp.price END) as cheapest_nightly_price")
+            ->selectRaw("{$cheapestDailySql} as cheapest_daily_price")
+            ->selectRaw("{$allPricesSql} as all_prices")
+            ->groupBy('rp.room_id');
+
         return $query
             ->join('properties as b', 'rooms.property_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')
             ->leftJoin('partner_info as pi', 'pi.user_id', '=', 'u.id')
             ->join('provinces as p', 'b.province_id', '=', 'p.id')
             ->leftJoin('property_types as pt', 'b.property_type_id', '=', 'pt.id')
-            ->leftJoin('room_prices as rp', 'rooms.id', '=', 'rp.room_id')
+            ->leftJoinSub($pricesSubquery, 'rp', 'rooms.id', '=', 'rp.room_id')
             ->leftJoin('room_images as ri', function ($join) {
                 $join->on('rooms.id', '=', 'ri.room_id')
                     ->where('ri.sort', 1);
@@ -184,14 +199,14 @@ final class Room extends Model
     public static function cheapestDailyPriceSql(): string
     {
         return 'ROUND(CASE
-            WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END) IS NOT NULL
+            WHEN MIN(CASE WHEN rp.unit = \'night\' THEN rp.price END) IS NOT NULL
                 AND MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END) IS NOT NULL
-            THEN (CASE WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+            THEN (CASE WHEN MIN(CASE WHEN rp.unit = \'night\' THEN rp.price END)
                     < MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END)
-                THEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+                THEN MIN(CASE WHEN rp.unit = \'night\' THEN rp.price END)
                 ELSE MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END) END)
-            WHEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END) IS NOT NULL
-            THEN MIN(CASE WHEN rp.unit = \'day\' THEN rp.price END)
+            WHEN MIN(CASE WHEN rp.unit = \'night\' THEN rp.price END) IS NOT NULL
+            THEN MIN(CASE WHEN rp.unit = \'night\' THEN rp.price END)
             ELSE MIN(CASE WHEN rp.unit = \'month\' THEN rp.price / 30 END)
         END, 0)';
     }

@@ -155,8 +155,17 @@ final class StayService
             $isLongTerm = false;
             if ($room && $room->property) {
                 $propertyType = $room->property->propertyType;
-                $propertySlug = $propertyType ? strtolower($propertyType->slug) : '';
-                $isLongTerm = in_array($propertySlug, ['can-ho', 'apartment', 'can-ho-dich-vu']);
+                $propertySlug = $propertyType ? (string) $propertyType->slug : '';
+                $priceUnit = (string) ($booking->price?->unit ?? 'night');
+                $stayNights = BookingStayAmountCalculator::countStayNights(
+                    $booking->start_date,
+                    $booking->end_date,
+                );
+                $isLongTerm = StayClassificationService::isLongTermLeaseBooking(
+                    $propertySlug,
+                    $stayNights,
+                    $priceUnit,
+                );
             }
 
             if ($isLongTerm) {

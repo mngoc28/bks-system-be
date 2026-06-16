@@ -206,7 +206,7 @@
                 Ngày giờ đặt phòng: <strong>{{ $data['booking_created_at'] }}</strong><br>
                 Từ ngày: <strong>{{ $data['start_time'] }}</strong><br>
                 Đến ngày: <strong>{{ $data['end_time'] }}</strong><br>
-                Tổng số ngày đặt: <strong>{{ (int) ($data['total_days'] ?? 0) }} ngày</strong><br>
+                Tổng số {{ ($data['price_unit'] ?? 'night') === 'month' ? 'tháng' : 'đêm' }} lưu trú: <strong>{{ (int) ($data['total_days'] ?? 0) }} {{ ($data['price_unit'] ?? 'night') === 'month' ? 'tháng' : 'đêm' }}</strong><br>
                 Xem chi tiết phòng tại:
                 <a href="{{ $data['room_url'] }}"
                     style="text-decoration: underline;">Xem chi tiết căn hộ
@@ -293,14 +293,16 @@
                         $roomStayAmount = max(0, (float) $data['total_amount'] - $servicesTotal);
                     }
                     $grandTotal = $roomStayAmount + $servicesTotal;
-                    $priceUnit = strtolower((string) ($data['price_unit'] ?? 'day'));
+                    $priceUnit = strtolower((string) ($data['price_unit'] ?? 'night'));
+                    $isMonthly = $priceUnit === 'month';
+                    $unitText = $isMonthly ? 'tháng' : 'đêm';
                     $unitSuffix = match ($priceUnit) {
                         'month' => ' · gói tháng',
                         'week'  => ' · gói tuần',
                         'year'  => ' · gói năm',
                         default => '',
                     };
-                    $roomFeeLabel = 'Phí thuê phòng (' . $totalDays . ' ngày' . $unitSuffix . ')';
+                    $roomFeeLabel = 'Phí thuê phòng (' . $totalDays . ' ' . $unitText . $unitSuffix . ')';
                 @endphp
                 
                 <div class="list-items">
@@ -308,7 +310,7 @@
                         <div class="list-item" style="justify-content: space-between;">
                             <span class="item-name">Đơn giá</span>
                             <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
-                                {{ number_format((float) $data['unit_price'], 0) }} VNĐ / {{ $data['price_unit'] === 'month' ? 'tháng' : 'ngày' }}
+                                {{ number_format((float) $data['unit_price'], 0) }} VNĐ / {{ $data['price_unit'] === 'month' ? 'tháng' : 'đêm' }}
                             </span>
                         </div>
                     @endif

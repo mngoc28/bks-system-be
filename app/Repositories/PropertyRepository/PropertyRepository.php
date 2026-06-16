@@ -44,6 +44,10 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
             $query->where('properties.user_id', $user->id);
         }
 
+        if ($request->filled('partner_id')) {
+            $query->where('properties.user_id', $request->partner_id);
+        }
+
         if ($request->filled('name')) {
             $query->whereRaw('LOWER(properties.name) LIKE ?', ['%' . strtolower($request->name) . '%']);
         }

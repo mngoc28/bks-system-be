@@ -174,35 +174,37 @@ class PropertiesTableSeeder extends Seeder
         ];
 
         $descriptions = [
-            'Tòa nhà cao cấp 25 tầng với thiết kế hiện đại, tọa lạc tại vị trí đắc địa. Bao gồm hệ thống thang máy cao tốc, bãi đỗ xe rộng rãi, hệ thống an ninh 24/7, camera giám sát toàn bộ tòa nhà. Tiện ích đầy đủ: phòng gym, bể bơi ngoài trời, sân chơi trẻ em, khu vực BBQ, vườn cảnh quan xanh mát. Gần trung tâm thương mại, trường học, bệnh viện, thuận tiện cho cuộc sống và công việc.',
+            'Tọa lạc ngay trung tâm thành phố, khách sạn boutique của chúng tôi là điểm khởi đầu lý tưởng để bạn khám phá mọi ngóc ngách tuyệt vời của địa phương. Phòng nghỉ thoáng đãng với view thành phố rực rỡ, dịch vụ spa thư giãn và nhà hàng ẩm thực đặc sắc. Chúng tôi không chỉ cung cấp nơi ngủ — chúng tôi tạo ra kỷ niệm.',
 
-            'Chung cư cao cấp 30 tầng với view thành phố tuyệt đẹp. Mỗi căn hộ được thiết kế tối ưu không gian, nội thất sang trọng. Hệ thống quản lý thông minh, thẻ từ ra vào, bảo vệ chuyên nghiệp. Tiện ích nội khu: phòng đa năng, thư viện, khu vui chơi trẻ em, phòng yoga, spa, nhà hàng. Giao thông thuận tiện, gần các tuyến metro, trạm xe buýt, dễ dàng di chuyển đến các khu vực trung tâm.',
+            'Bước vào không gian xanh mát của chúng tôi và tạm quên đi mọi bộn bề. Khu vườn nhiệt đới rộng 5.000m² bao quanh hồ bơi vô cực, được thiết kế để bạn thực sự thở sâu và nghỉ ngơi. Mỗi buổi sáng bắt đầu bằng tiếng chim hót và bữa điểm tâm được chuẩn bị tươi ngon từ nông trại địa phương.',
 
-            'Tòa nhà văn phòng kết hợp căn hộ dịch vụ 20 tầng. Tầng 1-10 là văn phòng cho thuê, tầng 11-20 là căn hộ dịch vụ cao cấp. Thiết kế hiện đại với hệ thống điều hòa trung tâm, internet tốc độ cao, hệ thống điện năng lượng mặt trời. Có bãi đỗ xe tầng hầm, thang máy riêng cho từng khu vực. Gần khu công nghiệp, trung tâm tài chính, phù hợp cho doanh nghiệp và khách công tác.',
+            'Một trong những khu nghỉ dưỡng ven sông hiếm hoi còn lại mang hồn cốt của Việt Nam xưa. Căn phòng nào cũng có view nhìn ra dòng sông êm đềm. Mỗi buổi tối thưởng thức ẩm thực đặc sản địa phương trên mặt sông trong ánh đèn lồng lung linh — đó là Việt Nam bạn luôn mơ đến.',
 
-            'Chung cư sinh thái 15 tầng với không gian xanh chiếm 40% diện tích. Thiết kế thân thiện môi trường, sử dụng năng lượng tái tạo, hệ thống xử lý nước thải hiện đại. Mỗi căn hộ có ban công rộng, có thể trồng cây xanh. Tiện ích: vườn rau sạch, khu vui chơi ngoài trời, đường chạy bộ, hồ bơi sinh thái. Gần công viên, hồ nước, không khí trong lành, phù hợp cho gia đình có trẻ em và người cao tuổi.',
+            'Homestay phong cách Indochine độc đáo được phục dựng nguyên vẹn trong một ngôi nhà cổ trăm tuổi. Sân trong trải dài với chậu cây đất nung và hồ cá nhỏ. Chủ nhà luôn sẵn sàng chia sẻ câu chuyện lịch sử và dẫn bạn đi những "hidden spots" mà khách du lịch thông thường không bao giờ tìm được.',
 
-            'Tòa nhà thương mại và căn hộ 18 tầng. Tầng 1-3 là trung tâm thương mại với đầy đủ tiện ích: siêu thị, nhà hàng, quán cà phê, spa, gym. Tầng 4-18 là căn hộ dịch vụ. Hệ thống an ninh hiện đại, bảo vệ 24/7, camera giám sát, thẻ từ thông minh. Thiết kế sang trọng, nội thất cao cấp. Vị trí trung tâm, gần các trường đại học, bệnh viện, ngân hàng, thuận tiện mọi mặt.',
+            'Sang trọng, tinh tế và gần gũi thiên nhiên — ba điều chúng tôi không bao giờ phải chọn một. Khu villa ven biển sở hữu bể bơi riêng, sân vườn trải dài và đường dẫn thẳng xuống bờ cát trắng. Nơi đây là điểm đến lý tưởng cho tuần trăng mật, kỳ nghỉ gia đình hay những cuối tuần đổi gió đặc biệt.',
 
-            'Chung cư cao cấp 35 tầng với view sông/cảnh quan thành phố. Thiết kế theo tiêu chuẩn quốc tế, mỗi căn hộ có ban công rộng, cửa kính lớn lấy ánh sáng tự nhiên. Hệ thống tiện ích đẳng cấp: hồ bơi vô cực, phòng gym đầy đủ thiết bị, spa, karaoke, phòng tiệc. Quản lý chuyên nghiệp, dịch vụ 5 sao. Gần các khu vui chơi giải trí, trung tâm mua sắm cao cấp, phù hợp cho khách hàng VIP và doanh nhân.',
+            'Căn hộ dịch vụ cao cấp với thiết kế tối giản, sạch bóng mà ấm áp. Tiện nghi đầy đủ từ bếp nấu hiện đại đến bồn tắm spa, phù hợp cho những chuyến công tác dài ngày hay kỳ nghỉ "slow travel" đang ngày càng được yêu thích. Dịch vụ concierge 24/7 sẵn sàng giúp bạn đặt tour, thuê xe hay tìm nhà hàng ngon nhất gần đây.',
 
-            'Tòa nhà căn hộ dịch vụ 22 tầng với thiết kế tối ưu cho khách công tác. Mỗi căn hộ được trang bị đầy đủ nội thất, bếp, máy giặt, wifi tốc độ cao. Dịch vụ hỗ trợ: dọn phòng hàng ngày, giặt ủi, đưa đón sân bay, đặt tour. Hệ thống an ninh nghiêm ngặt, bảo vệ 24/7. Gần sân bay, trung tâm hội nghị, khu công nghiệp, thuận tiện cho khách công tác và tổ chức sự kiện.',
+            'Đặt chân vào đây là bước vào một thế giới khác — nơi thời gian chậm lại và mọi giác quan được đánh thức. Khu nghỉ sinh thái nhỏ của chúng tôi ẩn sâu giữa rừng nguyên sinh, với chỉ 12 bungalow gỗ hòa mình vào thiên nhiên. Đêm nằm nghe tiếng lá rì rào và ngắm sao trời qua mái kính — đây là xa xỉ thực sự.',
 
-            'Chung cư sinh thái thông minh 28 tầng với công nghệ nhà thông minh. Tất cả căn hộ được trang bị hệ thống điều khiển tự động: điều hòa, đèn, rèm, hệ thống an ninh. Tiện ích hiện đại: phòng gym công nghệ cao, hồ bơi thông minh, khu vui chơi trẻ em có giám sát, vườn trên cao. Hệ thống quản lý năng lượng tối ưu, tiết kiệm chi phí. Gần khu công nghệ cao, trường đại học, phù hợp cho giới trẻ và gia đình trẻ.',
+            'Dành cho những người yêu sự thanh bình và trân trọng nghệ thuật. Gallery hotel của chúng tôi trưng bày tác phẩm của các nghệ sĩ địa phương trên mỗi hành lang, mỗi căn phòng. Cà phê sáng thưởng thức giữa những bức tranh sơn dầu và ánh nắng len lỏi qua ô cửa sổ — bắt đầu ngày mới theo cách không ai nghĩ đến.',
 
-            'Tòa nhà hỗn hợp 16 tầng: văn phòng, cửa hàng và căn hộ. Tầng 1-2 là cửa hàng mặt tiền, tầng 3-8 là văn phòng, tầng 9-16 là căn hộ. Thiết kế linh hoạt, có thể kết hợp văn phòng và căn hộ. Bãi đỗ xe rộng rãi, thang máy tải trọng lớn, hệ thống PCCC hiện đại. Gần chợ, trường học, bệnh viện, khu dân cư đông đúc, thuận tiện cho cả kinh doanh và sinh sống.',
+            'Khu nghỉ gia đình với những trải nghiệm không thể tìm thấy ở nơi nào khác: tự tay bắt cá tươi rồi nấu ăn cùng nhà bếp, chèo thuyền kayak khám phá hang động, leo núi ngắm bình minh và xem lại những khoảnh khắc đẹp nhất của chuyến đi bên bếp lửa trong đêm. Đây là kỳ nghỉ mà cả gia đình sẽ nhắc lại mãi.',
 
-            'Chung cư phục vụ người cao tuổi 12 tầng với thiết kế đặc biệt. Hành lang rộng, thang máy lớn, tay vịn ở mọi nơi, sàn chống trượt. Có phòng y tế, phòng vật lý trị liệu, khu vườn trị liệu. Dịch vụ chăm sóc sức khỏe chuyên nghiệp, bác sĩ thăm khám định kỳ. Gần bệnh viện, công viên, chợ, thuận tiện cho người cao tuổi và gia đình.',
+            'Mang vẻ đẹp của phong cách Nhật Bản đến giữa lòng Việt Nam, ryokan mini của chúng tôi tái hiện trải nghiệm onsen theo phong cách Việt Nam, với bồn tắm đá núi lửa, đèn giấy washi ấm áp và bữa ăn được phục vụ theo truyền thống kaiseki từng món một.',
 
-            'Tòa nhà căn hộ cho thuê dài hạn 24 tầng. Thiết kế đơn giản, giá cả hợp lý, phù hợp cho sinh viên, công nhân, nhân viên văn phòng. Mỗi căn hộ có đầy đủ tiện nghi cơ bản. Có phòng giặt công cộng, phòng tự học, wifi miễn phí. Quản lý thân thiện, giá cả minh bạch. Gần các trường đại học, khu công nghiệp, khu văn phòng, thuận tiện cho nhiều đối tượng.',
+            'Khách sạn boutique 5 sao nhỏ của chúng tôi chỉ có 20 phòng — đủ để chúng tôi biết tên từng vị khách, nhớ thói quen uống cà phê của bạn và chuẩn bị sẵn chăn bông ấm áp trước khi bạn về phòng vào tối khuya. Dịch vụ cá nhân hóa đến từng chi tiết nhỏ nhất.',
 
-            'Chung cư cao cấp 32 tầng với thiết kế độc đáo, kiến trúc hiện đại. Mỗi căn hộ có không gian riêng tư, ban công rộng, view đẹp. Tiện ích đầy đủ: hồ bơi vô cực, phòng gym, spa, yoga, khu vui chơi trẻ em, phòng tiệc, sân tennis. Dịch vụ quản lý chuyên nghiệp, bảo vệ 24/7, camera giám sát. Gần trung tâm thương mại, nhà hàng cao cấp, phù hợp cho khách hàng cao cấp.',
+            'Khu căn hộ dịch vụ nằm trong tổ hợp resort ven biển với 5 hồ bơi nhiệt đới, 8 nhà hàng đặc sắc từ ẩm thực Việt, Nhật, Ý đến fusion hiện đại, spa thư giãn và trực tiếp ra bãi biển. Đây là nơi bạn sẽ không muốn rời đi.',
 
-            'Tòa nhà văn phòng và căn hộ dịch vụ 19 tầng. Tầng 1-9 là văn phòng cho thuê với đầy đủ tiện ích: phòng họp, phòng tiếp khách, khu vực ăn uống. Tầng 10-19 là căn hộ dịch vụ sang trọng. Hệ thống internet tốc độ cao, điện năng lượng mặt trời, hệ thống làm mát tiết kiệm năng lượng. Bãi đỗ xe tầng hầm, thang máy riêng. Gần trung tâm tài chính, sân bay, phù hợp cho doanh nghiệp và khách công tác.',
+            'Giữa lòng phố cổ cổ kính, chúng tôi tạo ra một "thế giới song song" — vỏ ngoài là mặt tiền gạch trăm năm, bên trong là không gian hiện đại tối giản và dịch vụ không thua kém khách sạn 5 sao. Đây là địa chỉ bí mật của giới sành du lịch.',
 
-            'Chung cư sinh thái và bền vững 14 tầng. Thiết kế xanh với hệ thống thu nước mưa, năng lượng mặt trời, vườn trên mái. Không gian xanh chiếm 50% diện tích với vườn cây, hồ nước, đường đi bộ. Tiện ích: vườn rau sạch, khu vui chơi tự nhiên, phòng đa năng. Gần công viên lớn, hồ nước, không khí trong lành, phù hợp cho những người yêu thiên nhiên và môi trường.',
+            'Được bao quanh bởi ruộng bậc thang vàng óng vào mùa gặt và mây trắng lãng đãng quanh năm, khu nghỉ dưỡng ở độ cao 1.200m mang lại cảm giác như đang sống giữa thiên đường. Mỗi bữa sáng tự nấu bằng rau hữu cơ tươi hái từ vườn, mỗi tối ngồi bên bếp lửa nhà rông ấm áp.',
 
-            'Tòa nhà căn hộ dịch vụ ngắn hạn 26 tầng. Thiết kế hiện đại, mỗi căn hộ được trang bị đầy đủ nội thất, thiết bị điện tử. Dịch vụ đầy đủ: dọn phòng, giặt ủi, đưa đón, đặt tour, đặt nhà hàng. Hệ thống đặt phòng online, check-in nhanh chóng. Gần các điểm du lịch, trung tâm mua sắm, nhà hàng, phù hợp cho khách du lịch và công tác ngắn hạn.',
+            'Một khu nghỉ ven hồ yên tĩnh với những bè nổi nhỏ xinh, nơi bạn có thể thả câu, ngồi đọc sách hay đơn giản là ngắm mây trôi cả ngày mà không cần thêm gì. Đây là nơi dành riêng cho những người cần thực sự "disconnect" khỏi thế giới bận rộn.',
+
+            'Nhà khách nhỏ ấm cúng giữa lòng phố đêm sôi động, nhưng ngay khi bước qua cánh cổng gỗ, tất cả ồn ào tan biến. Sân trong trồng đầy hoa, tiếng đàn piano nhẹ nhàng buổi tối và chủ nhà luôn có sẵn ấm trà nóng chào đón bạn — đây là phong cách lưu trú mà bạn sẽ nhớ mãi.',
         ];
 
         $provinces = DB::table('provinces')->get(['id', 'name'])->keyBy('name');
@@ -248,16 +250,37 @@ class PropertiesTableSeeder extends Seeder
             $type = $faker->randomElement($propertyTypes->toArray());
             $slug = $type->slug;
             
+            $location = $faker->randomElement($addressData);
+            $provinceName = $location['province'];
+            
             // Pick a name based on type, fallback to generic if not defined
             $possibleNames = $typeNames[$slug] ?? [
                 'Tòa nhà ' . $faker->company, 'Cơ sở ' . $faker->lastName, 'Vùng ' . $faker->city, 'Khu vực ' . $faker->streetName
             ];
-            $name = $faker->randomElement($possibleNames) . ' ' . $faker->randomElement(['A', 'B', 'C', 'Premium', 'Luxury', 'Plaza', 'Center', 'Garden', 'Grand', 'View', 'Park', 'Corner', 'Elite', 'Signature']);
             
-            $location = $faker->randomElement($addressData);
+            // Filter names to prevent city mismatches (e.g., Sài Gòn Hotel in Hà Nội)
+            $filteredPossibleNames = array_filter($possibleNames, function ($pName) use ($provinceName) {
+                if ($provinceName !== 'Hà Nội') {
+                    if (stripos($pName, 'Hanoi') !== false || stripos($pName, 'Hà Nội') !== false || stripos($pName, 'Hoàn Kiếm') !== false || stripos($pName, 'Ciputra') !== false) {
+                        return false;
+                    }
+                }
+                if ($provinceName !== 'Hồ Chí Minh') {
+                    if (stripos($pName, 'Saigon') !== false || stripos($pName, 'Sài Gòn') !== false || stripos($pName, 'Landmark 81') !== false) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            if (empty($filteredPossibleNames)) {
+                $filteredPossibleNames = $possibleNames;
+            }
+
+            $name = $faker->randomElement($filteredPossibleNames) . ' ' . $faker->randomElement(['A', 'B', 'C', 'Premium', 'Luxury', 'Plaza', 'Center', 'Garden', 'Grand', 'View', 'Park', 'Corner', 'Elite', 'Signature']);
+            
             $description = $faker->randomElement($descriptions);
             
-            $provinceName = $location['province'];
             $provinceId = $provinces->has($provinceName) ? $provinces->get($provinceName)->id : $faker->randomElement($provinceIds);
 
             if (!isset($wardsByProvince[$provinceId])) {

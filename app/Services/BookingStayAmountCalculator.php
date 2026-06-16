@@ -19,33 +19,45 @@ final class BookingStayAmountCalculator
 
     public const int DAYS_PER_YEAR = 365;
 
+    /** Số đêm lưu trú (checkout exclusive) — REQ-STAY-002. */
+    public static function countStayNights(string|\DateTimeInterface $start, string|\DateTimeInterface $end): int
+    {
+        return StayClassificationService::countStayNights($start, $end);
+    }
+
+    /** Ngày lịch inclusive — prorate gói tháng. */
+    public static function countStayCalendarDays(string|\DateTimeInterface $start, string|\DateTimeInterface $end): int
+    {
+        return StayClassificationService::countStayCalendarDays($start, $end);
+    }
+
+    /**
+     * @deprecated Use countStayNights() for nightly rates; countStayCalendarDays() for month prorate.
+     */
     public static function countStayDays(string|\DateTimeInterface $start, string|\DateTimeInterface $end): int
     {
-        $startDate = Carbon::parse($start)->startOfDay();
-        $endDate = Carbon::parse($end)->startOfDay();
-        $days = $startDate->diffInDays($endDate) + 1;
-
-        return max(1, $days);
+        return self::countStayNights($start, $end);
     }
 
     public static function computeRoomStayTotal(
         string|\DateTimeInterface $start,
         string|\DateTimeInterface $end,
         float $unitPrice,
-        string $unit = 'day',
+        string $unit = 'night',
     ): float {
         if ($unitPrice <= 0) {
             return 0.0;
         }
 
-        $days = self::countStayDays($start, $end);
         $normalizedUnit = strtolower(trim($unit));
+        $nights = self::countStayNights($start, $end);
+        $calendarDays = self::countStayCalendarDays($start, $end);
 
         $roomStay = match ($normalizedUnit) {
-            'month' => $unitPrice * $days / self::DAYS_PER_MONTH,
-            'week'  => $unitPrice * $days / self::DAYS_PER_WEEK,
-            'year'  => $unitPrice * $days / self::DAYS_PER_YEAR,
-            default => $unitPrice * $days,
+            'month' => $unitPrice * $calendarDays / self::DAYS_PER_MONTH,
+            'week'  => $unitPrice * $nights / self::DAYS_PER_WEEK,
+            'year'  => $unitPrice * $nights / self::DAYS_PER_YEAR,
+            default => $unitPrice * $nights,
         };
 
         return round($roomStay, 2);
@@ -58,7 +70,7 @@ final class BookingStayAmountCalculator
 
         $booking->loadMissing('price');
         $unitPrice = (float) ($booking->price?->price ?? 0);
-        $unit = (string) ($booking->price?->unit ?? 'day');
+        $unit = (string) ($booking->price?->unit ?? 'night');
 
         return self::computeRoomStayTotal($startRaw, $endRaw, $unitPrice, $unit);
     }
@@ -88,8 +100,8 @@ final class BookingStayAmountCalculator
         string|\DateTimeInterface $start,
         string|\DateTimeInterface $end,
     ): ?int {
-        $stayDays = self::countStayDays($start, $end);
-        $preferMonth = $stayDays >= 30;
+        $stayNights = self::countStayNights($start, $end);
+        $preferMonth = $stayNights >= StayClassificationService::LONG_TERM_NIGHTS_THRESHOLD;
 
         $prices = RoomPrice::query()
             ->where('room_id', $roomId)
@@ -102,7 +114,7 @@ final class BookingStayAmountCalculator
 
         if (!$preferMonth) {
             $day = $prices->first(
-                static fn (RoomPrice $row): bool => strtolower((string) $row->unit) === 'day',
+                static fn (RoomPrice $row): bool => strtolower((string) $row->unit) === 'night',
             );
             if ($day !== null) {
                 return $day->id;
@@ -127,7 +139,7 @@ final class BookingStayAmountCalculator
         }
 
         $day = $prices->first(
-            static fn (RoomPrice $row): bool => strtolower((string) $row->unit) === 'day',
+            static fn (RoomPrice $row): bool => strtolower((string) $row->unit) === 'night',
         );
 
         return $day?->id ?? $prices->first()?->id;
@@ -146,7 +158,7 @@ final class BookingStayAmountCalculator
             $start,
             $end,
             (float) $roomPrice->price,
-            (string) ($roomPrice->unit ?? 'day'),
+            (string) ($roomPrice->unit ?? 'night'),
         );
     }
 }

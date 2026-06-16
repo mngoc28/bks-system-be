@@ -36,14 +36,48 @@ class RoomsTableSeeder extends Seeder
         }
 
         $typeRoomTitles = [
-            'khach-san-hotel' => ['Phòng Deluxe', 'Phòng Superior', 'Phòng Standard', 'Phòng Suite', 'Executive Room', 'Presidential Suite'],
-            'nha-nghi-motel-guesthouse' => ['Phòng Đơn', 'Phòng Đôi', 'Phòng Quạt', 'Phòng Điều Hòa'],
-            'can-ho-chung-cu' => ['Phòng Studio', 'Căn Hộ 1PN', 'Căn Hộ 2PN', 'Căn Hộ Studio'],
-            'biet-thu-villa' => ['Phòng Master', 'Phòng Ngủ Sân Vườn', 'Phòng Twin', 'Phòng View Hồ Bơi'],
-            'homestay' => ['Phòng Gác Mái', 'Phòng Gỗ', 'Phòng Cửa Sổ Loft', 'Phòng Dorm 4 Giường', 'Phòng Vintage'],
-            'resort-khu-nghi-duong' => ['Bungalow Garden View', 'Bungalow Pool Side', 'Pool Villa 1BR', 'Deluxe Ocean View'],
-            'phong-tro-nha-tro' => ['Phòng Trọ Khép Kín', 'Phòng Gác Lửng', 'Giường Tầng KTX', 'Phòng Cơ Bản'],
-            'camping-glamping' => ['Lều Mông Cổ', 'Nhà Gỗ Glamping', 'Lều Bell Tent', 'Lều Tròn Safari'],
+            'khach-san-hotel' => [
+                'Phòng Deluxe Giường Đôi Hướng Phố',
+                'Phòng Deluxe Giường Đơn Hướng Sân Vườn',
+                'Phòng Superior Tiêu Chuẩn',
+                'Phòng Superior Hướng Bể Bơi',
+                'Phòng Standard Giường Đôi',
+                'Phòng Standard Giường Đơn',
+                'Phòng Suite Hoàng Gia',
+                'Phòng Suite Gia Đình',
+                'Phòng Executive Hướng Phố',
+                'Phòng Presidential Suite (Tổng Thống)'
+            ],
+            'nha-nghi-guesthouse' => [
+                'Phòng Đơn Tiêu Chuẩn',
+                'Phòng Đơn Có Quạt',
+                'Phòng Đơn Máy Lạnh',
+                'Phòng Đôi Tiêu Chuẩn',
+                'Phòng Đôi Hướng Sân',
+                'Phòng Đôi Có Ban Công',
+                'Phòng Quạt Tiêu Chuẩn',
+                'Phòng Điều Hòa Tiện Nghi'
+            ],
+            'can-ho-dich-vu-theo-phong' => [
+                'Phòng Studio Hiện Đại',
+                'Phòng Studio Hướng Phố',
+                'Phòng Studio Ban Công',
+                'Căn Hộ 1 Phòng Ngủ Cozy',
+                'Căn Hộ 1 Phòng Ngủ Cao Cấp',
+                'Căn Hộ 2 Phòng Ngủ Gia Đình',
+                'Căn Hộ 2 Phòng Ngủ View Đẹp',
+                'Căn Hộ Studio Tiện Nghi'
+            ],
+            'homestay-co-chia-phong' => [
+                'Phòng Gác Mái Ấm Áp',
+                'Phòng Gác Mái Vintage',
+                'Phòng Gỗ Mộc Mạc',
+                'Phòng Gỗ Rustic',
+                'Phòng Loft Cửa Sổ Lớn',
+                'Phòng Dorm 4 Giường Tập Thể',
+                'Phòng Vintage Hoài Cổ',
+                'Phòng Vintage Nhỏ Xinh'
+            ],
         ];
 
         $roomCount = 0;
@@ -53,28 +87,89 @@ class RoomsTableSeeder extends Seeder
             $numRooms = rand(3, 6);
             $slug = $property->slug;
             $possibleTitles = $typeRoomTitles[$slug] ?? ['Phòng Cao Cấp', 'Phòng Tiêu Chuẩn', 'Phòng Sang Trọng'];
+            
+            // Shuffle and pick unique titles for rooms within this property
+            shuffle($possibleTitles);
+            $floorSequences = [];
 
             for ($r = 0; $r < $numRooms; $r++) {
                 $roomCount++;
-                $title = $faker->randomElement($possibleTitles) . ' ' . $faker->numberBetween(101, 999);
+                $title = $possibleTitles[$r % count($possibleTitles)];
                 $description = $faker->randomElement($descriptions);
                 
-                $roomType = $faker->numberBetween(1, 3); // 1=Studio, 2=Double, 3=Mini apartment
-                $people = match ($roomType) {
-                    1 => $faker->numberBetween(1, 2),
-                    2 => $faker->numberBetween(2, 4),
-                    3 => $faker->numberBetween(4, 8),
-                    default => 2,
-                };
+                // Enforce strict logical specifications based on the 4 property types slugs
+                if ($slug === 'khach-san-hotel') {
+                    // Hotels: 1 bedroom, double/twin beds. Suites can have 1 or 2 beds.
+                    $isSuite = (strpos($title, 'Suite') !== false || strpos($title, 'Executive') !== false);
+                    $bedroomsCount = 1; // Standard hotel rooms only have 1 bedroom space
+                    $bedsCount = $isSuite ? 2 : rand(1, 2);
+                    $roomType = $isSuite ? 2 : 1; 
+                    $people = $bedsCount * rand(1, 2);
+                    $area = $faker->randomFloat(2, 20, 50); // Hotels are 20m2 - 50m2
+                } elseif ($slug === 'nha-nghi-guesthouse') {
+                    // Guesthouses: Strictly 1 bedroom, 1 or 2 beds.
+                    $bedroomsCount = 1;
+                    $bedsCount = rand(1, 2);
+                    $roomType = 1;
+                    $people = $bedsCount * rand(1, 2);
+                    $area = $faker->randomFloat(2, 15, 30); // Guesthouses are 15m2 - 30m2
+                } elseif ($slug === 'homestay-co-chia-phong') {
+                    // Homestays: Each room/unit has 1 bedroom. Can be a Dorm room.
+                    $bedroomsCount = 1;
+                    $isDorm = (strpos($title, 'Dorm') !== false);
+                    $bedsCount = $isDorm ? 4 : rand(1, 2);
+                    $roomType = $isDorm ? 3 : 1;
+                    $people = $isDorm ? $bedsCount : rand(1, 2);
+                    $area = $isDorm ? $faker->randomFloat(2, 30, 45) : $faker->randomFloat(2, 18, 35); // Dorms are larger
+                } else {
+                    // Serviced apartments (can-ho-dich-vu-theo-phong): 1 to 3 bedrooms
+                    $roomType = $faker->numberBetween(1, 3);
+                    $bedroomsCount = match ($roomType) {
+                        1 => 1,
+                        2 => 2,
+                        3 => 3,
+                        default => 1,
+                    };
+                    $bedsCount = match ($roomType) {
+                        1 => rand(1, 2),
+                        2 => rand(2, 4),
+                        3 => rand(3, 6),
+                        default => 1,
+                    };
+                    $people = match ($roomType) {
+                        1 => rand(1, 2),
+                        2 => rand(2, 4),
+                        3 => rand(4, 8),
+                        default => 2,
+                    };
+                    
+                    // Realistic areas for apartments:
+                    $area = match ($bedroomsCount) {
+                        1 => $faker->randomFloat(2, 30, 50),  // 1 bedroom: 30 - 50 m2
+                        2 => $faker->randomFloat(2, 55, 80),  // 2 bedrooms: 55 - 80 m2
+                        3 => $faker->randomFloat(2, 85, 120), // 3 bedrooms: 85 - 120 m2
+                        default => $faker->randomFloat(2, 30, 50),
+                    };
+                }
+
+                $floor_number = $faker->numberBetween(1, 10);
+                if (!isset($floorSequences[$floor_number])) {
+                    $floorSequences[$floor_number] = 1;
+                } else {
+                    $floorSequences[$floor_number]++;
+                }
+                $room_number = (string)($floor_number * 100 + $floorSequences[$floor_number]);
 
                 $roomsData[] = [
                     'property_id' => $property->id,
                     'title' => $title,
-                    'room_number' => 'R' . str_pad($roomCount, 4, '0', STR_PAD_LEFT),
-                    'deposit' => $faker->numberBetween(500000, 10000000),
-                    'area' => $faker->randomFloat(2, 10, 80),
-                    'floor_number' => $faker->numberBetween(1, 10),
+                    'room_number' => $room_number,
+                    'deposit' => (float) (round($faker->numberBetween(500000, 10000000) / 50000) * 50000),
+                    'area' => $area,
+                    'floor_number' => $floor_number,
                     'people' => $people,
+                    'bedrooms_count' => $bedroomsCount,
+                    'beds_count' => $bedsCount,
                     'room_type' => $roomType, 
                     'status' => $faker->boolean(80), 
                     'description' => $description,

@@ -24,19 +24,19 @@ final class RoomPricesTableSeeder extends Seeder
      */
     private const PRICING_BY_PROPERTY_SLUG = [
         'khach-san-hotel' => [
-            'units' => ['day'],
+            'units' => ['night'],
             'group' => 'short_term',
         ],
         'nha-nghi-guesthouse' => [
-            'units' => ['day'],
+            'units' => ['night'],
             'group' => 'short_term',
         ],
         'homestay-co-chia-phong' => [
-            'units' => ['day', 'month'],
+            'units' => ['night', 'month'],
             'group' => 'flexible',
         ],
         'can-ho-dich-vu-theo-phong' => [
-            'units' => ['month', 'day'],
+            'units' => ['month', 'night'],
             'group' => 'long_term',
         ],
     ];
@@ -128,7 +128,7 @@ final class RoomPricesTableSeeder extends Seeder
             if ($config === null) {
                 $this->command->warn("Unknown property type slug \"{$propertySlug}\" for room {$roomId}; using day-only short_term fallback.");
                 $config = [
-                    'units' => ['day'],
+                    'units' => ['night'],
                     'group' => 'short_term',
                 ];
             }
@@ -182,7 +182,7 @@ final class RoomPricesTableSeeder extends Seeder
             $rows[] = $this->makeRow(
                 $roomId,
                 $packageId,
-                'day',
+                'night',
                 $propertySlug,
                 $nightRate,
                 $packageMultiplier,
@@ -198,7 +198,7 @@ final class RoomPricesTableSeeder extends Seeder
             $rows[] = $this->makeRow(
                 $roomId,
                 $packageId,
-                'day',
+                'night',
                 $propertySlug,
                 $nightRate,
                 $packageMultiplier,
@@ -237,7 +237,7 @@ final class RoomPricesTableSeeder extends Seeder
             $rows[] = $this->makeRow(
                 $roomId,
                 $packageId,
-                'day',
+                'night',
                 $propertySlug,
                 $nightRate,
                 $packageMultiplier,
@@ -319,7 +319,7 @@ final class RoomPricesTableSeeder extends Seeder
 
     private function resolveMonthlyApartmentRate(float $area, Generator $faker): float
     {
-        $perSqm = $faker->randomFloat(2, 120_000, 200_000);
+        $perSqm = $faker->randomFloat(2, 250_000, 450_000);
         $rate = $area * $perSqm * $faker->randomFloat(2, 0.9, 1.1);
 
         return $this->clamp(
@@ -390,7 +390,9 @@ final class RoomPricesTableSeeder extends Seeder
 
     private function applyPackageMultiplier(float $base, float $multiplier): float
     {
-        return round($base * $multiplier, 2);
+        $calculated = $base * $multiplier;
+        // Round to the nearest 10,000 VND for professional hospitality pricing
+        return (float) (round($calculated / 10000) * 10000);
     }
 
     private function packageMultiplier(int $packageId): float

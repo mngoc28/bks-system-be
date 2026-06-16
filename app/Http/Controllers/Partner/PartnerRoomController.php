@@ -319,6 +319,8 @@ final class PartnerRoomController extends Controller
             'room_number' => (string) ($request->input('room_number') ?? $title),
             'floor_number' => (int) $request->input('floor_number', 1),
             'people' => (int) $request->input('people', 1),
+            'bedrooms_count' => (int) $request->input('bedrooms_count', 1),
+            'beds_count' => (int) $request->input('beds_count', 1),
             'room_type' => (int) $request->input('room_type', 1),
             'status' => $request->boolean('status', true),
             'area' => (float) $request->input('area', 0),
@@ -395,7 +397,7 @@ final class PartnerRoomController extends Controller
             }
 
             $unit = (string) ($item['unit'] ?? 'month');
-            if (!in_array($unit, ['day', 'month', 'year'], true)) {
+            if (!in_array($unit, ['night', 'month', 'year'], true)) {
                 $unit = 'month';
             }
 

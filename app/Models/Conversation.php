@@ -7,9 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Conversation extends Model
+final class Conversation extends Model
 {
     use HasFactory;
+
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'user_id',
+        'partner_id',
+        'booking_id',
+        'last_message_at',
+    ];
 
     protected $casts = [
         'last_message_at' => 'datetime',

@@ -31,7 +31,7 @@ trait ResolvesBookingPriceId
 
         if (!$preferMonth) {
             foreach ($prices as $price) {
-                if ($price['unit'] === 'day') {
+                if ($price['unit'] === 'night') {
                     return $price['id'];
                 }
             }
@@ -52,7 +52,7 @@ trait ResolvesBookingPriceId
         }
 
         foreach ($prices as $price) {
-            if ($price['unit'] === 'day') {
+            if ($price['unit'] === 'night') {
                 return $price['id'];
             }
         }

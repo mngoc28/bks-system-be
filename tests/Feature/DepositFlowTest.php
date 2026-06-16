@@ -128,8 +128,7 @@ final class DepositFlowTest extends TestCase
 
         $room = Room::query()->firstOrFail();
         $user = User::query()->where('role', 'user')->firstOrFail();
-        $price = RoomPrice::query()->where('room_id', $room->id)->first() ?? RoomPrice::query()->firstOrFail();
-        $price->update(['unit' => 'night']);
+        $price = RoomPrice::query()->where('room_id', $room->id)->where('unit', 'night')->first() ?? RoomPrice::query()->where('unit', 'night')->firstOrFail();
 
         $booking = Booking::create([
             'room_id'        => $room->id,

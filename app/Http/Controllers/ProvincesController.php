@@ -84,4 +84,25 @@ class ProvincesController extends Controller
         }
         return $this->successResponse($results, __('province.messages.get_all_provinces_types_success'));
     }
+
+    /**
+     * Update a province's details
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $validator = $this->provincesValidation->updateProvinceValidation($request, $id);
+        if ($validator->fails()) {
+            return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
+        }
+
+        $results = $this->provincesService->updateProvince($id, $request->only(['name', 'name_en', 'image']));
+        if (!$results['success']) {
+            return $this->errorResponse($results['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($results['data'], $results['message']);
+    }
 }

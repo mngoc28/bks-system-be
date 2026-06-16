@@ -46,6 +46,7 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
             'provinces.id',
             'provinces.name',
             'provinces.name_en',
+            'provinces.image',
             DB::raw('COALESCE(wc.ward_count, 0) as ward_count'),
             DB::raw('COALESCE(rc.room_count, 0) as room_count')
         )
@@ -128,7 +129,7 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
      */
     public function getAllProvincesTypes(): object
     {
-        return $this->model->select('id', 'name', 'name_en')->get();
+        return $this->model->select('id', 'name', 'name_en', 'image')->get();
     }
 
     // ====== The functions below are APIs for the end user ======
@@ -139,9 +140,11 @@ class ProvincesRepository extends BaseRepository implements ProvincesRepositoryI
      */
     public function getAllProvinces(): array
     {
-        return $this->model
-            ->select('provinces.id', 'provinces.name', 'provinces.name_en')
-            ->get()
-            ->toArray();
+        return \Illuminate\Support\Facades\Cache::rememberForever('all_provinces', function () {
+            return $this->model
+                ->select('provinces.id', 'provinces.name', 'provinces.name_en', 'provinces.image')
+                ->get()
+                ->toArray();
+        });
     }
 }

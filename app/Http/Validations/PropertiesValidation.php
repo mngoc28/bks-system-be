@@ -26,6 +26,11 @@ final class PropertiesValidation
         return Validator::make(
             $request->all(),
             [
+                'partner_id'    => [
+                    'nullable',
+                    'integer',
+                    'exists:users,id',
+                ],
                 'name'          => [
                     'nullable',
                     'string',
