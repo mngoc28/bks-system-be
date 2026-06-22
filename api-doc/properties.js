@@ -8,7 +8,11 @@
  *
  * @apiHeader {String} Authorization Bearer token (JWT)
  *
- * @apiParam {String} [name] Search by property name (case-insensitive, partial match)
+ * @apiParam {String} [name] Search by property name only (case-insensitive, partial match)
+ * @apiParam {String} [keyword] Search by property name or address detail (case-insensitive, partial match). Partner list: `GET /api/v1/partner/properties/searchAll`
+ * @apiParam {String} [occupancy_filter] Filter properties with at least one room matching occupancy: `vacant`, `occupied`, or `maintenance` (partner list)
+ * @apiParam {Number} [min_rating] Minimum average review rating (0–5). Value `0` means properties with no reviews.
+ * @apiParam {Number} [has_rooms] Filter by room presence: `1` = has rooms, `0` = no rooms (partner list)
  * @apiParam {String} [ward] Search by ward name (case-insensitive, partial match)
  * @apiParam {String} [province] Search by province name (case-insensitive, partial match)
  * @apiParam {Number} [year_built] Filter by year built (exact match)

@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\BookingCancellationRequest;
 use App\Models\Contract;
 use App\Models\RoomBlock;
+use App\Models\RoomMaintenance;
 use App\Policies\ServicePolicy;
 use App\Policies\RoomPolicy;
 use App\Policies\PropertyPolicy;
@@ -17,6 +18,7 @@ use App\Policies\BookingPolicy;
 use App\Policies\BookingCancellationRequestPolicy;
 use App\Policies\ContractPolicy;
 use App\Policies\RoomBlockPolicy;
+use App\Policies\RoomMaintenancePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +35,7 @@ class AuthServiceProvider extends ServiceProvider
         BookingCancellationRequest::class => BookingCancellationRequestPolicy::class,
         Contract::class => ContractPolicy::class,
         RoomBlock::class => RoomBlockPolicy::class,
+        RoomMaintenance::class => RoomMaintenancePolicy::class,
         // Property::class => PropertyPolicy::class,
         // Room::class => RoomPolicy::class,
         // Service::class => ServicePolicy::class,

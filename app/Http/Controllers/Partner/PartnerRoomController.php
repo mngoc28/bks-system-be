@@ -329,6 +329,8 @@ final class PartnerRoomController extends Controller
             'services' => $this->normalizeServiceIds($request->input('services', [])),
             'prices' => $this->normalizePrices($request->input('prices', [])),
             'utility_fees' => is_array($request->input('utility_fees')) ? $request->input('utility_fees') : [],
+            'sync_to_same_type' => $request->boolean('sync_to_same_type', false),
+            'apply_to_all_rooms' => $request->boolean('apply_to_all_rooms', false),
         ];
     }
 
@@ -413,5 +415,39 @@ final class PartnerRoomController extends Controller
         }
 
         return $normalized;
+    }
+
+    /**
+     * Update housekeeping status of a room.
+     *
+     * @param Request $request
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function updateHousekeepingStatus(Request $request, $id): JsonResponse
+    {
+        $validator = \Illuminate\Support\Facades\Validator::make(
+            array_merge($request->all(), ['id' => $id]),
+            [
+                'id' => ['required', 'integer', 'exists:rooms,id'],
+                'housekeeping_status' => ['required', 'string', 'in:clean,dirty,inspecting'],
+            ],
+            [
+                'id.exists' => 'Phòng không tồn tại.',
+                'housekeeping_status.in' => 'Trạng thái buồng phòng không hợp lệ.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return $this->validateError($validator->errors(), null, HttpStatus::VALIDATION_ERROR);
+        }
+
+        $result = $this->roomsService->updateHousekeepingStatus((int)$id, $request->input('housekeeping_status'));
+
+        if (! $result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
     }
 }

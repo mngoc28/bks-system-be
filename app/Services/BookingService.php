@@ -29,6 +29,7 @@ use App\Jobs\SendBooking;
 use App\Jobs\SendBookingCancelled;
 use App\Jobs\VerifyMail;
 use App\Models\Booking;
+use App\Models\Contract;
 use App\Models\RoomPrice;
 use App\Models\PartnerSettlementPeriod;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -747,42 +748,17 @@ final class BookingService
             $updated = $this->bookingRepository->find($id);
 
             // Sinh hợp đồng (Generate Contract)
-            $room = $this->roomsRepository->find($booking->room_id);
-            if ($room && $room->property) {
-                $propertyType = $room->property->propertyType;
-                $propertySlug = $propertyType ? (string) $propertyType->slug : '';
-                $priceUnit = (string) ($booking->price?->unit ?? 'night');
-                $stayNights = BookingStayAmountCalculator::countStayNights(
-                    $booking->start_date,
-                    $booking->end_date,
-                );
+            $this->createContractDocumentForBooking($updated, $now);
 
-                $isLongTerm = StayClassificationService::isLongTermLeaseBooking(
-                    $propertySlug,
-                    $stayNights,
-                    $priceUnit,
-                );
-
-                $contractType = $isLongTerm ? 'LEASE_AGREEMENT' : 'TERMS_AND_CONDITIONS';
-                $contractStatus = $isLongTerm ? 0 : 1; // 0: Pending signature, 1: Auto-signed
-                $contractTitle = $isLongTerm ? 'Hợp đồng thuê phòng / Căn hộ' : 'Phiếu xác nhận lưu trú';
-
-                $content = "Hợp đồng cho mã đặt phòng " . sprintf('RM-%04d-%06d', date('Y'), $booking->id);
-
-                $booking->contracts()->create([
-                    'title'         => $contractTitle,
-                    'content'       => $content,
-                    'status'        => $contractStatus,
-                    'type'          => 'Rental',
-                    'contract_type' => $contractType,
-                    'created_by'    => Auth::id() ?? 1,
-                    'signature_date'=> $contractStatus === 1 ? $now : null,
-                ]);
+            $contractType = null;
+            $firstContract = $updated->contracts()->orderBy('id')->first();
+            if ($firstContract instanceof Contract) {
+                $contractType = (string) ($firstContract->contract_type ?? '');
             }
 
             $this->timelineService->recordConfirmed($id, null, [
                 'confirmed_at'  => $now->toIso8601String(),
-                'contract_type' => $contractType ?? null,
+                'contract_type' => $contractType !== '' ? $contractType : null,
             ]);
 
             DB::commit();
@@ -1564,6 +1540,126 @@ final class BookingService
     // =========================================================================
 
     /**
+     * Ensure a contract exists for a confirmed/completed partner booking.
+     * Idempotent — returns the existing contract when already present.
+     *
+     * @return array{success: bool, data: mixed, message: string}
+     */
+    public function handleEnsureBookingContract(int $id): array
+    {
+        try {
+            $booking = $this->bookingRepository->find($id);
+            if (!$booking) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.not_found'),
+                ];
+            }
+
+            $partnerId = (int) Auth::id();
+            $booking->loadMissing(['room.property', 'price', 'contracts']);
+
+            if (
+                ! $booking->room?->property
+                || (int) $booking->room->property->user_id !== $partnerId
+            ) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => __('booking.messages.unauthorized'),
+                ];
+            }
+
+            if (! in_array((int) $booking->status, [BookingStatus::CONFIRMED->value, BookingStatus::COMPLETED->value], true)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Chỉ booking đã duyệt hoặc hoàn thành mới có hợp đồng.',
+                ];
+            }
+
+            $contract = $this->createContractDocumentForBooking($booking);
+            if (! $contract instanceof Contract) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => 'Không thể tạo hợp đồng cho booking này.',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data'    => ['id' => (int) $contract->id],
+                'message' => 'Hợp đồng đã sẵn sàng.',
+            ];
+        } catch (Exception $e) {
+            Log::error('Ensure booking contract failed: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Không thể tạo hợp đồng cho booking này.',
+            ];
+        }
+    }
+
+    /**
+     * Create the default contract document for a booking when missing.
+     */
+    private function createContractDocumentForBooking(Booking $booking, ?Carbon $signedAt = null): ?Contract
+    {
+        $existing = $booking->contracts()->orderBy('id')->first();
+        if ($existing instanceof Contract) {
+            return $existing;
+        }
+
+        $room = $booking->relationLoaded('room') && $booking->room
+            ? $booking->room
+            : $this->roomsRepository->find((int) $booking->room_id);
+
+        if (! $room) {
+            return null;
+        }
+
+        $room->loadMissing(['property.propertyType']);
+
+        if (! $room->property) {
+            return null;
+        }
+
+        $propertyType = $room->property->propertyType;
+        $propertySlug = $propertyType ? (string) $propertyType->slug : '';
+        $priceUnit = (string) ($booking->price?->unit ?? 'night');
+        $stayNights = BookingStayAmountCalculator::countStayNights(
+            $booking->start_date,
+            $booking->end_date,
+        );
+
+        $isLongTerm = StayClassificationService::isLongTermLeaseBooking(
+            $propertySlug,
+            $stayNights,
+            $priceUnit,
+        );
+
+        $contractType = $isLongTerm ? 'LEASE_AGREEMENT' : 'TERMS_AND_CONDITIONS';
+        $contractStatus = $isLongTerm ? 0 : 1;
+        $contractTitle = $isLongTerm ? 'Hợp đồng thuê phòng / Căn hộ' : 'Phiếu xác nhận lưu trú';
+        $content = 'Hợp đồng cho mã đặt phòng ' . sprintf('RM-%04d-%06d', date('Y'), $booking->id);
+        $now = $signedAt ?? Carbon::now();
+
+        return $booking->contracts()->create([
+            'title'          => $contractTitle,
+            'content'        => $content,
+            'status'         => $contractStatus,
+            'type'           => 'Rental',
+            'contract_type'  => $contractType,
+            'created_by'     => Auth::id() ?? 1,
+            'signature_date' => $contractStatus === 1 ? $now : null,
+        ]);
+    }
+
+    /**
      * Get bookings for partner
      *
      * @param Request $request
@@ -1582,6 +1678,32 @@ final class BookingService
             ];
         } catch (Exception $e) {
             Log::error("Partner get bookings failed: " . $e->getMessage());
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => __('booking.messages.retrieved_failed'),
+            ];
+        }
+    }
+
+    /**
+     * Get lightweight booking counters for partner booking tabs/cards.
+     *
+     * @return array
+     */
+    public function handleGetBookingSummaryForPartner(): array
+    {
+        try {
+            $partnerId = Auth::id();
+            $summary = $this->bookingRepository->getBookingSummaryForPartner((int) $partnerId);
+
+            return [
+                'success' => true,
+                'data'    => $summary,
+                'message' => __('booking.messages.retrieved_successfully'),
+            ];
+        } catch (Exception $e) {
+            Log::error("Partner get booking summary failed: " . $e->getMessage());
             return [
                 'success' => false,
                 'data'    => null,
@@ -1721,7 +1843,10 @@ final class BookingService
                 'stay_status' => 'checked_out',
                 'status' => BookingStatus::COMPLETED->value,
             ]);
-            $this->roomsRepository->update($booking->room_id, ['status' => true]);
+            $this->roomsRepository->update($booking->room_id, [
+                'status' => true,
+                'housekeeping_status' => 'dirty',
+            ]);
             $this->timelineService->recordCheckedOut($id);
             DB::commit();
 

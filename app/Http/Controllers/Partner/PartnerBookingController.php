@@ -70,6 +70,29 @@ final class PartnerBookingController extends Controller
     }
 
     /**
+     * Get lightweight booking counters for partner booking tabs/cards.
+     *
+     * @return JsonResponse
+     */
+    public function summary(): JsonResponse
+    {
+        $result = $this->bookingService->handleGetBookingSummaryForPartner();
+
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
+
+    /**
      * Check-in a booking
      *
      * @param int $id
@@ -269,5 +292,22 @@ final class PartnerBookingController extends Controller
         }
 
         return $this->successResponse(null, $result['message']);
+    }
+
+    /**
+     * Ensure contract document exists for a confirmed/completed booking.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function ensureContract(int $id): JsonResponse
+    {
+        $result = $this->bookingService->handleEnsureBookingContract($id);
+
+        if (! $result['success']) {
+            return $this->errorResponse($result['message'], null, HttpStatus::BAD_REQUEST);
+        }
+
+        return $this->successResponse($result['data'], $result['message']);
     }
 }

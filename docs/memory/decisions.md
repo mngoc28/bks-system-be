@@ -1,5 +1,93 @@
 # Repository Decisions Log
 
+## 2026-06-19 - Partner properties list keyword search (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260619-PP-001 |
+| Context | PRD OQ1: search chỉ match `name` trong khi placeholder gợi ý địa chỉ |
+| Decision | Thêm param API `keyword` (LIKE `name` OR `address_detail`); giữ `name` chỉ match tên cho backward-compat |
+| Rationale | FE chuyển sang `keyword`; client/API cũ dùng `name` không break |
+| Related artifact | `docs/plans/plan_015_partner_properties_list_gaps.md`, `app/Repositories/PropertyRepository/PropertyRepository.php` |
+| Status | Planned |
+
+## 2026-06-19 - Partner properties sort rating NULL handling (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260619-PP-002 |
+| Context | PRD OQ2: sort theo rating khi property chưa có review |
+| Decision | `reviews_avg_rating` sort desc → NULL values **cuối danh sách** |
+| Rationale | Partner ưu tiên thấy property có đánh giá cao trước |
+| Related artifact | `docs/plans/plan_015_partner_properties_list_gaps.md` |
+| Status | Planned |
+
+## 2026-06-19 - Partner properties single delete confirm (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260619-PP-003 |
+| Context | Bulk delete bắt gõ `XÁC NHẬN XÓA`; xóa đơn không confirm |
+| Decision | Dialog xóa đơn: 2 nút Cancel/Confirm, hiển thị `rooms_count`; **không** typed confirmation |
+| Rationale | Cân bằng an toàn và tốc độ thao tác |
+| Related artifact | `docs/plans/plan_015_partner_properties_list_gaps.md`, `bks-system-fe/src/pages/Partner/Properties.tsx` |
+| Status | Planned |
+
+## 2026-06-18 - Partner maintenance API lifecycle (implemented)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260618-MNT-005 |
+| Context | PLAN-MNT-014 Phase 2 backend |
+| Decision | Partner API `GET/PATCH room-maintenances/{id}`; list luôn paginate; create trong transaction + optional block sync; release block khi complete/cancel nếu `block.reason === maintenance.title` |
+| Rationale | Tái sử dụng `RoomBlockService`; tránh xóa block thủ công của Partner khi chỉ link dedup |
+| Related artifact | `app/Services/RoomMaintenanceService.php`, `app/Services/MaintenanceBlockSyncService.php` |
+| Status | Implemented (2026-06-18) |
+
+## 2026-06-18 - Partner maintenance Phase 1 schema (implemented)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260618-MNT-004 |
+| Context | PLAN-MNT-014 Phase 1 foundation |
+| Decision | Migration `2026_06_18_120000_extend_room_maintenances_for_partner_lifecycle.php` thêm 7 cột + index scope; FK `room_block_id` ON DELETE SET NULL |
+| Rationale | Backward-compatible; existing rows default `block_calendar=true`, `source=partner` |
+| Related artifact | `docs/plans/plan_014_partner_maintenance.md`, `app/Models/RoomMaintenance.php` |
+| Status | Implemented (2026-06-18) |
+
+## 2026-06-18 - Partner maintenance block_calendar default (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260618-MNT-001 |
+| Context | SRS OQ2: `end_time` null có thể gây block Calendar vô hạn |
+| Decision | `block_calendar` default `true`; khi `true` bắt buộc `end_time` trên API create |
+| Rationale | Tránh khóa tồn bán vĩnh viễn; Partner vẫn có thể `block_calendar=false` để chỉ ghi nhận phiếu |
+| Related artifact | `docs/plans/plan_014_partner_maintenance.md`, `docs/SRC/srs_partner_maintenance.md` |
+| Status | Planned |
+
+## 2026-06-18 - Partner maintenance conflict với booking đang ở (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260618-MNT-002 |
+| Context | SRS OQ1: bảo trì trùng booking checked-in |
+| Decision | Cho phép tạo phiếu nếu `block_calendar=false`; từ chối 409 nếu `block_calendar=true` và overlap booking/block |
+| Rationale | Linh hoạt ghi nhận sự cố khi khách đang ở; vẫn chặn overbooking khi Partner chọn khóa lịch |
+| Related artifact | `docs/plans/plan_014_partner_maintenance.md`, `app/Services/ConflictChecker.php` |
+| Status | Planned |
+
+## 2026-06-18 - Partner maintenance sync qua RoomBlockService (plan)
+
+| Field | Decision |
+|---|---|
+| Decision ID | DEC-260618-MNT-003 |
+| Context | Tránh duplicate logic conflict + calendar cache invalidation |
+| Decision | `MaintenanceBlockSyncService` gọi `RoomBlockService::create`/`delete`; dedup link block `maintenance` overlap thay vì tạo trùng |
+| Rationale | Tái dùng Partner Portal 360 Phase 3; event `room_block.changed` tự invalidate calendar |
+| Related artifact | `docs/plans/plan_014_partner_maintenance.md`, `app/Services/RoomBlockService.php` |
+| Status | Planned |
+
 ## 2026-06-08 - Partner Dashboard overbooking count (plan)
 
 | Field | Decision |

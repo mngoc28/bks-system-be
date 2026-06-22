@@ -128,6 +128,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Platform Support Contact
+    |--------------------------------------------------------------------------
+    |
+    | Fallback contact shown on Partner Room Detail when partner profile
+    | has no phone/email configured.
+    |
+    */
+
+    'support_phone' => env('APP_SUPPORT_PHONE'),
+    'support_email' => env('APP_SUPPORT_EMAIL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 final class PartnerApprovalController extends Controller
@@ -166,48 +165,5 @@ final class PartnerApprovalController extends Controller
             Log::error('Partner verification failed: ' . $e->getMessage());
             return $this->errorResponse('Lỗi hệ thống: ' . $e->getMessage(), null, HttpStatus::INTERNAL_SERVER_ERROR);
         }
-    }
-
-    /**
-     * Serve private documents securely.
-     *
-     * @param Request $request
-     * @return mixed
-     */
-    public function viewPrivateDocument(Request $request)
-    {
-        $path = $request->input('path');
-        if (empty($path)) {
-            return response()->json(['message' => 'Đường dẫn tệp là bắt buộc.'], 400);
-        }
-
-        $user = Auth::guard('api')->user();
-        if (!$user) {
-            return response()->json(['message' => 'Không được phép truy cập.'], 401);
-        }
-
-        // Security Check: Only Admin can view all, Partners can only view their own
-        if ($user->role !== 'admin') {
-            $parts = explode('/', $path);
-            $isInvalidPath = count($parts) < 3 ||
-                $parts[0] !== 'private' ||
-                $parts[1] !== 'partners' ||
-                (int) $parts[2] !== (int) $user->id;
-
-            if ($isInvalidPath) {
-                return response()->json([
-                    'message' => 'Từ chối truy cập. Bạn chỉ có quyền xem tài liệu của chính mình.'
-                ], 403);
-            }
-        }
-
-        if (!Storage::disk('local')->exists($path)) {
-            return response()->json(['message' => 'Không tìm thấy tệp tài liệu.'], 404);
-        }
-
-        $fileContent = Storage::disk('local')->get($path);
-        $mimeType = Storage::disk('local')->mimeType($path);
-
-        return response($fileContent)->header('Content-Type', $mimeType);
     }
 }

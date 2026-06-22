@@ -119,24 +119,28 @@ class PartnerInforServices
             }
 
             $dataUpdate = [
-                'company_name' => $request->company_name,
-                'phone'        => $request->phone,
-                'address'      => $request->address,
-                'website'      => $request->website,
-                'description'  => $request->description,
-                'updated_by'   => Auth::id(),
+                'updated_by' => Auth::id(),
             ];
+
+            $optionalFields = ['company_name', 'phone', 'address', 'website', 'description', 'province_id', 'ward_id'];
+            foreach ($optionalFields as $field) {
+                if ($request->has($field)) {
+                    $dataUpdate[$field] = $request->input($field);
+                }
+            }
 
             $upload = new UploadFile();
             $imageFields = ['image_1', 'image_2', 'image_3'];
             foreach ($imageFields as $field) {
                 if ($request->hasFile($field)) {
-                    // upload picture
                     $avatarUrl = $upload->uploadImage(
                         $request->file($field),
                         'partner',
                         $id,
                     );
+                    if (!$avatarUrl) {
+                        throw new Exception('Partner image upload failed');
+                    }
                     $imageJustUploaded[] = $avatarUrl;
                     if ($partner->$field) {
                         $oldAvatarUrl[] = $partner->$field;

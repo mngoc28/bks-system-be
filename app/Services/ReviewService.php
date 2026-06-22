@@ -205,6 +205,11 @@ class ReviewService
             }
 
             DB::commit();
+
+            if (isset($createdReviews['room'])) {
+                app(HomePageCacheService::class)->bumpRoomsCacheVersion();
+            }
+
             return [
                 'success' => true,
                 'data' => $createdReviews,

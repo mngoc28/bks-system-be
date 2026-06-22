@@ -29,6 +29,7 @@
 | 2026-05-21 | Cursor Agent (stack-task RTM) | Room-tourist mapping implemented: migration `2026_05_21_120001_create_tourist_spots_table.php`, migration `2026_05_21_120002_create_room_tourist_spot_maps_table.php`, model relations `Room::touristSpotMaps()`, `TouristSpot::roomTouristSpotMaps()`, `RoomTouristSpotMap`, public summary enrichment via `RoomTouristSummaryService` for home/search/detail, admin CRUD routes/controllers for `tourist-spots` and `room-tourist-spot-maps`. Travel time kept as estimated/managed value; no live routing schema added. |
 | 2026-05-30 | Cursor Agent (PLAN-PARTNER-PROP-009 Phase 1) | Migration `2026_05_30_120000_add_partner_properties_list_indexes.php`: index `properties(user_id)`; index `property_images(property_id, sort, id)` phục vụ partner properties list API. |
 | 2026-05-31 | Cursor Agent (stack-analyze) | SRS `srs_admin_revenue_reconciliation.md`: đề xuất bổ sung bảng `partner_settlement_periods`, `settlement_line_items`; mở rộng `bookings` với các cột `payment_collected_at`, `settlement_period_id`. Cập nhật ER diagram và quy tắc dữ liệu đối soát. |
+| 2026-06-18 | Cursor Agent (stack-task PLAN-MNT-014 Phase 1) | Migration `2026_06_18_120000_extend_room_maintenances_for_partner_lifecycle.php`: thêm `room_block_id` (FK nullable→`room_blocks.id` ON DELETE SET NULL), `block_calendar` boolean default true, `source` varchar(30) default `partner`, `cancellation_reason` varchar(500) nullable, `started_at`/`completed_at`/`cancelled_at` timestamp nullable; index `idx_room_maintenances_partner_scope(property_id, status, maintenance_type, start_time)`. Model `RoomMaintenance` bổ sung relations + status/type constants. Seeder `RoomMaintenancesSeeder` cập nhật cột mới. |
 
 ## Nguyên tắc dùng chung
 
@@ -273,6 +274,37 @@ Mục đích: cho Partner chặn lịch phòng vì bảo trì, owner-use hoặc 
 - CHECK `block_type IN ('maintenance','owner_use','off_market')`.
 - Foreign key `created_by` ON DELETE SET NULL về `users.id`.
 
+### room_maintenances
+
+Mục đích: phiếu bảo trì / sự cố phòng do Partner tạo; có thể liên kết `room_blocks` khi `block_calendar = true`.
+
+| Column | Type | Nullable | Key | Reference | Notes |
+|---|---|---|---|---|---|
+| id | bigint | No | PK | - | Maintenance ticket ID |
+| room_id | bigint | No | FK | rooms.id | Phòng bảo trì |
+| property_id | bigint | No | FK, Index | properties.id | Cơ sở chứa phòng |
+| title | string(255) | No | - | - | Tiêu đề công việc |
+| description | text | Yes | - | - | Mô tả chi tiết |
+| maintenance_type | enum | No | Index | - | `scheduled`, `emergency` |
+| start_time | datetime | No | Index | - | Bắt đầu thực hiện |
+| end_time | datetime | Yes | - | - | Kết thúc dự kiến / thực tế |
+| status | enum | No | Index | - | `planned`, `in_progress`, `completed`, `cancelled` |
+| room_block_id | bigint | Yes | FK | room_blocks.id | Block Calendar đồng bộ (nullable) |
+| block_calendar | boolean | No | - | - | Default true — có khóa lịch khi tạo |
+| source | varchar(30) | No | - | - | Default `partner` |
+| cancellation_reason | varchar(500) | Yes | - | - | Lý do hủy |
+| started_at | timestamp | Yes | - | - | Thời điểm tiếp nhận |
+| completed_at | timestamp | Yes | - | - | Thời điểm hoàn thành |
+| cancelled_at | timestamp | Yes | - | - | Thời điểm hủy |
+| images | json | Yes | - | - | URL ảnh minh chứng |
+| created_by | bigint | No | FK | users.id | Người tạo phiếu |
+| created_at | timestamp | No | - | - | Laravel timestamps |
+| updated_at | timestamp | No | - | - | Laravel timestamps |
+
+**Index cần đảm bảo:** `idx_room_maintenances_partner_scope(property_id, status, maintenance_type, start_time)`.
+
+**Quan hệ:** `room_maintenances.room_block_id` → `room_blocks.id` (ON DELETE SET NULL). Khi phiếu `completed`/`cancelled`, runtime Phase 2 sẽ gỡ block liên kết.
+
 ### tourist_spots
 
 Mục đích: master danh mục các điểm du lịch / khu tham quan nổi bật để gắn với phòng và hiển thị trên home/search.
@@ -359,6 +391,8 @@ erDiagram
   ROOMS ||--o{ ROOM_PRICES : has
   ROOMS ||--o{ BOOKINGS : receives
   ROOMS ||--o{ ROOM_BLOCKS : blocks
+  ROOMS ||--o{ ROOM_MAINTENANCES : maintains
+  ROOM_BLOCKS ||--o| ROOM_MAINTENANCES : syncs
   ROOMS ||--o{ UTILITY_FEES : has
   ROOMS ||--o{ ROOM_TOURIST_SPOT_MAPS : maps
   BOOKINGS ||--o{ CONTRACTS : generates

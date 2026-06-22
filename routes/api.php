@@ -83,11 +83,6 @@ Route::group([
      */
     Route::middleware(['jwt.auth'])->post('broadcasting/auth', [BroadcastAuthController::class, 'authenticate']);
 
-    Route::middleware(['jwt.auth'])->get(
-        'documents/view',
-        [\App\Http\Controllers\Admin\PartnerApprovalController::class, 'viewPrivateDocument']
-    );
-
     /**
      * Check permission
      */
@@ -276,6 +271,8 @@ Route::group([
         Route::middleware(['jwt.auth'])->prefix('room-maintenances')->group(function () {
             Route::get('/', [RoomMaintenanceController::class, 'index']);
             Route::post('/', [RoomMaintenanceController::class, 'store']);
+            Route::get('{id}', [RoomMaintenanceController::class, 'show'])->whereNumber('id');
+            Route::patch('{id}', [RoomMaintenanceController::class, 'update'])->whereNumber('id');
         });
 
         /**
@@ -525,7 +522,8 @@ Route::group([
          * Base Url /api/v1/partner/
          */
         Route::get('business-profile', [PartnerInforController::class, 'showSelf']);
-        // update partner information
+        // update partner information (POST supports multipart image uploads; PUT for JSON-only updates)
+        Route::post('business-profile', [PartnerInforController::class, 'updateSelf']);
         Route::put('business-profile', [PartnerInforController::class, 'updateSelf']);
         // detail partner information
         Route::get('detail/{id}', [PartnerInforController::class, 'show']);
@@ -590,6 +588,7 @@ Route::group([
             Route::post('bulk-update-status', [PartnerRoomController::class, 'bulkUpdateStatus']);
             Route::post('bulk-delete', [PartnerRoomController::class, 'bulkDelete']);
             Route::put('{id}', [PartnerRoomController::class, 'update']);
+            Route::patch('{id}/housekeeping', [PartnerRoomController::class, 'updateHousekeepingStatus']);
             Route::delete('{id}', [RoomsController::class, 'destroy']);
         });
 
@@ -691,6 +690,7 @@ Route::group([
         Route::prefix('bookings')->group(function () {
             Route::get('/', [PartnerBookingController::class, 'index']);
             Route::post('/', [BookingController::class, 'store']);
+            Route::get('summary', [PartnerBookingController::class, 'summary']);
             // Phase 3/4 (T3.13, T4.4): gắn feature flag partner360
             Route::middleware('partner360')->group(function () {
                 Route::post('bulk-confirm', [PartnerBookingController::class, 'bulkConfirm']);
@@ -705,6 +705,7 @@ Route::group([
             Route::put('{id}/no-show', [PartnerBookingController::class, 'noShow'])->whereNumber('id');
             Route::put('{id}/check-in', [PartnerBookingController::class, 'checkIn'])->whereNumber('id');
             Route::put('{id}/check-out', [PartnerBookingController::class, 'checkOut'])->whereNumber('id');
+            Route::post('{id}/ensure-contract', [PartnerBookingController::class, 'ensureContract'])->whereNumber('id');
         });
 
         /**
@@ -742,7 +743,10 @@ Route::group([
          */
         Route::prefix('room-maintenances')->group(function () {
             Route::get('/', [RoomMaintenanceController::class, 'index']);
+            Route::get('/conflict-preview', [RoomMaintenanceController::class, 'conflictPreview']);
             Route::post('/', [RoomMaintenanceController::class, 'store']);
+            Route::get('{id}', [RoomMaintenanceController::class, 'show'])->whereNumber('id');
+            Route::patch('{id}', [RoomMaintenanceController::class, 'update'])->whereNumber('id');
         });
 
         Route::prefix('stay-services')->group(function () {
@@ -852,15 +856,21 @@ Route::group([
 
     // Home public APIs
     Route::prefix('home')->group(function () {
+        $publicCache = 'cache.headers:public;max_age=3600;stale_while_revalidate=86400';
+
+        Route::get('/bootstrap-metadata', [HomeController::class, 'getBootstrapMetadata'])
+            ->middleware($publicCache);
         Route::prefix('rooms')->group(function () {
             Route::get('/getTopRatedRoom', [HomeController::class, 'getTopRatedRooms']);
             Route::get('/rooms-by-province', [HomeController::class, 'getRoomsByProvince']);
             Route::get('/rooms-by-tourist-spot', [HomeController::class, 'getRoomsByTouristSpot']);
             Route::get('/filter', [HomeController::class, 'filterRooms']);
         });
-        Route::get('/provinces', [HomeController::class, 'getProvinces']);
+        Route::get('/provinces', [HomeController::class, 'getProvinces'])
+            ->middleware($publicCache);
         Route::get('/tourist-spots', [HomeController::class, 'getTouristSpots']);
-        Route::get('/property-types', [PropertiesController::class, 'getAllPropertyTypes']);
+        Route::get('/property-types', [PropertiesController::class, 'getAllPropertyTypes'])
+            ->middleware($publicCache);
         Route::get('/wards/{provinceId}', [WardsController::class, 'getWardsByProvinceId'])->whereNumber('provinceId');
         Route::get('/partners/random', [HomeController::class, 'getRandomPartners']);
         Route::get('/news/latest', [HomeController::class, 'getLatestNews']);

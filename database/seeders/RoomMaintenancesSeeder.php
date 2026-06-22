@@ -34,6 +34,8 @@ class RoomMaintenancesSeeder extends Seeder
             $end = (clone $start)->addHours(rand(2, 6));
             $task = $maintenanceTasks[array_rand($maintenanceTasks)];
 
+            $status = collect(['planned', 'in_progress', 'completed', 'cancelled'])->random();
+
             $records[] = [
                 'room_id' => (($i - 1) % 10) + 1,
                 'property_id' => (($i - 1) % 5) + 1,
@@ -42,7 +44,14 @@ class RoomMaintenancesSeeder extends Seeder
                 'maintenance_type' => rand(0, 1) ? 'scheduled' : 'emergency',
                 'start_time' => $start,
                 'end_time' => $end,
-                'status' => collect(['planned', 'in_progress', 'completed', 'cancelled'])->random(),
+                'status' => $status,
+                'room_block_id' => null,
+                'block_calendar' => true,
+                'source' => 'partner',
+                'cancellation_reason' => $status === 'cancelled' ? 'Hủy theo kế hoạch vận hành (seed)' : null,
+                'started_at' => in_array($status, ['in_progress', 'completed', 'cancelled'], true) ? $start : null,
+                'completed_at' => $status === 'completed' ? $end : null,
+                'cancelled_at' => $status === 'cancelled' ? $end : null,
                 'created_by' => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),

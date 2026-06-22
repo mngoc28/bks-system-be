@@ -143,4 +143,43 @@ final class PublicRoomSearchPaginationTest extends TestCase
             }
         }
     }
+
+    public function test_public_room_search_returns_segmented_payload_for_rent_segments(): void
+    {
+        $response = $this->getJson('/api/v1/rooms/search?rent_segments=daily,monthly&page=1&per_page=5&sort_by=cheapest_daily_price&sort_direction=asc');
+
+        $response->assertOk();
+        $response->assertJsonPath('status', 'success');
+        $response->assertJsonStructure([
+            'status',
+            'message',
+            'data' => [
+                'daily' => [
+                    'current_page',
+                    'data',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+                'monthly' => [
+                    'current_page',
+                    'data',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+            ],
+        ]);
+        $response->assertJsonPath('data.daily.current_page', 1);
+        $response->assertJsonPath('data.monthly.current_page', 1);
+        $response->assertJsonPath('data.daily.per_page', 5);
+        $response->assertJsonPath('data.monthly.per_page', 5);
+    }
+
+    public function test_public_room_search_rejects_rent_type_with_rent_segments(): void
+    {
+        $response = $this->getJson('/api/v1/rooms/search?rent_segments=daily,monthly&rent_type=daily');
+
+        $response->assertStatus(422);
+    }
 }

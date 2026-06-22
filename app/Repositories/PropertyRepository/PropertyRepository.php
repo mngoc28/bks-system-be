@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\PropertyRepository;
 
+use App\Enums\BookingStatus;
 use App\Enums\UserType;
 use App\Models\Property;
 use App\Models\Room;
@@ -50,6 +51,10 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
 
         if ($request->filled('name')) {
             $query->whereRaw('LOWER(properties.name) LIKE ?', ['%' . strtolower($request->name) . '%']);
+        }
+
+        if ($request->filled('keyword')) {
+            $this->applyPropertyKeywordFilter($query, (string) $request->keyword);
         }
 
         if ($request->filled('ward_name')) {
@@ -147,24 +152,24 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
     {
         $roomsLoadMode = $this->resolvePartnerRoomsLoadMode($request);
         $includeCover  = $this->shouldIncludePartnerPropertyCover($request);
+        $needsUserJoin = $this->partnerPropertySortIncludes($sort, 'user_name');
+        $needsProvinceJoin = true;
+        $needsWardJoin = true;
 
-        $propertyReviewAgg = DB::table('reviews')
-            ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
-            ->select([
-                'rooms.property_id',
-                DB::raw('COUNT(reviews.id) as property_reviews_count'),
-                DB::raw('ROUND(AVG(reviews.rating), 1) as property_reviews_avg_rating'),
-            ])
-            ->groupBy('rooms.property_id');
+        $today = now()->toDateString();
+        $confirmedStatus = BookingStatus::CONFIRMED->value;
 
         $selectColumns = [
             'properties.*',
-            'users.name as user_name',
-            'provinces.name as province_name',
-            'wards.name as ward_name',
-            DB::raw('COALESCE(property_review_agg.property_reviews_count, 0) as reviews_count'),
-            DB::raw('property_review_agg.property_reviews_avg_rating as reviews_avg_rating'),
+            $this->buildVacantRoomsCountSelectRaw($today, $confirmedStatus),
         ];
+
+        if ($needsUserJoin) {
+            $selectColumns[] = 'users.name as user_name';
+        }
+        $selectColumns[] = 'provinces.name as province_name';
+        $selectColumns[] = 'wards.name as ward_name';
+
 
         if ($includeCover) {
             $selectColumns[] = DB::raw(
@@ -176,14 +181,15 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
 
         $query = $this->model
             ->select($selectColumns)
-            ->leftJoin('users', 'properties.user_id', '=', 'users.id')
-            ->leftJoin('provinces', 'properties.province_id', '=', 'provinces.id')
-            ->leftJoin('wards', 'properties.ward_id', '=', 'wards.id')
-            ->leftJoinSub($propertyReviewAgg, 'property_review_agg', function ($join): void {
-                $join->on('property_review_agg.property_id', '=', 'properties.id');
-            })
             ->where('properties.user_id', $partnerId)
             ->withCount('rooms');
+
+        if ($needsUserJoin) {
+            $query->leftJoin('users', 'properties.user_id', '=', 'users.id');
+        }
+        $query->leftJoin('provinces', 'properties.province_id', '=', 'provinces.id');
+        $query->leftJoin('wards', 'properties.ward_id', '=', 'wards.id');
+
 
         $this->applyPartnerRoomsEagerLoad($query, $request, $roomsLoadMode);
 
@@ -193,6 +199,10 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
 
         if ($request->filled('name')) {
             $query->whereRaw('LOWER(properties.name) LIKE ?', ['%' . strtolower($request->name) . '%']);
+        }
+
+        if ($request->filled('keyword')) {
+            $this->applyPropertyKeywordFilter($query, (string) $request->keyword);
         }
 
         if ($request->filled('ward_name')) {
@@ -215,6 +225,23 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
             $query->where('properties.rent_category', $request->rent_category);
         }
 
+        if ($request->filled('occupancy_filter')) {
+            $this->applyPartnerOccupancyFilter($query, (string) $request->occupancy_filter);
+        }
+
+        if ($request->has('min_rating') && $request->input('min_rating') !== '' && $request->input('min_rating') !== null) {
+            $this->applyPartnerMinRatingFilter($query, $partnerId, (float) $request->min_rating);
+        }
+
+        if ($request->has('has_rooms') && $request->input('has_rooms') !== '' && $request->input('has_rooms') !== null) {
+            $hasRooms = (int) $request->has_rooms;
+            if ($hasRooms === 1) {
+                $query->having('rooms_count', '>', 0);
+            } elseif ($hasRooms === 0) {
+                $query->having('rooms_count', '=', 0);
+            }
+        }
+
         if ($request->filled('area_min')) {
             $query->where('properties.area', '>=', $request->area_min);
         }
@@ -224,6 +251,8 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
         }
 
         if (!empty($sort)) {
+            $reviewSortJoined = false;
+
             foreach ($sort as $item) {
                 $filed = $item['field'];
                 $order = $item['order'] ?? 'asc';
@@ -238,6 +267,16 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
                     case 'ward_name':
                         $query->orderBy('wards.name', $order);
                         break;
+                    case 'rooms_count':
+                        $query->orderBy('rooms_count', $order);
+                        break;
+                    case 'reviews_avg_rating':
+                        if (! $reviewSortJoined) {
+                            $this->joinPartnerPropertyReviewSort($query, $partnerId);
+                            $reviewSortJoined = true;
+                        }
+                        $this->applyPartnerPropertyReviewSortOrder($query, $order);
+                        break;
                     default:
                         $query->orderBy("properties.$filed", $order);
                 }
@@ -249,12 +288,62 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
         $perPage = (int) ($request->filled('per_page') ? $request->per_page : config('const.DEFAULT_PER_PAGE'));
         $page = (int) ($request->filled('page') ? $request->page : config('const.DEFAULT_PAGE'));
 
-        return $query->paginate($perPage, ['*'], 'page', $page);
+        $properties = $query->paginate($perPage, ['*'], 'page', $page);
+        $this->attachPartnerPropertyReviewAggregates($properties, $partnerId);
+
+        return $properties;
+    }
+
+    private function partnerPropertySortIncludes(array $sort, string $field): bool
+    {
+        foreach ($sort as $item) {
+            if (($item['field'] ?? null) === $field) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function attachPartnerPropertyReviewAggregates(LengthAwarePaginator $properties, int $partnerId): void
+    {
+        $propertyIds = $properties->getCollection()
+            ->pluck('id')
+            ->map(static fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($propertyIds->isEmpty()) {
+            return;
+        }
+
+        $reviewAggregates = DB::table('reviews')
+            ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
+            ->whereIn('rooms.property_id', $propertyIds)
+            ->select([
+                'rooms.property_id',
+                DB::raw('COUNT(reviews.id) as reviews_count'),
+                DB::raw('ROUND(AVG(reviews.rating), 1) as reviews_avg_rating'),
+            ])
+            ->groupBy('rooms.property_id')
+            ->get()
+            ->keyBy('property_id');
+
+        $properties->getCollection()->transform(static function ($property) use ($reviewAggregates) {
+            $aggregate = $reviewAggregates->get($property->id);
+            $property->reviews_count = (int) ($aggregate->reviews_count ?? 0);
+            $property->reviews_avg_rating = $aggregate->reviews_avg_rating ?? null;
+
+            return $property;
+        });
     }
 
     public function getPropertyByIdForPartner(int $id, int $partnerId): object|null
     {
         return $this->model->with(['province', 'ward', 'user'])
+            ->withCount('rooms')
             ->where('id', $id)
             ->where('user_id', $partnerId)
             ->first();
@@ -280,6 +369,9 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
             return null;
         }
 
+        $today = now()->toDateString();
+        $confirmedStatus = BookingStatus::CONFIRMED->value;
+
         $rooms = Room::query()
             ->where('property_id', $propertyId)
             ->with([
@@ -299,6 +391,7 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
                 'rooms.area',
                 'rooms.people',
             )
+            ->selectRaw($this->buildOccupancyStatusSelect($today, $confirmedStatus))
             ->orderBy('rooms.id', 'desc')
             ->limit($limit)
             ->get();
@@ -382,5 +475,144 @@ final class PropertyRepository extends BaseRepository implements PropertyReposit
                 $roomQuery->limit($roomsLimit);
             }
         }]);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function joinPartnerPropertyReviewSort($query, int $partnerId): void
+    {
+        $sub = DB::table('reviews')
+            ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
+            ->join('properties as review_properties', 'rooms.property_id', '=', 'review_properties.id')
+            ->where('review_properties.user_id', $partnerId)
+            ->groupBy('rooms.property_id')
+            ->select([
+                'rooms.property_id',
+                DB::raw('ROUND(AVG(reviews.rating), 1) as reviews_avg_rating_sort'),
+            ]);
+
+        $query->leftJoinSub($sub, 'property_review_sort', 'property_review_sort.property_id', '=', 'properties.id');
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function applyPartnerPropertyReviewSortOrder($query, string $order): void
+    {
+        $direction = strtolower($order) === 'asc' ? 'asc' : 'desc';
+
+        if ($direction === 'desc') {
+            $query->orderByRaw('property_review_sort.reviews_avg_rating_sort IS NULL ASC')
+                ->orderBy('property_review_sort.reviews_avg_rating_sort', 'desc');
+
+            return;
+        }
+
+        $query->orderByRaw('property_review_sort.reviews_avg_rating_sort IS NULL DESC')
+            ->orderBy('property_review_sort.reviews_avg_rating_sort', 'asc');
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function applyPropertyKeywordFilter($query, string $keyword): void
+    {
+        $term = '%' . strtolower($keyword) . '%';
+
+        $query->where(static function ($inner) use ($term): void {
+            $inner->whereRaw('LOWER(properties.name) LIKE ?', [$term])
+                ->orWhereRaw('LOWER(properties.address_detail) LIKE ?', [$term]);
+        });
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function applyPartnerOccupancyFilter($query, string $occupancyFilter): void
+    {
+        $allowed = ['vacant', 'occupied', 'maintenance'];
+        if (! in_array($occupancyFilter, $allowed, true)) {
+            return;
+        }
+
+        $today = now()->toDateString();
+        $confirmedStatus = BookingStatus::CONFIRMED->value;
+        $caseExpression = $this->buildOccupancyStatusCaseExpression($today, $confirmedStatus);
+
+        $query->whereExists(static function ($sub) use ($caseExpression, $occupancyFilter): void {
+            $sub->select(DB::raw('1'))
+                ->from('rooms')
+                ->whereColumn('rooms.property_id', 'properties.id')
+                ->whereRaw('(' . $caseExpression . ') = ?', [$occupancyFilter]);
+        });
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function applyPartnerMinRatingFilter($query, int $partnerId, float $minRating): void
+    {
+        if ($minRating <= 0) {
+            $query->whereNotExists(static function ($sub): void {
+                $sub->select(DB::raw('1'))
+                    ->from('reviews')
+                    ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
+                    ->whereColumn('rooms.property_id', 'properties.id');
+            });
+
+            return;
+        }
+
+        $query->whereIn('properties.id', static function ($sub) use ($partnerId, $minRating): void {
+            $sub->select('rooms.property_id')
+                ->from('reviews')
+                ->join('rooms', 'reviews.room_id', '=', 'rooms.id')
+                ->join('properties as rating_properties', 'rooms.property_id', '=', 'rating_properties.id')
+                ->where('rating_properties.user_id', $partnerId)
+                ->groupBy('rooms.property_id')
+                ->havingRaw('AVG(reviews.rating) >= ?', [$minRating]);
+        });
+    }
+
+    private function buildOccupancyStatusCaseExpression(string $today, int $confirmedStatus): string
+    {
+        return $this->buildOccupancyStatusCaseExpressionForRoom('rooms', $today, $confirmedStatus);
+    }
+
+    private function buildOccupancyStatusCaseExpressionForRoom(string $roomAlias, string $today, int $confirmedStatus): string
+    {
+        return "CASE
+            WHEN {$roomAlias}.status = 0 THEN 'hidden'
+            WHEN EXISTS (
+                SELECT 1 FROM bookings
+                WHERE bookings.room_id = {$roomAlias}.id
+                AND bookings.status = {$confirmedStatus}
+                AND bookings.start_date <= '{$today}'
+                AND bookings.end_date >= '{$today}'
+            ) THEN 'occupied'
+            WHEN EXISTS (
+                SELECT 1 FROM room_maintenances
+                WHERE room_maintenances.room_id = {$roomAlias}.id
+                AND room_maintenances.status IN ('planned', 'in_progress')
+                AND DATE(room_maintenances.start_time) <= '{$today}'
+                AND (room_maintenances.end_time IS NULL OR DATE(room_maintenances.end_time) >= '{$today}')
+            ) THEN 'maintenance'
+            ELSE 'vacant'
+        END";
+    }
+
+    private function buildVacantRoomsCountSelectRaw(string $today, int $confirmedStatus): \Illuminate\Database\Query\Expression
+    {
+        $caseExpression = $this->buildOccupancyStatusCaseExpressionForRoom('r', $today, $confirmedStatus);
+
+        return DB::raw(
+            "(SELECT COUNT(*) FROM rooms r WHERE r.property_id = properties.id AND ({$caseExpression}) = 'vacant') as vacant_rooms_count"
+        );
+    }
+
+    private function buildOccupancyStatusSelect(string $today, int $confirmedStatus): string
+    {
+        return $this->buildOccupancyStatusCaseExpression($today, $confirmedStatus) . ' as occupancy_status';
     }
 }

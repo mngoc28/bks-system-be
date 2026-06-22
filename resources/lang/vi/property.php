@@ -71,6 +71,18 @@ return [
             'integer'  => 'Hình thức cho thuê phải là số nguyên.',
             'in'       => 'Hình thức cho thuê không hợp lệ.',
         ],
+        'occupancy_filter' => [
+            'in' => 'Bộ lọc trạng thái phòng không hợp lệ.',
+        ],
+        'min_rating'       => [
+            'numeric' => 'Điểm đánh giá tối thiểu phải là số.',
+            'min'     => 'Điểm đánh giá tối thiểu phải từ 0 trở lên.',
+            'max'     => 'Điểm đánh giá tối thiểu không được vượt quá 5.',
+        ],
+        'has_rooms'        => [
+            'integer' => 'Bộ lọc có phòng phải là số nguyên.',
+            'in'      => 'Bộ lọc có phòng phải là 0 hoặc 1.',
+        ],
         'area'             => [
             'numeric' => 'Diện tích phải là số.',
             'min'     => 'Diện tích phải ít nhất là 0.',
@@ -101,6 +113,7 @@ return [
         'ward_name'        => 'tên phường/xã',
         'province_name'    => 'tên tỉnh/thành',
         'name'             => 'tên cơ sở',
+        'keyword'          => 'từ khóa tìm kiếm',
         'address_detail'   => 'địa chỉ chi tiết',
         'number_of_floors' => 'số tầng',
         'number_of_units'  => 'số lượng phòng',
@@ -108,6 +121,9 @@ return [
         'property_type'    => 'loại hình công trình',
         'property_type_id' => 'loại hình lưu trú',
         'rent_category'    => 'hình thức cho thuê',
+        'occupancy_filter' => 'trạng thái phòng',
+        'min_rating'       => 'điểm đánh giá tối thiểu',
+        'has_rooms_filter' => 'bộ lọc có phòng',
         'area'             => 'diện tích',
         'description'      => 'mô tả',
         'created_by'       => 'người tạo',

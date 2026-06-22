@@ -176,6 +176,14 @@ interface BookingRepositoryInterface extends RepositoryInterface
     public function getBookingsForPartner(int $partnerId, $request): LengthAwarePaginator;
 
     /**
+     * Get lightweight booking counters for a specific partner.
+     *
+     * @param int $partnerId
+     * @return array<string, int>
+     */
+    public function getBookingSummaryForPartner(int $partnerId): array;
+
+    /**
      * Get bookings per month for a specific partner
      *
      * @param int $partnerId

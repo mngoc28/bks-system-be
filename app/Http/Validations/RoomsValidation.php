@@ -33,6 +33,7 @@ final class RoomsValidation
                 'room_number' => ['nullable', 'string', 'max:50'],
                 'room_type'   => ['nullable', 'in:' . implode(',', RoomType::roomTypeValues())],
                 'status'      => ['nullable', 'in:' . implode(',', RoomStatus::statusValues())],
+                'occupancy'   => ['nullable', 'string', 'in:vacant,occupied,maintenance'],
                 'page' => ['nullable', 'integer', 'min:1'],
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
                 'sort_by' => ['nullable', 'in:cheapest_daily_price,people'],
@@ -41,7 +42,14 @@ final class RoomsValidation
                 'price_min' => ['nullable', 'numeric', 'min:0'],
                 'price_max' => ['nullable', 'numeric', 'min:0'],
                 'guests' => ['nullable', 'integer', 'min:1'],
-                'rent_type' => ['nullable', 'string', 'in:daily,monthly'],
+                'rent_type' => [
+                    'nullable',
+                    'string',
+                    'in:daily,monthly',
+                    Rule::prohibitedIf(static fn () => request()->filled('rent_segments')),
+                ],
+                'rent_segments' => ['nullable', 'string', 'max:32', 'regex:/^(daily|monthly)(,(daily|monthly))*$/'],
+                'include_tourist_summary' => ['nullable'],
             ],
             [
                 'property_id.exists' => __('room.validation.property_id.exists'),

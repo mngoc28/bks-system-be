@@ -8,6 +8,7 @@ use App\Models\Room;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * @property string|null $occupancy_status
  * @mixin Room
  */
 final class PartnerRoomPreviewResource extends JsonResource
@@ -24,6 +25,7 @@ final class PartnerRoomPreviewResource extends JsonResource
             'title'              => $this->title,
             'room_type'          => $this->room_type,
             'status'             => $this->status,
+            'occupancy_status'   => $this->occupancy_status ?? null,
             'area'               => $this->area,
             'people'             => $this->people,
             'bedrooms_count'     => $this->bedrooms_count,
