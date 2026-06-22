@@ -54,7 +54,7 @@ class ChatbotSeeder extends Seeder
                 ]
             ],
             5 => [
-                'content' => 'Bạn vui lòng liên hệ Hotline: 1900 1234 hoặc để lại số điện thoại để nhân viên gọi lại tư vấn nhé!',
+                'content' => 'Bạn vui lòng liên hệ Hotline: 0333494850 hoặc để lại số điện thoại để nhân viên gọi lại tư vấn nhé!',
                 'is_start_node' => 0,
                 'answers' => [
                     ['content' => 'Để lại số điện thoại', 'next' => null, 'is_final' => 1],

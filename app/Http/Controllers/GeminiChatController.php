@@ -409,6 +409,7 @@ final class GeminiChatController extends Controller
             // Request a reasonable batch of candidate rooms
             $searchParams['per_page'] = 50;
             $searchParams['with_details'] = true;
+            $searchParams['include_tourist_summary'] = true;
 
             // Merge parameters into global request so pipeline filters can read them
             request()->merge($searchParams);

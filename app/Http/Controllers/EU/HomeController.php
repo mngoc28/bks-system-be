@@ -9,6 +9,7 @@ use App\Services\RoomsService;
 use App\Services\NewsService;
 use App\Services\PartnerInforServices;
 use App\Services\ProvincesService;
+use App\Services\HomeMetadataService;
 use App\Services\TouristSpotService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class HomeController extends Controller
     protected $partnerInforServices;
     protected $provinceService;
     protected TouristSpotService $touristSpotService;
+    protected HomeMetadataService $homeMetadataService;
 
     /**
      * Create a new AuthController instance.
@@ -34,6 +36,7 @@ class HomeController extends Controller
         PartnerInforServices $partnerInforServices,
         ProvincesService $provinceService,
         TouristSpotService $touristSpotService,
+        HomeMetadataService $homeMetadataService,
     ) {
         $this->roomsValidation = $roomsValidation;
         $this->roomsService    = $roomsService;
@@ -41,6 +44,7 @@ class HomeController extends Controller
         $this->partnerInforServices = $partnerInforServices;
         $this->provinceService = $provinceService;
         $this->touristSpotService = $touristSpotService;
+        $this->homeMetadataService = $homeMetadataService;
     }
 
     /**
@@ -159,6 +163,27 @@ class HomeController extends Controller
         }
 
         $result = $this->touristSpotService->listPublicSuggestions($request);
+
+        if (! $result['success']) {
+            return $this->errorResponse(
+                $result['message'],
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+
+        return $this->successResponse(
+            $result['data'],
+            $result['message']
+        );
+    }
+
+    /**
+     * Bootstrap homepage metadata (provinces, property types, tourist spots).
+     */
+    public function getBootstrapMetadata(): JsonResponse
+    {
+        $result = $this->homeMetadataService->getBootstrapMetadata();
 
         if (! $result['success']) {
             return $this->errorResponse(

@@ -25,6 +25,51 @@ final class RoomTouristSummaryService
         return $this->enrichRoomCollection(collect($rooms));
     }
 
+    /**
+     * Enrich multiple paginated room lists with a single tourist summary query.
+     *
+     * @param array<int, object> $paginators
+     * @return array<int, object>
+     */
+    public function enrichPaginators(array $paginators): array
+    {
+        $roomIds = [];
+
+        foreach ($paginators as $paginator) {
+            if (! is_object($paginator) || ! method_exists($paginator, 'getCollection')) {
+                continue;
+            }
+
+            $roomIds = array_merge(
+                $roomIds,
+                $paginator->getCollection()
+                    ->pluck('id')
+                    ->filter()
+                    ->map(static fn ($roomId) => (int) $roomId)
+                    ->all()
+            );
+        }
+
+        $summaries = $this->buildSummaryMap(array_values(array_unique($roomIds)));
+
+        foreach ($paginators as $paginator) {
+            if (! is_object($paginator) || ! method_exists($paginator, 'getCollection') || ! method_exists($paginator, 'setCollection')) {
+                continue;
+            }
+
+            $paginator->setCollection(
+                $paginator->getCollection()->map(function ($room) use ($summaries) {
+                    $roomId = (int) ($room->id ?? 0);
+                    $room->tourist_summary = $summaries[$roomId] ?? $this->defaultSummary();
+
+                    return $room;
+                })
+            );
+        }
+
+        return $paginators;
+    }
+
     private function enrichRoomCollection(Collection $roomsCollection): Collection
     {
         $roomIds = $roomsCollection

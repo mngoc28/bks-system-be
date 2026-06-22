@@ -36,6 +36,11 @@ final class PropertiesValidation
                     'string',
                     'max:255',
                 ],
+                'keyword'       => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
                 'ward_name'     => [
                     'nullable',
                     'string',
@@ -100,9 +105,26 @@ final class PropertiesValidation
                     'string',
                     'max:50',
                 ],
+                'occupancy_filter' => [
+                    'nullable',
+                    'string',
+                    'in:vacant,occupied,maintenance',
+                ],
+                'min_rating'    => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                    'max:5',
+                ],
+                'has_rooms'     => [
+                    'nullable',
+                    'integer',
+                    'in:0,1',
+                ],
             ],
             [
                 'name.max'          => __('property.validation.name.max'),
+                'keyword.max'       => __('property.validation.name.max'),
                 'ward_name.max'     => __('property.validation.ward_name.max'),
                 'province_name.max' => __('property.validation.province_name.max'),
                 'year_built.integer' => __('property.validation.year_built.integer'),
@@ -119,9 +141,16 @@ final class PropertiesValidation
                 'page.min'          => __('pagination.page.min'),
                 'per_page.integer'  => __('pagination.per_page.integer'),
                 'per_page.min'      => __('pagination.per_page.min'),
+                'occupancy_filter.in' => __('property.validation.occupancy_filter.in'),
+                'min_rating.numeric'  => __('property.validation.min_rating.numeric'),
+                'min_rating.min'      => __('property.validation.min_rating.min'),
+                'min_rating.max'      => __('property.validation.min_rating.max'),
+                'has_rooms.integer'   => __('property.validation.has_rooms.integer'),
+                'has_rooms.in'        => __('property.validation.has_rooms.in'),
             ],
             [
                 'name'          => __('property.attributes.name'),
+                'keyword'       => __('property.attributes.keyword'),
                 'ward_name'     => __('property.attributes.ward_name'),
                 'province_name' => __('property.attributes.province_name'),
                 'year_built'    => __('property.attributes.year_built'),
@@ -129,6 +158,9 @@ final class PropertiesValidation
                 'rent_category'    => __('property.attributes.rent_category'),
                 'area_min'      => __('property.attributes.area'),
                 'area_max'      => __('property.attributes.area'),
+                'occupancy_filter' => __('property.attributes.occupancy_filter'),
+                'min_rating'    => __('property.attributes.min_rating'),
+                'has_rooms'     => __('property.attributes.has_rooms_filter'),
             ]
         );
     }

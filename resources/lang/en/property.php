@@ -71,6 +71,18 @@ return [
             'integer'  => 'Rent category must be an integer',
             'in'       => 'Rent category is invalid',
         ],
+        'occupancy_filter' => [
+            'in' => 'Room occupancy filter is invalid',
+        ],
+        'min_rating'       => [
+            'numeric' => 'Minimum rating must be a number',
+            'min'     => 'Minimum rating must be at least 0',
+            'max'     => 'Minimum rating must not exceed 5',
+        ],
+        'has_rooms'        => [
+            'integer' => 'Has rooms filter must be an integer',
+            'in'      => 'Has rooms filter must be 0 or 1',
+        ],
         'area'             => [
             'numeric' => 'Area must be a number',
             'min'     => 'Area must be at least 0',
@@ -101,6 +113,7 @@ return [
         'ward_name'        => 'ward name',
         'province_name'    => 'province name',
         'name'             => 'property name',
+        'keyword'          => 'search keyword',
         'address_detail'   => 'address detail',
         'number_of_floors' => 'number of floors',
         'number_of_units'  => 'number of units',
@@ -108,6 +121,9 @@ return [
         'property_type'    => 'structure kind',
         'property_type_id' => 'property type',
         'rent_category'    => 'rent category',
+        'occupancy_filter' => 'room occupancy filter',
+        'min_rating'       => 'minimum rating',
+        'has_rooms_filter' => 'has rooms filter',
         'area'             => 'area',
         'description'      => 'description',
         'created_by'       => 'creator',

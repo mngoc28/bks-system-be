@@ -84,25 +84,25 @@ final class PartnerInfoTableSeeder extends Seeder
             'Từ tầng cao nhìn xuống Hồ Tây lấp lánh trong buổi bình minh — đây là trải nghiệm mà Skyline Suite mang lại cho từng vị khách. Phòng suite rộng rãi, dịch vụ concierge 24/7, và ẩm thực fine-dining ngay tại tầng 30.',
         ];
 
-        // High-quality Unsplash hospitality image pools
-        $imagePool1 = [
-            'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?auto=format&fit=crop&w=800&q=80',
-        ];
-        $imagePool2 = [
-            'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1464146072230-91cabc968266?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
-        ];
-        $imagePool3 = [
-            'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80',
+        // Verified Unsplash URLs (exterior / common area — not room interiors)
+        $u = static fn (string $id): string => "https://images.unsplash.com/{$id}?auto=format&fit=crop&w=800&q=80";
+
+        $partnerBrandImages = [
+            ['image_1' => $u('photo-1566073771259-6a8506099945'), 'image_2' => $u('photo-1520250497591-112f2f40a3f4'), 'image_3' => $u('photo-1512917774080-9991f1c4c750')],
+            ['image_1' => $u('photo-1470071459604-3b5ec3a7fe05'), 'image_2' => $u('photo-1500530855697-b586d89ba3ee'), 'image_3' => $u('photo-1520250497591-112f2f40a3f4')],
+            ['image_1' => $u('photo-1564013799919-ab600027ffc6'), 'image_2' => $u('photo-1580587771525-78b9dba3b914'), 'image_3' => $u('photo-1445019980597-93fa8acb246c')],
+            ['image_1' => $u('photo-1551882547-ff40c63fe5fa'), 'image_2' => $u('photo-1545324418-cc1a3fa10c00'), 'image_3' => $u('photo-1600596542815-ffad4c1539a9')],
+            ['image_1' => $u('photo-1522708323590-d24dbb6b0267'), 'image_2' => $u('photo-1600585154340-be6161a56a0c'), 'image_3' => $u('photo-1560185007-c5ca9d2c014d')],
+            ['image_1' => $u('photo-1439066615861-d1af74d74000'), 'image_2' => $u('photo-1507525428034-b723cf961d3e'), 'image_3' => $u('photo-1496417263034-38ec4f0b665a')],
+            ['image_1' => $u('photo-1582719478250-c89cae4dc85b'), 'image_2' => $u('photo-1566073771259-6a8506099945'), 'image_3' => $u('photo-1571003123894-1f0594d2b5d9')],
+            ['image_1' => $u('photo-1571003123894-1f0594d2b5d9'), 'image_2' => $u('photo-1496417263034-38ec4f0b665a'), 'image_3' => $u('photo-1559592413-7cec4d0cae2b')],
+            ['image_1' => $u('photo-1560185007-c5ca9d2c014d'), 'image_2' => $u('photo-1559592413-7cec4d0cae2b'), 'image_3' => $u('photo-1580587771525-78b9dba3b914')],
+            ['image_1' => $u('photo-1496417263034-38ec4f0b665a'), 'image_2' => $u('photo-1507525428034-b723cf961d3e'), 'image_3' => $u('photo-1512917774080-9991f1c4c750')],
+            ['image_1' => $u('photo-1500530855697-b586d89ba3ee'), 'image_2' => $u('photo-1470071459604-3b5ec3a7fe05'), 'image_3' => $u('photo-1520250497591-112f2f40a3f4')],
+            ['image_1' => $u('photo-1445019980597-93fa8acb246c'), 'image_2' => $u('photo-1564013799919-ab600027ffc6'), 'image_3' => $u('photo-1571003123894-1f0594d2b5d9')],
+            ['image_1' => $u('photo-1567272131881-8ce2275deb67'), 'image_2' => $u('photo-1560185007-c5ca9d2c014d'), 'image_3' => $u('photo-1551882547-ff40c63fe5fa')],
+            ['image_1' => $u('photo-1507525428034-b723cf961d3e'), 'image_2' => $u('photo-1439066615861-d1af74d74000'), 'image_3' => $u('photo-1496417263034-38ec4f0b665a')],
+            ['image_1' => $u('photo-1545324418-cc1a3fa10c00'), 'image_2' => $u('photo-1600596542815-ffad4c1539a9'), 'image_3' => $u('photo-1551882547-ff40c63fe5fa')],
         ];
 
         $majorProvinceIds = DB::table('provinces')
@@ -163,9 +163,9 @@ final class PartnerInfoTableSeeder extends Seeder
                 'phone'        => $faker->phoneNumber(),
                 'website'      => $faker->optional(0.9)->url(),
                 'description'  => $descriptions[$index % count($descriptions)],
-                'image_1'      => $faker->randomElement($imagePool1),
-                'image_2'      => $faker->randomElement($imagePool2),
-                'image_3'      => $faker->randomElement($imagePool3),
+                'image_1'      => $partnerBrandImages[$index % count($partnerBrandImages)]['image_1'],
+                'image_2'      => $partnerBrandImages[$index % count($partnerBrandImages)]['image_2'],
+                'image_3'      => $partnerBrandImages[$index % count($partnerBrandImages)]['image_3'],
                 'created_by'   => $faker->randomElement($adminPartnerIds),
                 'updated_by'   => $faker->randomElement($adminPartnerIds),
                 'created_at'   => Carbon::now()->subDays(rand(1, 40)),

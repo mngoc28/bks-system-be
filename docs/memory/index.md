@@ -86,6 +86,22 @@
 | 2026-06-08 | UI design v1 Partner Dashboard (operations-first): tái cấu trúc KPI 2 tầng, alert 4 loại, work queue SLA/conflict, property filter, gỡ chart tháng trùng | `docs/ui-designs/partner-dashboard/ui_design_v1.md`, `canvases/partner-dashboard-ui-v1.canvas.tsx` |
 | 2026-06-08 | Plan PLAN-PP360-DASH-012: 4 phase (FE quick wins → BE API → FE integration → QA), ~7–10 dev-days, không migration DB; overbooking count qua logic interval overlap | `docs/plans/plan_012_partner_dashboard_redesign.md`, `docs/SRC/srs_partner_portal_360.md` |
 
+## Partner properties list gaps
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-06-19 | PRD Partner Properties list gaps: filter/search/UX (Must: rent_category, keyword, add room CTA, delete confirm; Should: geo, sort, cover; Could: occupancy, URL persist, export) | `docs/SRC/prd_partner_properties_list_gaps.md`, `bks-system-fe/src/pages/Partner/Properties.tsx` |
+| 2026-06-19 | Plan PLAN-PP-015: 4 phase (BE keyword → Must FE → Should → Could+QA), 24 task ~48h; PD-PP-015-001 keyword param; không migration Must/Should | `docs/plans/plan_015_partner_properties_list_gaps.md`, `docs/plans/plan_009_partner_properties_api_optimization.md` |
+
+## Partner room maintenance
+
+| Date | Entry | Related artifacts |
+|---|---|---|
+| 2026-06-18 | SRS Partner room maintenance: vòng đời phiếu `room_maintenances`, đồng bộ `room_blocks`, authorize Partner, API list/create/show/patch | `docs/SRC/srs_partner_maintenance.md`, `docs/architecture/data-dictionary.md` §2.3.5 |
+| 2026-06-18 | Plan PLAN-MNT-014: 4 phase (migration → BE core → FE → integration/QA), 26 task ~52h; `MaintenanceBlockSyncService` delegate `RoomBlockService`; handoff stack-task/testcase_014/review | `docs/plans/plan_014_partner_maintenance.md`, `docs/SRC/srs_partner_maintenance.md`, `app/Services/RoomBlockService.php` |
+| 2026-06-18 | **PLAN-MNT-014 Phase 1 DONE:** migration `2026_06_18_120000_extend_room_maintenances_for_partner_lifecycle.php`, model `RoomMaintenance` relations/constants, DB docs + seeder cập nhật | `docs/plans/plan_014_partner_maintenance.md`, `app/Models/RoomMaintenance.php`, `docs/databases_docs/db_overview_etc_core_schema.md` |
+| 2026-06-18 | **PLAN-MNT-014 Phase 2 DONE:** API lifecycle Partner (list/create/show/patch), `MaintenanceBlockSyncService`, `RoomMaintenanceResource`, urgent sort emergency-first; feature tests 3/3 | `app/Services/RoomMaintenanceService.php`, `app/Policies/RoomMaintenancePolicy.php`, `tests/Feature/Partner/PartnerRoomMaintenanceTest.php` |
+
 ## Quick Links
 
 - Core domain facts: `docs/memory/knowledge_base.md`

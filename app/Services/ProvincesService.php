@@ -130,6 +130,7 @@ class ProvincesService
 
             $this->provincesRepository->update($id, $data);
             \Illuminate\Support\Facades\Cache::forget('all_provinces');
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
 
             return [
                 'success' => true,

@@ -590,7 +590,9 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             'bookings.cancellation_reason',
             'bookings.cancelled_at',
             'bookings.no_show_at',
-        )->with('bookingDeposit');
+            'bookings.price_id',
+            DB::raw('(SELECT id FROM contracts WHERE contracts.booking_id = bookings.id ORDER BY id ASC LIMIT 1) as contract_id'),
+        )->with(['bookingDeposit', 'price', 'services']);
 
         $query->join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->leftJoin('room_prices', 'bookings.price_id', '=', 'room_prices.id')
@@ -598,6 +600,14 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
             ->join('users', 'bookings.user_id', '=', 'users.id')
             ->leftJoin('users as partner', 'properties.user_id', '=', 'partner.id')
             ->where('properties.user_id', $partnerId);
+
+        if ($request->filled('room_id')) {
+            $query->where('bookings.room_id', (int) $request->input('room_id'));
+        }
+
+        if ($request->filled('property_id')) {
+            $query->where('rooms.property_id', (int) $request->input('property_id'));
+        }
 
         if ($request->filled('status')) {
             $query->where('bookings.status', $request->status);
@@ -651,6 +661,72 @@ final class BookingRepository extends BaseRepository implements BookingRepositor
 
         $perPage = (int) $request->input('per_page', 10);
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Get lightweight booking counters for a specific partner.
+     *
+     * @param int $partnerId
+     * @return array<string, int>
+     */
+    public function getBookingSummaryForPartner(int $partnerId): array
+    {
+        $today = now()->format('Y-m-d');
+
+        $summary = $this->model
+            ->join('rooms', 'bookings.room_id', '=', 'rooms.id')
+            ->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->where('properties.user_id', $partnerId)
+            ->selectRaw('COUNT(*) as totalBookingsCount')
+            ->selectRaw('SUM(CASE WHEN bookings.status = ? THEN 1 ELSE 0 END) as pendingBookingsCount', [BookingStatus::PENDING->value])
+            ->selectRaw('SUM(CASE WHEN bookings.status = ? THEN 1 ELSE 0 END) as confirmedBookingsCount', [BookingStatus::CONFIRMED->value])
+            ->selectRaw('SUM(CASE WHEN bookings.status = ? THEN 1 ELSE 0 END) as cancelledBookingsCount', [BookingStatus::CANCELLED->value])
+            ->selectRaw('SUM(CASE WHEN bookings.status = ? THEN 1 ELSE 0 END) as completedBookingsCount', [BookingStatus::COMPLETED->value])
+            ->selectRaw('SUM(CASE WHEN bookings.status = ? THEN 1 ELSE 0 END) as pendingCancellationCount', [BookingStatus::PENDING_CANCELLATION->value])
+            ->selectRaw(
+                "SUM(CASE WHEN bookings.status = ? AND bookings.stay_status = 'checked_in' THEN 1 ELSE 0 END) as inStayCount",
+                [BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN DATE(bookings.start_date) = ? AND bookings.status = ? AND bookings.stay_status = 'pending' THEN 1 ELSE 0 END) as todayCheckInCount",
+                [$today, BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN DATE(bookings.end_date) = ? AND bookings.status = ? AND bookings.stay_status = 'checked_in' THEN 1 ELSE 0 END) as todayCheckOutCount",
+                [$today, BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN bookings.status = ? AND bookings.stay_status = 'no_show' THEN 1 ELSE 0 END) as noShowCount",
+                [BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN bookings.status = ? AND bookings.deposit_status = 'pending' AND bookings.deposit_amount > 0 THEN 1 ELSE 0 END) as depositUnpaidCount",
+                [BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN bookings.status = ? AND bookings.deposit_status = 'payment_submitted' THEN 1 ELSE 0 END) as depositSubmittedCount",
+                [BookingStatus::CONFIRMED->value],
+            )
+            ->selectRaw("SUM(CASE WHEN bookings.payment_status = 'unpaid' THEN 1 ELSE 0 END) as paymentUnpaidCount")
+            ->first();
+
+        return collect([
+            'totalBookingsCount',
+            'pendingBookingsCount',
+            'confirmedBookingsCount',
+            'cancelledBookingsCount',
+            'completedBookingsCount',
+            'pendingCancellationCount',
+            'inStayCount',
+            'todayCheckInCount',
+            'todayCheckOutCount',
+            'noShowCount',
+            'depositUnpaidCount',
+            'depositSubmittedCount',
+            'paymentUnpaidCount',
+        ])->mapWithKeys(static fn (string $key): array => [
+            $key => (int) ($summary?->{$key} ?? 0),
+        ])->all();
     }
 
     /**

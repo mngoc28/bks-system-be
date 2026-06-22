@@ -23,13 +23,7 @@ final class CloudinaryService
     public function uploadImage(UploadedFile $file, string $folder, array $options = []): array
     {
         try {
-            // Resize and convert to WebP
-            $image = Image::make($file);
-            $image->resize(config('const.IMAGE_RESIZE_WIDTH'), null, function ($constraint) {
-                $constraint->aspectRatio();
-            });
-            $tempPath = tempnam(sys_get_temp_dir(), 'webp') . '.webp';
-            $image->encode('webp', config('const.WEBP_QUALITY'))->save($tempPath);
+            $tempPath = $this->createWebpTempPath($file);
 
             $result = Cloudinary::upload(
                 $tempPath,
@@ -41,21 +35,9 @@ final class CloudinaryService
                 ], $options)
             );
 
-            // Clean up temp file
             unlink($tempPath);
 
-            $url = str_replace(
-                config('const.CLOUDINARY_HEADER_IMAGE_URL'),
-                '',
-                $result->getSecurePath()
-            );
-
-            return [
-                'success' => true,
-                'url' => $url,
-                'public_id' => $result->getPublicId(),
-                'message' => __('cloudinary.messages.upload_success'),
-            ];
+            return $this->formatUploadResult($result);
         } catch (Exception $e) {
             Log::error('Cloudinary upload error: ' . $e->getMessage(), [
                 'file' => $file->getClientOriginalName(),
@@ -69,6 +51,169 @@ final class CloudinaryService
                 'message' => __('cloudinary.messages.upload_error'),
             ];
         }
+    }
+
+    /**
+     * Upload partner legal documents (images converted to WebP, PDF kept as-is).
+     *
+     * @return array{success: bool, url: string|null, public_id: string|null, message: string}
+     */
+    public function uploadPartnerDocument(UploadedFile $file, string $folder, array $options = []): array
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $isPdf = $extension === 'pdf' || $file->getMimeType() === 'application/pdf';
+
+        if ($isPdf) {
+            return $this->uploadRawUploadedFile($file, $folder, $options);
+        }
+
+        return $this->uploadImage($file, $folder, $options);
+    }
+
+    /**
+     * Upload binary content (signature image, generated PDF, etc.).
+     *
+     * @return array{success: bool, url: string|null, public_id: string|null, message: string}
+     */
+    public function uploadBinaryFile(
+        string $binaryContent,
+        string $folder,
+        string $filename,
+        bool $convertImageToWebp = false
+    ): array {
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $tempPath = tempnam(sys_get_temp_dir(), 'cld_bin_') . '.' . $extension;
+
+        try {
+            if ($convertImageToWebp) {
+                $image = Image::make($binaryContent);
+                $image->resize(config('const.IMAGE_RESIZE_WIDTH'), null, function ($constraint) {
+                    $constraint->aspectRatio();
+                });
+                $webpPath = tempnam(sys_get_temp_dir(), 'cld_webp_') . '.webp';
+                $image->encode('webp', config('const.WEBP_QUALITY'))->save($webpPath);
+                unlink($tempPath);
+                $tempPath = $webpPath;
+            } else {
+                file_put_contents($tempPath, $binaryContent);
+            }
+
+            $result = Cloudinary::upload($tempPath, [
+                'folder' => $folder,
+                'resource_type' => 'image',
+                'overwrite' => true,
+                'invalidate' => true,
+            ]);
+
+            return $this->formatUploadResult($result);
+        } catch (Exception $e) {
+            Log::error('Cloudinary binary upload error: ' . $e->getMessage(), [
+                'filename' => $filename,
+                'error' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'url' => null,
+                'public_id' => null,
+                'message' => __('cloudinary.messages.upload_error'),
+            ];
+        } finally {
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+        }
+    }
+
+    /**
+     * Delete a file previously stored on Cloudinary using the relative path saved in DB.
+     */
+    public function deleteStoredFile(?string $storedPath): void
+    {
+        $publicId = $this->extractPublicIdFromStoredPath($storedPath);
+        if ($publicId) {
+            $this->deleteImage($publicId);
+        }
+    }
+
+    public function extractPublicIdFromStoredPath(?string $storedPath): ?string
+    {
+        if (empty($storedPath)) {
+            return null;
+        }
+
+        $normalizedPath = ltrim($storedPath, '/');
+        $withoutVersion = preg_replace('/^v\d+\//', '', $normalizedPath);
+
+        if (empty($withoutVersion)) {
+            return null;
+        }
+
+        return preg_replace('/\.[^.]+$/', '', $withoutVersion) ?: null;
+    }
+
+    /**
+     * @return array{success: bool, url: string|null, public_id: string|null, message: string}
+     */
+    private function uploadRawUploadedFile(UploadedFile $file, string $folder, array $options = []): array
+    {
+        try {
+            $result = Cloudinary::upload(
+                $file->getRealPath(),
+                array_merge([
+                    'folder' => $folder,
+                    'resource_type' => 'image',
+                    'overwrite' => true,
+                    'invalidate' => true,
+                ], $options)
+            );
+
+            return $this->formatUploadResult($result);
+        } catch (Exception $e) {
+            Log::error('Cloudinary raw upload error: ' . $e->getMessage(), [
+                'file' => $file->getClientOriginalName(),
+                'error' => $e->getTraceAsString(),
+            ]);
+
+            return [
+                'success' => false,
+                'url' => null,
+                'public_id' => null,
+                'message' => __('cloudinary.messages.upload_error'),
+            ];
+        }
+    }
+
+    private function createWebpTempPath(UploadedFile $file): string
+    {
+        $image = Image::make($file);
+        $image->resize(config('const.IMAGE_RESIZE_WIDTH'), null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+        $tempPath = tempnam(sys_get_temp_dir(), 'webp') . '.webp';
+        $image->encode('webp', config('const.WEBP_QUALITY'))->save($tempPath);
+
+        return $tempPath;
+    }
+
+    /**
+     * @param mixed $result
+     * @return array{success: bool, url: string|null, public_id: string|null, message: string}
+     */
+    private function formatUploadResult($result): array
+    {
+        $url = str_replace(
+            config('const.CLOUDINARY_HEADER_IMAGE_URL'),
+            '',
+            $result->getSecurePath()
+        );
+
+        return [
+            'success' => true,
+            'url' => $url,
+            'public_id' => $result->getPublicId(),
+            'message' => __('cloudinary.messages.upload_success'),
+        ];
     }
 
     /**

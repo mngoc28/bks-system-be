@@ -1,5 +1,29 @@
 # Repository Knowledge Base
 
+## 2026-06-19 - Partner Properties list filter & UX gaps
+
+### Nguồn tham chiếu
+
+- `docs/SRC/prd_partner_properties_list_gaps.md`
+- `docs/plans/plan_015_partner_properties_list_gaps.md`
+- `docs/plans/plan_009_partner_properties_api_optimization.md`
+- `bks-system-fe/src/pages/Partner/Properties.tsx`
+- `app/Repositories/PropertyRepository/PropertyRepository.php`
+
+### Kiến thức nghiệp vụ đã chốt (plan)
+
+- Trang `/partner/properties` đủ CRUD cốt lõi nhưng thiếu lớp vận hành: lọc `rent_category`, tìm địa chỉ, sort, thêm phòng tại chỗ, confirm xóa đơn.
+- Must release (Slice B): keyword search, rent filter, add room CTA, single delete dialog.
+- Should release (Slice C): Tỉnh/Phường, sort 4 option, cover thumbnail.
+- Could (Slice D): occupancy/rating filter, URL persist, preview filter, export Excel (optional).
+
+### Kiến thức kỹ thuật đã chốt (plan)
+
+- API `GET /partner/properties/searchAll` đã hỗ trợ `rent_category`, `province_name`, `ward_name`, `sort`, `include=cover`; cần thêm `keyword` (Must) và `occupancy_filter` / `min_rating` / `has_rooms` (Could).
+- Không migration DB cho Must/Should; `properties.address_detail` dùng cho keyword LIKE.
+- Giữ `with_rooms=0` + lazy preview theo plan 009; không revert eager load cũ.
+- Filter mobile: panel nâng cao collapse (PD-PP-015-004).
+
 ## 2026-05-31 - Đối soát doanh thu Admin
 
 ### Nguồn tham chiếu
@@ -658,4 +682,47 @@
 - Feature concurrency test cho scheduler vs partner thao tác terminate hoãn tới QC do `phpunit.xml` chưa có DB testing.
 - Renewal reminder hiện set một lần (không nhắc lặp). Re-trigger sau N ngày sẽ do partner manual hoặc thêm task backlog.
 - Chấm dứt hợp đồng không tự update Booking status — booking handling sau termination thuộc backlog operations.
+
+## 2026-06-18 - Partner room maintenance (bảo trì phòng)
+
+### Nguồn tham chiếu
+
+- `docs/SRC/srs_partner_maintenance.md`
+- `docs/plans/plan_014_partner_maintenance.md`
+- `docs/architecture/data-dictionary.md` §2.3.5
+- `docs/databases_docs/db_overview_etc_core_schema.md`
+- `app/Services/RoomBlockService.php`, `app/Services/ConflictChecker.php`
+
+### Kiến thức nghiệp vụ đã chốt (plan)
+
+- **Hai entity:** `room_maintenances` = phiếu công việc (lifecycle); `room_blocks` = khóa tồn bán trên Calendar.
+- **Đồng bộ:** Khi tạo phiếu với `block_calendar=true` (mặc định), hệ thống tạo `room_block` type `maintenance` và lưu `room_block_id`. Khi `completed`/`cancelled`, gỡ block liên kết.
+- **State machine:** `planned` → `in_progress` → `completed` | `cancelled`; không hủy phiếu `completed`.
+- **Conflict:** Nếu `block_calendar=true` và overlap booking/block active → 409. Nếu `block_calendar=false`, cho phép ghi nhận sự cố kể cả khi có khách đang ở.
+- **Out of scope phase 1:** End User báo sự cố, realtime event, recurring maintenance, vendor assignment.
+
+### Kiến thức kỹ thuật đã chốt (plan)
+
+- **Migration:** Thêm `room_block_id`, `block_calendar`, `source`, `cancellation_reason`, `started_at`, `completed_at`, `cancelled_at` + index scope Partner.
+- **Service mới:** `MaintenanceBlockSyncService` delegate `RoomBlockService` (không duplicate `ConflictChecker`).
+- **API Partner:** Bổ sung `GET /{id}`, `PATCH /{id}`; fix pagination `page`/`per_page`; `RoomMaintenancePolicy` ownership.
+- **FE:** Sửa `Maintenances.tsx` (bỏ mock status), `RoomDetail` (block_calendar + conflict UI), `MaintenanceSection` CTA tiếp nhận.
+- **Tests:** `PartnerRoomMaintenanceTest` feature + unit state machine.
+- **Handoff:** `testcase_014_partner_maintenance.md` qua `stack-testcase`; thực thi qua `stack-task`.
+
+### Phase 1 đã ship (2026-06-18)
+
+- **Migration:** `database/migrations/2026_06_18_120000_extend_room_maintenances_for_partner_lifecycle.php` — chạy thành công trên DB dev.
+- **Model:** `RoomMaintenance` → `final`, constants status/type/source, relations `room`, `property`, `roomBlock`, `creator`.
+- **Seeder:** `RoomMaintenancesSeeder` seed cột `block_calendar`, `source`, audit timestamps.
+- **Docs:** `db_overview_etc_core_schema.md` (section `room_maintenances` + changelog), `data-dictionary.md` §2.3.5.
+- **Next:** Phase 2 T2.1 — `RoomMaintenancePolicy` + service lifecycle.
+
+### Phase 2 đã ship (2026-06-18)
+
+- **Policy:** `RoomMaintenancePolicy` — Partner scope qua `property.user_id`; admin bypass.
+- **Services:** `RoomMaintenanceService` (create/update/list/detail), `MaintenanceBlockSyncService` → `RoomBlockService`.
+- **API:** `GET/PATCH /api/v1/partner/room-maintenances/{id}`; list pagination `page`/`per_page`; enriched `RoomMaintenanceResource`.
+- **Tests:** `tests/Feature/Partner/PartnerRoomMaintenanceTest.php` — 3 tests, 20 assertions.
+- **Next:** Phase 3 FE — `Maintenances.tsx`, `partnerService.updateMaintenance`, Room Detail.
 

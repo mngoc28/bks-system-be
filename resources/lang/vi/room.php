@@ -193,4 +193,12 @@ return [
         'deleted_successfully'   => 'Xóa phòng thành công',
         'delete_failed'          => 'Không thể xóa phòng',
     ],
+    'housekeeping' => [
+        'clean'      => 'Sạch sẽ',
+        'dirty'      => 'Cần dọn',
+        'inspecting' => 'Đang kiểm tra',
+        'updated'    => 'Cập nhật trạng thái buồng phòng thành công.',
+        'update_failed' => 'Không thể cập nhật trạng thái buồng phòng.',
+        'checkout_dirty' => 'Phòng đã được đánh dấu cần dọn sau check-out.',
+    ],
 ];

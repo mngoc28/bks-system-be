@@ -36,6 +36,7 @@ final class RoomsService
     private UtilityFeeService $utilityFeeService;
     private RoomTouristSummaryService $roomTouristSummaryService;
     private ConflictChecker $conflictChecker;
+    private HomePageCacheService $homePageCacheService;
 
     /**
      * Constructor method.
@@ -60,7 +61,8 @@ final class RoomsService
         RoomPriceService $roomPriceService,
         UtilityFeeService $utilityFeeService,
         RoomTouristSummaryService $roomTouristSummaryService,
-        ConflictChecker $conflictChecker
+        ConflictChecker $conflictChecker,
+        HomePageCacheService $homePageCacheService
     ) {
         $this->roomsRepository = $roomsRepository;
         $this->roomServiceRepository = $roomServiceRepository;
@@ -72,6 +74,7 @@ final class RoomsService
         $this->utilityFeeService = $utilityFeeService;
         $this->roomTouristSummaryService = $roomTouristSummaryService;
         $this->conflictChecker = $conflictChecker;
+        $this->homePageCacheService = $homePageCacheService;
     }
     /**
      * Get all rooms or search by criteria with pagination
@@ -201,6 +204,8 @@ final class RoomsService
 
             DB::commit();
 
+            $this->homePageCacheService->bumpRoomsCacheVersion();
+
             // Load relationships for response
             $room->load(["amenities", "services", "prices"]);
 
@@ -249,7 +254,8 @@ final class RoomsService
                 'description',
             ]);
             $roomData['updated_by'] = Auth::id();
-            $room = $this->roomsRepository->update($id, $roomData);
+            $this->roomsRepository->update($id, $roomData);
+            $room = Room::query()->findOrFail($id);
 
             // Handle relationships separately
             $this->roomServiceRepository->deleteBy(["room_id" => $id]);
@@ -283,14 +289,85 @@ final class RoomsService
                 );
             }
 
+            // Sync configuration to other rooms of the same type and property
+            if ($request->boolean('sync_to_same_type', false)) {
+                $otherRooms = Room::query()
+                    ->where('property_id', $room->property_id)
+                    ->where('room_type', $room->room_type)
+                    ->where('id', '!=', $room->id)
+                    ->get();
+
+                foreach ($otherRooms as $otherRoom) {
+                    // Sync amenities
+                    $this->roomAmenityRepository->deleteBy(["room_id" => $otherRoom->id]);
+                    $this->roomAmenityService->saveRoomAmenities(
+                        $otherRoom->id,
+                        $request->amenities ?? []
+                    );
+
+                    // Sync services
+                    $this->roomServiceRepository->deleteBy(["room_id" => $otherRoom->id]);
+                    $this->roomServiceService->saveServiceCheckbox(
+                        $otherRoom->id,
+                        $request->services ?? []
+                    );
+
+                    // Sync prices
+                    $priceSyncResult = $this->roomPriceService->saveRoomPrices(
+                        $otherRoom->id,
+                        $request->prices ?? []
+                    );
+                    if (is_array($priceSyncResult) && isset($priceSyncResult['success']) && !$priceSyncResult['success']) {
+                        DB::rollBack();
+                        return [
+                            "success" => false,
+                            "data" => null,
+                            "message" => "Đồng bộ bảng giá thất bại cho phòng {$otherRoom->room_number}: " . $priceSyncResult['message'],
+                        ];
+                    }
+
+                    // Sync utility fees
+                    if ($request->filled("utility_fees") && is_array($request->utility_fees)) {
+                        $this->utilityFeeService->saveUtilityFees(
+                            $otherRoom->id,
+                            $request->utility_fees
+                        );
+                    }
+                }
+            }
+
+            // Sync amenities/services to all other rooms in the same property
+            if ($request->boolean('apply_to_all_rooms', false)) {
+                $allOtherRooms = Room::query()
+                    ->where('property_id', $room->property_id)
+                    ->where('id', '!=', $room->id)
+                    ->get();
+
+                foreach ($allOtherRooms as $otherRoom) {
+                    $this->roomAmenityRepository->deleteBy(['room_id' => $otherRoom->id]);
+                    $this->roomAmenityService->saveRoomAmenities(
+                        $otherRoom->id,
+                        $request->amenities ?? []
+                    );
+
+                    $this->roomServiceRepository->deleteBy(['room_id' => $otherRoom->id]);
+                    $this->roomServiceService->saveServiceCheckbox(
+                        $otherRoom->id,
+                        $request->services ?? []
+                    );
+                }
+            }
+
             DB::commit();
+            $this->homePageCacheService->bumpRoomsCacheVersion();
+
             return [
                 "success" => true,
                 "data" => $room,
                 "message" => __("room.messages.updated_successfully"),
             ];
         } catch (\Exception $e) {
-            Log::error("Error updating room: " . $e->getMessage());
+            Log::error("Error updating room: ", ['exception' => $e]);
             DB::rollBack();
             return [
                 "success" => false,
@@ -319,6 +396,9 @@ final class RoomsService
                     "data" => null,
                 ];
             }
+
+            $this->homePageCacheService->bumpRoomsCacheVersion();
+
             return [
                 "success" => true,
                 "message" => __("room.messages.deleted_successfully"),
@@ -370,9 +450,21 @@ final class RoomsService
      */
     public function getTopRatedRooms(Request $request): array
     {
+        return $this->homePageCacheService->rememberTopRatedRooms($request, function () use ($request): array {
+            return $this->buildTopRatedRoomsPayload($request);
+        });
+    }
+
+    /**
+     * @return array{success: bool, data?: mixed, message: string}
+     */
+    private function buildTopRatedRoomsPayload(Request $request): array
+    {
         try {
             $rooms = $this->roomsRepository->getTopRatedRooms($request);
-            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            if ($request->boolean('include_tourist_summary')) {
+                $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            }
 
             return [
                 "success" => true,
@@ -398,8 +490,14 @@ final class RoomsService
     public function handleRoomList($request): array
     {
         try {
+            if ($request->filled('rent_segments')) {
+                return $this->handleSegmentedRoomList($request);
+            }
+
             $rooms = $this->roomsRepository->getRoomList($request);
-            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            if ($this->shouldIncludeTouristSummary($request)) {
+                $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            }
 
             return [
                 "success" => true,
@@ -417,6 +515,76 @@ final class RoomsService
     }
 
     /**
+     * Get paginated room lists for multiple rent segments in one response.
+     *
+     * @param Request $request
+     * @return array
+     */
+    private function handleSegmentedRoomList(Request $request): array
+    {
+        $segments = $this->parseRentSegments((string) $request->input('rent_segments'));
+        $paginators = [];
+
+        foreach ($segments as $segment) {
+            $segmentRequest = $this->duplicateRequestWithOverrides($request, [
+                'rent_type' => $segment,
+            ]);
+            $paginators[$segment] = $this->roomsRepository->getRoomList($segmentRequest);
+        }
+
+        if ($this->shouldIncludeTouristSummary($request)) {
+            $this->roomTouristSummaryService->enrichPaginators(array_values($paginators));
+        }
+
+        $data = [];
+        foreach ($segments as $segment) {
+            $data[$segment] = $paginators[$segment];
+        }
+
+        return [
+            'success' => true,
+            'data' => $data,
+            'message' => __('room.messages.retrieved_successfully'),
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function parseRentSegments(string $value): array
+    {
+        $allowed = ['daily', 'monthly'];
+        $parts = array_values(array_unique(array_filter(array_map('trim', explode(',', $value)))));
+        $segments = array_values(array_intersect($parts, $allowed));
+
+        if ($segments === []) {
+            return ['daily', 'monthly'];
+        }
+
+        return $segments;
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function duplicateRequestWithOverrides(Request $request, array $overrides): Request
+    {
+        $query = array_merge($request->query(), $overrides);
+        unset($query['rent_segments']);
+
+        return Request::create(
+            $request->getRequestUri(),
+            $request->method(),
+            $query
+        );
+    }
+
+    private function shouldIncludeTouristSummary(Request $request): bool
+    {
+        return $request->boolean('include_tourist_summary');
+    }
+
+    /**
      * Get suggested rooms grouped by province for homepage.
      *
      * @param Request $request
@@ -429,7 +597,9 @@ final class RoomsService
             $limit = (int) $request->input('limit', 4);
 
             $rooms = $this->roomsRepository->getSuggestedRoomsByProvince($provinceIds, $limit);
-            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            if ($request->boolean('include_tourist_summary')) {
+                $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            }
 
             $groupedRooms = collect($rooms)
                 ->groupBy(fn ($room) => $room->province_name ?? __('room.messages.retrieved_successfully'))
@@ -468,6 +638,19 @@ final class RoomsService
      */
     public function handleSuggestedRoomsByTouristSpot(Request $request): array
     {
+        return $this->homePageCacheService->rememberSuggestedRoomsByTouristSpot(
+            $request,
+            function () use ($request): array {
+                return $this->buildSuggestedRoomsByTouristSpotPayload($request);
+            },
+        );
+    }
+
+    /**
+     * @return array{success: bool, data?: mixed, message: string}
+     */
+    private function buildSuggestedRoomsByTouristSpotPayload(Request $request): array
+    {
         try {
             $touristSpotIds = $this->resolveTouristSpotIdsFromRequest($request);
             $limit = (int) $request->input('limit', 12);
@@ -481,7 +664,9 @@ final class RoomsService
             }
 
             $rooms = $this->roomsRepository->getSuggestedRoomsByTouristSpot($touristSpotIds, $limit);
-            $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            if ($request->boolean('include_tourist_summary')) {
+                $rooms = $this->roomTouristSummaryService->enrichRooms($rooms);
+            }
 
             $minRooms = (int) config('homepage.spot_min_rooms', 4);
 
@@ -624,6 +809,10 @@ final class RoomsService
                     "message" => __("room.messages.not_found"),
                 ];
             }
+
+            $room->support_phone = config('app.support_phone') ?: null;
+            $room->support_email = config('app.support_email') ?: null;
+
             return [
                 "success" => true,
                 "data" => $room,
@@ -912,6 +1101,50 @@ final class RoomsService
             return [
                 'success' => false,
                 'message' => 'Lấy danh sách ngày bận thất bại.'
+            ];
+        }
+    }
+
+    /**
+     * Update housekeeping status of a room
+     *
+     * @param int $id
+     * @param string $status
+     * @return array
+     */
+    public function updateHousekeepingStatus(int $id, string $status): array
+    {
+        try {
+            $partnerId = (int) Auth::id();
+
+            $room = Room::query()
+                ->where('id', $id)
+                ->whereHas('property', function ($query) use ($partnerId) {
+                    $query->where('user_id', $partnerId);
+                })
+                ->first();
+
+            if (!$room) {
+                return [
+                    "success" => false,
+                    "message" => "Phòng không tồn tại hoặc bạn không có quyền cập nhật.",
+                ];
+            }
+
+            $room->housekeeping_status = $status;
+            $room->updated_by = $partnerId;
+            $room->save();
+
+            return [
+                "success" => true,
+                "data" => $room,
+                "message" => "Cập nhật trạng thái buồng phòng thành công.",
+            ];
+        } catch (\Exception $e) {
+            Log::error("Error updateHousekeepingStatus: " . $e->getMessage());
+            return [
+                "success" => false,
+                "message" => "Lỗi cập nhật trạng thái buồng phòng: " . $e->getMessage(),
             ];
         }
     }

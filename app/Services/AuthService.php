@@ -23,6 +23,7 @@ class AuthService
     protected $adminRepository;
     protected $usersRepository;
     protected $partnerInfoRepository;
+    protected CloudinaryService $cloudinaryService;
 
     /**
      * Constructor
@@ -30,10 +31,12 @@ class AuthService
      */
     public function __construct(
         UsersRepositoryInterface $usersRepository,
-        PartnerInforRepositoryInterface $partnerInfoRepository
+        PartnerInforRepositoryInterface $partnerInfoRepository,
+        CloudinaryService $cloudinaryService
     ) {
         $this->usersRepository = $usersRepository;
         $this->partnerInfoRepository = $partnerInfoRepository;
+        $this->cloudinaryService = $cloudinaryService;
     }
 
     /**
@@ -499,9 +502,11 @@ class AuthService
 
             foreach ($fileFields as $dbColumn => $requestKey) {
                 if ($request->hasFile($requestKey)) {
-                    $file = $request->file($requestKey);
-                    $path = $file->store("private/partners/{$user->id}", 'local');
-                    $updateData[$dbColumn] = $path;
+                    $updateData[$dbColumn] = $this->uploadPartnerDocumentFile(
+                        $request->file($requestKey),
+                        (int) $user->id,
+                        $partnerInfo->$dbColumn ?? null
+                    );
                 }
             }
 
@@ -556,16 +561,7 @@ class AuthService
             }
 
             $imageParts = explode(";base64,", $signatureBase64);
-            if (count($imageParts) > 1) {
-                $imageTypeAux = explode("image/", $imageParts[0]);
-                $imageType = $imageTypeAux[1] ?? 'png';
-                $imageBase64Decoded = base64_decode($imageParts[1]);
-
-                $signatureFilename = "signature_" . time() . "." . $imageType;
-                $signaturePath = "private/partners/{$user->id}/{$signatureFilename}";
-
-                \Illuminate\Support\Facades\Storage::disk('local')->put($signaturePath, $imageBase64Decoded);
-            } else {
+            if (count($imageParts) <= 1) {
                 return [
                     'status'  => false,
                     'message' => 'Định dạng chữ ký không hợp lệ.',
@@ -573,14 +569,16 @@ class AuthService
                 ];
             }
 
-            $contractPdfPath = "private/partners/{$user->id}/contract_" . time() . ".pdf";
-
-            // Read signature base64 content
-            $signatureBase64ForPdf = '';
-            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($signaturePath)) {
-                $signatureData = \Illuminate\Support\Facades\Storage::disk('local')->get($signaturePath);
-                $signatureBase64ForPdf = base64_encode($signatureData);
+            $imageBase64Decoded = base64_decode($imageParts[1]);
+            if (!is_string($imageBase64Decoded)) {
+                return [
+                    'status'  => false,
+                    'message' => 'Định dạng chữ ký không hợp lệ.',
+                    'data'    => null,
+                ];
             }
+
+            $signatureBase64ForPdf = base64_encode($imageBase64Decoded);
 
             $html = view('pdf.contract', [
                 'date' => now()->format('d/m/Y'),
@@ -600,10 +598,25 @@ class AuthService
             $mpdf->WriteHTML($html);
             $pdfContent = $mpdf->Output('', 'S');
 
-            \Illuminate\Support\Facades\Storage::disk('local')->put($contractPdfPath, $pdfContent);
+            $contractUpload = $this->cloudinaryService->uploadBinaryFile(
+                $pdfContent,
+                "partners/{$user->id}/contracts",
+                'contract_' . time() . '.pdf'
+            );
+
+            if (!$contractUpload['success'] || empty($contractUpload['url'])) {
+                return [
+                    'status'  => false,
+                    'message' => $contractUpload['message'],
+                    'data'    => null,
+                ];
+            }
+
+
+            $this->cloudinaryService->deleteStoredFile($partnerInfo->contract_pdf_path);
 
             $this->partnerInfoRepository->update($partnerInfo->id, [
-                'contract_pdf_path' => $contractPdfPath,
+                'contract_pdf_path' => $contractUpload['url'],
                 'updated_by'        => $user->id,
             ]);
 
@@ -617,7 +630,7 @@ class AuthService
                 'status'  => true,
                 'message' => 'Ký hợp đồng và hoàn tất nộp hồ sơ thành công!',
                 'data'    => [
-                    'contract_pdf_path' => $contractPdfPath,
+                    'contract_pdf_path' => $contractUpload['url'],
                 ],
             ];
         } catch (\Exception $e) {
@@ -680,9 +693,11 @@ class AuthService
 
             foreach ($fileFields as $dbColumn => $requestKey) {
                 if ($request->hasFile($requestKey)) {
-                    $file = $request->file($requestKey);
-                    $path = $file->store("private/partners/{$user->id}", 'local');
-                    $updateData[$dbColumn] = $path;
+                    $updateData[$dbColumn] = $this->uploadPartnerDocumentFile(
+                        $request->file($requestKey),
+                        (int) $user->id,
+                        $partnerInfo->$dbColumn ?? null
+                    );
                 }
             }
 
@@ -720,5 +735,30 @@ class AuthService
                 'data'    => null,
             ];
         }
+    }
+
+    /**
+     * Upload a partner legal document to Cloudinary and remove the previous file if applicable.
+     *
+     * @throws Exception
+     */
+    private function uploadPartnerDocumentFile(
+        \Illuminate\Http\UploadedFile $file,
+        int $userId,
+        ?string $existingPath = null
+    ): string {
+        $uploadResult = $this->cloudinaryService->uploadPartnerDocument(
+            $file,
+            "partners/{$userId}/documents"
+        );
+
+        if (!$uploadResult['success'] || empty($uploadResult['url'])) {
+            throw new Exception($uploadResult['message']);
+        }
+
+
+        $this->cloudinaryService->deleteStoredFile($existingPath);
+
+        return $uploadResult['url'];
     }
 }

@@ -63,6 +63,8 @@ final class TouristSpotService
                 return TouristSpot::query()->create($data);
             });
 
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
+
             return [
                 'success' => true,
                 'data' => $spot,
@@ -97,6 +99,8 @@ final class TouristSpotService
             DB::transaction(static function () use ($spot, $data): void {
                 $spot->update($data);
             });
+
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
 
             return [
                 'success' => true,

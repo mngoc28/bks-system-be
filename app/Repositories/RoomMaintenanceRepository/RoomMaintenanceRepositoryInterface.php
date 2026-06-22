@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories\RoomMaintenanceRepository;
 
 use App\Repositories\RepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * Interface RoomMaintenanceRepositoryInterface
@@ -14,12 +15,14 @@ use App\Repositories\RepositoryInterface;
 interface RoomMaintenanceRepositoryInterface extends RepositoryInterface
 {
     /**
-     * Get room maintenance list with optional filters
-     *
-     * @param array $filters
-     * @return mixed
+     * @param array<string, mixed> $filters
      */
-    public function getList(array $filters);
+    public function getList(array $filters): LengthAwarePaginator;
+
+    /**
+     * Find maintenance by id with optional partner scope.
+     */
+    public function findByIdForScope(int $id, ?int $partnerId): ?\App\Models\RoomMaintenance;
 
     /**
      * Get urgent maintenance requests for a specific partner

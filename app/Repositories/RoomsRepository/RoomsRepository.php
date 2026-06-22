@@ -7,6 +7,7 @@ namespace App\Repositories\RoomsRepository;
 use App\Enums\BookingStatus;
 use App\Enums\ImageType;
 use App\Enums\RoomStatus;
+use App\Models\Property;
 use App\Models\Room;
 use App\Repositories\BaseRepository;
 use App\Repositories\RoomsRepository\RoomsRepositoryInterface;
@@ -224,7 +225,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      */
     public function getTopRatedRooms(Request $request): object | null
     {
-        $roomsQuery = $this->model->withBaseJoins();
+        $roomsQuery = Room::query()->withListJoins();
+
 
         $this->applyTopRatedQueryLogic($roomsQuery);
 
@@ -281,13 +283,17 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             $groupByColumns[] = 'rooms.description';
         }
 
-        $roomsQuery = $this->model->withBaseJoins()
-            ->where('rooms.status', RoomStatus::PUBLIC)
-            ->select(array_merge($selectColumns, [
-                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
-                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
-                DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
-            ]));
+        $extraSelectColumns = $this->getRoomListReviewSelectColumns();
+
+        if ($this->needsProvinceRowNumber($request)) {
+            $extraSelectColumns[] = DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num');
+        }
+
+        $roomsQuery = Room::query()->withListJoins()
+            ->where('rooms.status', RoomStatus::PUBLIC);
+
+        $this->applyReviewAggregateJoin($roomsQuery);
+        $roomsQuery->select(array_merge($selectColumns, $extraSelectColumns));
 
         $roomsQuery = app(Pipeline::class)
             ->send($roomsQuery)
@@ -303,22 +309,162 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ])
             ->thenReturn();
 
-        $roomsQueryForExecution = DB::table(DB::raw("({$roomsQuery->toSql()}) as ranked_rooms"))
-            ->mergeBindings($roomsQuery->getQuery());
+        if ($this->needsWrappedRoomListQuery($request)) {
+            $roomsQueryForExecution = DB::table(DB::raw("({$roomsQuery->toSql()}) as ranked_rooms"))
+                ->mergeBindings($roomsQuery->getQuery());
 
-        $this->applyRoomListLimitsAndSorting($roomsQueryForExecution, $request);
+            $this->applyRoomListLimitsAndSorting($roomsQueryForExecution, $request);
+
+            if ($request->filled('page') || $request->filled('per_page')) {
+                $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
+                $page = (int) $request->input('page', config('const.DEFAULT_PAGE'));
+
+                return $roomsQueryForExecution
+                    ->select('*')
+                    ->paginate($perPage, ['*'], 'page', $page)
+                    ->appends($request->query());
+            }
+
+            return $roomsQueryForExecution->select('*')->get();
+        }
+
+        $this->applyRoomListLimitsAndSortingOnBuilder($roomsQuery, $request);
 
         if ($request->filled('page') || $request->filled('per_page')) {
             $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
             $page = (int) $request->input('page', config('const.DEFAULT_PAGE'));
 
-            return $roomsQueryForExecution
-                ->select('*')
+            return $roomsQuery
                 ->paginate($perPage, ['*'], 'page', $page)
                 ->appends($request->query());
         }
 
-        return $roomsQueryForExecution->select('*')->get();
+        return $roomsQuery->get();
+    }
+
+    /**
+     * @return array<int, \Illuminate\Database\Query\Expression|string>
+     */
+    private function getRoomListReviewSelectColumns(): array
+    {
+        return [
+            DB::raw('COALESCE(rev.reviews_count, 0) as reviews_count'),
+            DB::raw('COALESCE(rev.reviews_avg_rating, 0) as reviews_avg_rating'),
+        ];
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $roomsQuery
+     */
+    private function applyReviewAggregateJoin($roomsQuery): void
+    {
+        $reviewsSubquery = DB::table('reviews')
+            ->select('room_id')
+            ->selectRaw('COUNT(*) as reviews_count')
+            ->selectRaw('ROUND(AVG(rating), 1) as reviews_avg_rating')
+            ->groupBy('room_id');
+
+        $roomsQuery->leftJoinSub($reviewsSubquery, 'rev', 'rooms.id', '=', 'rev.room_id');
+    }
+
+    /**
+     * Whether the homepage-style per-province row cap is required.
+     */
+    private function needsProvinceRowNumber(Request $request): bool
+    {
+        return ! $this->hasRoomListSpecificFilter($request)
+            && ! ($request->filled('page') || $request->filled('per_page'));
+    }
+
+    /**
+     * Whether computed select aliases must be filtered via a wrapped subquery.
+     */
+    private function needsWrappedRoomListQuery(Request $request): bool
+    {
+        return $this->needsProvinceRowNumber($request);
+    }
+
+    /**
+     * @param array<int, mixed>|null $provinceIds
+     */
+    private function hasRoomListSpecificFilter(Request $request, ?array $provinceIds = null): bool
+    {
+        $provinceIds ??= $request->input('province_ids', []);
+
+        return $request->filled('province_id')
+            || ! empty($provinceIds)
+            || $request->filled('ward_id')
+            || $request->filled('property_type_id')
+            || $request->filled('keyword')
+            || $request->filled('partner_id')
+            || $request->filled('tourist_spot_slug')
+            || $request->filled('price_min')
+            || $request->filled('price_max')
+            || $request->filled('guests')
+            || $request->filled('rent_type');
+    }
+
+    /**
+     * Apply limits and sorting directly on the Eloquent room list query.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $roomsQuery
+     */
+    private function applyRoomListLimitsAndSortingOnBuilder($roomsQuery, Request $request): void
+    {
+        if ($request->filled('price_min')) {
+            $roomsQuery->where('rp.cheapest_daily_price', '>=', (float) $request->input('price_min'));
+        }
+        if ($request->filled('price_max')) {
+            $roomsQuery->where('rp.cheapest_daily_price', '<=', (float) $request->input('price_max'));
+        }
+        if ($request->filled('guests')) {
+            $roomsQuery->where('rooms.people', '>=', (int) $request->input('guests'));
+        }
+        if ($request->filled('rating_min')) {
+            $roomsQuery->whereRaw('COALESCE(rev.reviews_avg_rating, 0) >= ?', [(float) $request->input('rating_min')]);
+        }
+        if ($request->filled('rent_type')) {
+            $this->applyRentTypeFilterOnBuilder($roomsQuery, (string) $request->input('rent_type'));
+        }
+
+        $sortBy = $request->input('sort_by');
+        $sortDirection = $request->input('sort_direction', 'asc');
+
+        if (in_array($sortBy, ['cheapest_daily_price', 'people'], true) && in_array($sortDirection, ['asc', 'desc'], true)) {
+            if ($sortBy === 'cheapest_daily_price') {
+                $roomsQuery->orderBy('rp.cheapest_daily_price', $sortDirection);
+            } else {
+                $roomsQuery->orderBy('rooms.people', $sortDirection);
+            }
+
+            $roomsQuery->orderBy('rooms.id', 'desc');
+
+            return;
+        }
+
+        $roomsQuery->orderBy('rooms.id', 'desc');
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $roomsQuery
+     */
+    private function applyRentTypeFilterOnBuilder($roomsQuery, string $rentType): void
+    {
+        if ($rentType === 'daily') {
+            $roomsQuery->where(function ($query): void {
+                $query->where('pt.name', 'NOT LIKE', '%căn hộ%')
+                    ->where('pt.name', 'NOT LIKE', '%apartment%');
+            });
+
+            return;
+        }
+
+        if ($rentType === 'monthly') {
+            $roomsQuery->where(function ($query): void {
+                $query->where('pt.name', 'LIKE', '%căn hộ%')
+                    ->orWhere('pt.name', 'LIKE', '%apartment%');
+            });
+        }
     }
 
     /**
@@ -330,19 +476,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      */
     private function applyRoomListLimitsAndSorting($roomsQueryForExecution, Request $request): void
     {
-        $provinceIds = $request->input('province_ids', []);
         $shouldPaginate = $request->filled('page') || $request->filled('per_page');
-        $hasSpecificFilter = $request->filled('province_id')
-            || !empty($provinceIds)
-            || $request->filled('ward_id')
-            || $request->filled('property_type_id')
-            || $request->filled('keyword')
-            || $request->filled('partner_id')
-            || $request->filled('tourist_spot_slug')
-            || $request->filled('price_min')
-            || $request->filled('price_max')
-            || $request->filled('guests')
-            || $request->filled('rent_type');
+        $hasSpecificFilter = $this->hasRoomListSpecificFilter($request);
 
         if ($request->filled('price_min')) {
             $roomsQueryForExecution->where('cheapest_daily_price', '>=', floatval($request->input('price_min')));
@@ -462,6 +597,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.description',
             'rooms.area',
             'ri.image_url as room_image',
+            'b.name as property_name',
             'b.address_detail as property_address',
             'b.pet_policy',
             'b.pet_policy_note',
@@ -520,6 +656,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.description',
             'rooms.area',
             'ri.image_url',
+            'b.name',
             'b.address_detail',
             'b.pet_policy',
             'b.pet_policy_note',
@@ -561,31 +698,17 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      */
     public function getRoomsForPartner(int $partnerId, $request): LengthAwarePaginator
     {
+        if ($request->filled('property_id')) {
+            return $this->getRoomsForPartnerProperty($partnerId, (int) $request->property_id, $request);
+        }
+
         $query = $this->model->with([
             'amenities:id,name',
             'services:id,name',
             'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
-            'utilityFees',
-            'images' => function ($q) {
-                $q->where('sort', 1)->select('id', 'room_id', 'image_url');
-            }
         ])
             ->join('properties', 'rooms.property_id', '=', 'properties.id')
-            ->select([
-                'rooms.id',
-                'rooms.property_id',
-                'rooms.room_number',
-                'rooms.title',
-                'properties.name as property_name',
-                'rooms.room_type',
-                'rooms.status',
-                'rooms.area',
-                'rooms.people',
-                'rooms.bedrooms_count',
-                'rooms.beds_count',
-                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
-                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
-            ])
+            ->select($this->getPartnerRoomsListSelectColumns())
             ->where('properties.user_id', $partnerId)
             ->orderBy('rooms.id', 'desc');
 
@@ -598,11 +721,56 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->thenReturn();
 
         $this->applyRoomsForPartnerPropertyFilters($query, $request);
+        $this->applyPartnerOccupancyFilter($query, $request);
 
         $perPage = $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
         $page = $request->input('page', config('const.DEFAULT_PAGE'));
 
         return $query->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    private function getRoomsForPartnerProperty(int $partnerId, int $propertyId, $request): LengthAwarePaginator
+    {
+        $perPage = (int) $request->input('per_page', config('const.DEFAULT_PER_PAGE'));
+        $page = (int) $request->input('page', config('const.DEFAULT_PAGE'));
+
+        $property = Property::query()
+            ->select('id', 'name')
+            ->where('id', $propertyId)
+            ->where('user_id', $partnerId)
+            ->first();
+
+        if ($property === null) {
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage, $page);
+        }
+
+        $query = $this->model->with([
+            'amenities:id,name',
+            'services:id,name',
+            'prices:id,room_id,price_package_id,unit,price,deposit_amount,minimum_stay',
+        ])
+            ->select($this->getPartnerRoomsListSelectColumns(includePropertyName: false))
+            ->where('rooms.property_id', $propertyId)
+            ->orderBy('rooms.id', 'desc');
+
+        $query = app(Pipeline::class)
+            ->send($query)
+            ->through([
+                \App\QueryFilters\Rooms\RoomNumber::class,
+                \App\QueryFilters\Rooms\Status::class,
+            ])
+            ->thenReturn();
+
+        $this->applyPartnerOccupancyFilter($query, $request);
+
+        $rooms = $query->paginate($perPage, ['*'], 'page', $page);
+        $rooms->getCollection()->transform(static function ($room) use ($property) {
+            $room->property_name = $property->name;
+
+            return $room;
+        });
+
+        return $rooms;
     }
 
     /**
@@ -642,6 +810,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 $q->select('id', 'room_id', 'image_url', 'image_type');
             }
         ])->join('properties', 'rooms.property_id', '=', 'properties.id')
+            ->join('users as property_owner', 'properties.user_id', '=', 'property_owner.id')
             ->select($this->getRoomDetailForPartnerSelectColumns())
             ->where('rooms.id', $id)
             ->where('properties.user_id', $partnerId)
@@ -664,6 +833,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'rooms.floor_number',
             'rooms.deposit',
             'rooms.status',
+            'rooms.housekeeping_status',
             'rooms.area',
             'rooms.people',
             'rooms.bedrooms_count',
@@ -674,6 +844,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             'properties.name as property_name',
             'properties.province_id as province_id',
             'properties.property_type_id as property_type_id',
+            'property_owner.phone as partner_phone',
+            'property_owner.email as partner_email',
             DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
             DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating')
         ];
@@ -753,32 +925,108 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
      * @param int $confirmedStatus
      * @return array
      */
+    /**
+     * @return array{0: string, 1: int}
+     */
+    private function partnerOccupancyContext(): array
+    {
+        return [now()->toDateString(), BookingStatus::CONFIRMED->value];
+    }
+
+    private function buildPartnerOccupancyStatusCaseExpression(
+        string $roomAlias,
+        string $today,
+        int $confirmedStatus,
+    ): string {
+        return "CASE
+            WHEN {$roomAlias}.status = 0 THEN 'hidden'
+            WHEN EXISTS (
+                SELECT 1 FROM bookings
+                WHERE bookings.room_id = {$roomAlias}.id
+                AND bookings.status = {$confirmedStatus}
+                AND bookings.start_date <= '{$today}'
+                AND bookings.end_date >= '{$today}'
+            ) THEN 'occupied'
+            WHEN EXISTS (
+                SELECT 1 FROM room_maintenances
+                WHERE room_maintenances.room_id = {$roomAlias}.id
+                AND room_maintenances.status IN ('planned', 'in_progress')
+                AND DATE(room_maintenances.start_time) <= '{$today}'
+                AND (room_maintenances.end_time IS NULL OR DATE(room_maintenances.end_time) >= '{$today}')
+            ) THEN 'maintenance'
+            ELSE 'vacant'
+        END";
+    }
+
+    private function buildPartnerOccupancyStatusSelectRaw(string $roomAlias = 'rooms'): \Illuminate\Database\Query\Expression
+    {
+        [$today, $confirmedStatus] = $this->partnerOccupancyContext();
+        $caseExpression = $this->buildPartnerOccupancyStatusCaseExpression($roomAlias, $today, $confirmedStatus);
+
+        return DB::raw("({$caseExpression}) as occupancy_status");
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder $query
+     */
+    private function applyPartnerOccupancyFilter($query, mixed $request): void
+    {
+        if (! $request->filled('occupancy')) {
+            return;
+        }
+
+        $occupancy = (string) $request->input('occupancy');
+        $allowed = ['vacant', 'occupied', 'maintenance'];
+        if (! in_array($occupancy, $allowed, true)) {
+            return;
+        }
+
+        [$today, $confirmedStatus] = $this->partnerOccupancyContext();
+        $caseExpression = $this->buildPartnerOccupancyStatusCaseExpression('rooms', $today, $confirmedStatus);
+        $query->whereRaw('(' . $caseExpression . ') = ?', [$occupancy]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function getPartnerRoomsListSelectColumns(bool $includePropertyName = true): array
+    {
+        $columns = [
+            'rooms.id',
+            'rooms.property_id',
+            'rooms.room_number',
+            'rooms.title',
+        ];
+
+        if ($includePropertyName) {
+            $columns[] = 'properties.name as property_name';
+        }
+
+        return array_merge($columns, [
+            'rooms.room_type',
+            'rooms.status',
+            'rooms.housekeeping_status',
+            'rooms.area',
+            'rooms.people',
+            'rooms.bedrooms_count',
+            'rooms.beds_count',
+            $this->buildPartnerOccupancyStatusSelectRaw('rooms'),
+            DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
+            DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
+        ]);
+    }
+
     private function getOccupancySelectColumns(string $today, int $confirmedStatus): array
     {
+        $occupancyStatusSelect = '(' . $this->buildPartnerOccupancyStatusCaseExpression('rooms', $today, $confirmedStatus) . ') as occupancy_status';
+
         return [
             'rooms.id',
             'rooms.room_number',
             'rooms.title',
             'rooms.floor_number',
             'rooms.status as room_visibility',
-            DB::raw("CASE 
-                WHEN rooms.status = 0 THEN 'hidden'
-                WHEN EXISTS (
-                    SELECT 1 FROM bookings 
-                    WHERE bookings.room_id = rooms.id 
-                    AND bookings.status = " . $confirmedStatus . "
-                    AND bookings.start_date <= '$today'
-                    AND bookings.end_date >= '$today'
-                ) THEN 'occupied'
-                WHEN EXISTS (
-                    SELECT 1 FROM room_maintenances 
-                    WHERE room_maintenances.room_id = rooms.id 
-                    AND room_maintenances.status IN ('planned', 'in_progress')
-                    AND DATE(room_maintenances.start_time) <= '$today'
-                    AND (room_maintenances.end_time IS NULL OR DATE(room_maintenances.end_time) >= '$today')
-                ) THEN 'maintenance'
-                ELSE 'vacant'
-            END as occupancy_status"),
+            DB::raw($occupancyStatusSelect),
             DB::raw("(SELECT u.name FROM bookings b JOIN users u ON b.user_id = u.id 
                 WHERE b.room_id = rooms.id AND b.status = " . $confirmedStatus . "
                 AND b.start_date <= '$today' AND b.end_date >= '$today' LIMIT 1) as customer_name"),
@@ -800,13 +1048,14 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             return collect();
         }
 
-        $roomsQuery = $this->model->withBaseJoins()
+        $roomsQuery = Room::query()->withListJoins()
             ->where('rooms.status', RoomStatus::PUBLIC)
-            ->whereIn('p.id', $provinceIds)
-            ->select(array_merge($this->getBaseSelectColumns(), [
-                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
-                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
-                DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num')
+            ->whereIn('p.id', $provinceIds);
+
+        $this->applyReviewAggregateJoin($roomsQuery);
+
+        $roomsQuery->select(array_merge($this->getBaseSelectColumns(), $this->getRoomListReviewSelectColumns(), [
+                DB::raw('ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY rooms.updated_at DESC) as province_row_num'),
             ]));
 
         $executionQuery = DB::table(DB::raw("({$roomsQuery->toSql()}) as ranked_rooms"))
@@ -823,11 +1072,12 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
         }
 
         $rowNumberOrder = 'rtsm.is_primary DESC, '
-            . '(SELECT COALESCE(ROUND(AVG(rating), 1), 0) FROM reviews WHERE reviews.room_id = rooms.id) DESC, '
-            . '(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) DESC, '
+            . 'COALESCE(rev.reviews_avg_rating, 0) DESC, '
+            . 'COALESCE(rev.reviews_count, 0) DESC, '
             . 'rtsm.travel_time_minutes ASC, rooms.updated_at DESC';
 
-        $roomsQuery = $this->model->withBaseJoins()
+        $roomsQuery = Room::query()->withListJoins()
+
             ->join('room_tourist_spot_maps as rtsm', 'rtsm.room_id', '=', 'rooms.id')
             ->join('tourist_spots as ts', 'ts.id', '=', 'rtsm.tourist_spot_id')
             ->where('rooms.status', RoomStatus::PUBLIC)
@@ -840,14 +1090,15 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                     ->from('room_prices')
                     ->whereColumn('room_prices.room_id', 'rooms.id')
                     ->where('room_prices.unit', 'night');
-            })
-            ->select(array_merge($this->getBaseSelectColumns(), [
+            });
+
+        $this->applyReviewAggregateJoin($roomsQuery);
+
+        $roomsQuery->select(array_merge($this->getBaseSelectColumns(), $this->getRoomListReviewSelectColumns(), [
                 'ts.id as tourist_spot_id',
                 'ts.name as tourist_spot_name',
                 'ts.slug as tourist_spot_slug',
                 'ts.region_label as tourist_spot_region_label',
-                DB::raw('(SELECT COUNT(*) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_count'),
-                DB::raw('(SELECT ROUND(AVG(rating), 1) FROM reviews WHERE reviews.room_id = rooms.id) as reviews_avg_rating'),
                 DB::raw("ROW_NUMBER() OVER (PARTITION BY ts.id ORDER BY {$rowNumberOrder}) as tourist_spot_row_num"),
             ]));
 

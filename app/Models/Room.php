@@ -45,6 +45,7 @@ final class Room extends Model
         'beds_count'     => 'integer',
         'room_type'      => 'integer',
         'status'         => 'boolean',
+        'housekeeping_status' => 'string',
         'created_at'     => 'datetime',
         'updated_at'     => 'datetime',
     ];
@@ -178,6 +179,36 @@ final class Room extends Model
             ->selectRaw("{$allPricesSql} as all_prices")
             ->groupBy('rp.room_id');
 
+        return $this->applyBaseRoomCardJoins($query, $pricesSubquery);
+    }
+
+    /**
+     * Lighter joins for paginated public room search cards (skips all_prices JSON aggregation).
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWithListJoins($query)
+    {
+        $cheapestDailySql = self::cheapestDailyPriceSql();
+
+        $pricesSubquery = DB::table('room_prices as rp')
+            ->select('rp.room_id')
+            ->selectRaw("MIN(CASE WHEN rp.unit = 'month' THEN rp.price END) as cheapest_monthly_price")
+            ->selectRaw("MIN(CASE WHEN rp.unit = 'night' THEN rp.price END) as cheapest_nightly_price")
+            ->selectRaw("{$cheapestDailySql} as cheapest_daily_price")
+            ->groupBy('rp.room_id');
+
+        return $this->applyBaseRoomCardJoins($query, $pricesSubquery);
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param \Illuminate\Database\Query\Builder $pricesSubquery
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function applyBaseRoomCardJoins($query, $pricesSubquery)
+    {
         return $query
             ->join('properties as b', 'rooms.property_id', '=', 'b.id')
             ->join('users as u', 'b.user_id', '=', 'u.id')

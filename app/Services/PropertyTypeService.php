@@ -23,6 +23,8 @@ class PropertyTypeService
         try {
             $propertyType = $this->propertyTypeRepository->create($data);
 
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
+
             return [
                 'success' => true,
                 'data' => $propertyType->toArray(),
@@ -132,6 +134,8 @@ class PropertyTypeService
 
             $propertyType->update($data);
 
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
+
             return [
                 'success' => true,
                 'data' => $propertyType->refresh()->toArray(),
@@ -175,6 +179,8 @@ class PropertyTypeService
             $propertyType->update([
                 'is_active' => $data['is_active'],
             ]);
+
+            app(HomePageCacheService::class)->bumpMetadataCacheVersion();
 
             return [
                 'success' => true,

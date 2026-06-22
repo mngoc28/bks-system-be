@@ -11,6 +11,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $room_id
+ * @property int $price_id
+ * @property int $status
+ * @property string $stay_status
+ * @property string $payment_status
+ * @property Carbon|string $start_date
+ * @property Carbon|string $end_date
+ * @property string|null $customer_name
+ * @property string|null $customer_phone
+ * @property string|null $customer_email
+ * @property string|null $cancellation_reason
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ */
 final class Booking extends Model
 {
     use HasFactory;
@@ -28,6 +47,13 @@ final class Booking extends Model
      * @var array<int, string>
      */
     protected $guarded = [];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['total_amount'];
 
     /**
      * The attributes that should be cast.
