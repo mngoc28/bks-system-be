@@ -37,7 +37,6 @@ final class HomeMetadataService
                     'property_types' => $propertyTypesResult['data'] ?? [],
                     'tourist_spots' => $touristSpotsResult['data'],
                 ];
-
             });
 
             return [
