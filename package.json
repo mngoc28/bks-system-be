@@ -8,8 +8,8 @@
         "tunnel": "npx localtunnel --port 8000 --subdomain tame-donuts-wait",
         "tunnel:ssh": "ssh -o StrictHostKeyChecking=no -R 80:127.0.0.1:8000 nokey@localhost.run",
         "tunnel:ngrok": "npx ngrok http 8000 --domain=foam-proximity-unraveled.ngrok-free.dev",
-        "dev:tunnel": "node scripts/check-docker.js && concurrently \"php artisan serve\" \"npm run tunnel:ngrok\"",
-        "dev:ssh": "node scripts/check-docker.js && concurrently \"php artisan serve\" \"npm run tunnel:ssh\""
+        "dev:tunnel": "node scripts/check-docker.js && concurrently \"php artisan serve\" \"npm run tunnel:ngrok\" \"php artisan queue:work\"",
+        "dev:ssh": "node scripts/check-docker.js && concurrently \"php artisan serve\" \"npm run tunnel:ssh\" \"php artisan queue:work\""
     },
     "devDependencies": {
         "@prettier/plugin-php": "^0.18.9",

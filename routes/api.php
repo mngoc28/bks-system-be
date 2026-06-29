@@ -413,6 +413,7 @@ Route::group([
             Route::get('/charts/occupancy', [DashboardController::class, 'getOccupancyChart']);
             Route::get('/revenue-performance', [DashboardController::class, 'getRevenuePerformance']);
             Route::get('/stats', [DashboardController::class, 'getStats']);
+            Route::get('/consolidated', [DashboardController::class, 'getConsolidatedData']);
         });
 
         /**
@@ -800,6 +801,7 @@ Route::group([
             ]);
             Route::get('/stats', [PartnerDashboardController::class, 'getStats']);
             Route::get('/kpis', [PartnerDashboardController::class, 'getKpis']);
+            Route::get('/consolidated', [PartnerDashboardController::class, 'getConsolidatedData']);
             // Phase 4/5 (T4.1, T4.2, T5.6): chart endpoints gắn feature flag.
             Route::middleware('partner360')->group(function () {
                 Route::get('/charts/occupancy', [PartnerDashboardController::class, 'getOccupancyChart']);

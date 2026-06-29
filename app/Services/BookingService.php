@@ -1274,7 +1274,9 @@ final class BookingService
                 'message' => __('booking.messages.user_booking_created_successfully'),
             ];
         } catch (Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
             Log::error('User booking creation failed: ' . $e->getMessage(), [
                 'email'   => $request->input('email'),
                 'room_id' => $roomId,

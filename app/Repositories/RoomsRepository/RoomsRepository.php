@@ -1084,13 +1084,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             ->where('ts.is_active', true)
             ->whereIn('ts.id', $touristSpotIds)
             ->whereNotNull('ts.province_id')
-            ->whereColumn('b.province_id', 'ts.province_id')
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('room_prices')
-                    ->whereColumn('room_prices.room_id', 'rooms.id')
-                    ->where('room_prices.unit', 'night');
-            });
+            ->whereColumn('b.province_id', 'ts.province_id');
 
         $this->applyReviewAggregateJoin($roomsQuery);
 
