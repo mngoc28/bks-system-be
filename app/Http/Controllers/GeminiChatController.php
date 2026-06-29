@@ -505,6 +505,7 @@ final class GeminiChatController extends Controller
                 $formattedRooms[] = [
                     'id' => $room->id,
                     'title' => $room->title,
+                    'room_image' => $room->room_image ?? null,
                     'room_type' => $room->room_type,
                     'people' => $room->people,
                     'area' => $room->area,

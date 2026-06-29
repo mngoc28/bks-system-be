@@ -254,20 +254,24 @@ final class DashboardService
                     ->format("Y-m-d")
             );
 
-            $bookingsPerMonth = $this->bookingRepository->getBookingsPerMonth(
-                $startDate,
-                $endDate
-            );
-
-            return [
-                "success" => true,
-                "data" => [
+            $cacheKey = "admin_bookings_per_month_{$startDate}_{$endDate}";
+            $data = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate) {
+                $bookingsPerMonth = $this->bookingRepository->getBookingsPerMonth(
+                    $startDate,
+                    $endDate
+                );
+                return [
                     "bookingsPerMonth" => $bookingsPerMonth,
                     "dateRange" => [
                         "startDate" => $startDate,
                         "endDate" => $endDate,
                     ],
-                ],
+                ];
+            });
+
+            return [
+                "success" => true,
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.bookings_per_month_fetched"
                 ),
@@ -314,29 +318,34 @@ final class DashboardService
                 $startDate = $start->toDateString();
             }
 
-            $countsByDate = $this->bookingRepository
-                ->getBookingsPerDay($startDate, $endDate)
-                ->keyBy('date');
+            $cacheKey = "admin_bookings_trend_{$startDate}_{$endDate}";
+            $data = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate, $start, $end) {
+                $countsByDate = $this->bookingRepository
+                    ->getBookingsPerDay($startDate, $endDate)
+                    ->keyBy('date');
 
-            $points = [];
-            foreach (CarbonPeriod::create($start, $end) as $day) {
-                $dateString = $day->toDateString();
-                $points[] = [
-                    'date' => $dateString,
-                    'total' => (int) ($countsByDate[$dateString]['total'] ?? 0),
-                ];
-            }
+                $points = [];
+                foreach (CarbonPeriod::create($start, $end) as $day) {
+                    $dateString = $day->toDateString();
+                    $points[] = [
+                        'date' => $dateString,
+                        'total' => (int) ($countsByDate[$dateString]['total'] ?? 0),
+                    ];
+                }
 
-            return [
-                'success' => true,
-                'data' => [
+                return [
                     'points' => $points,
                     'granularity' => 'day',
                     'dateRange' => [
                         'startDate' => $startDate,
                         'endDate' => $endDate,
                     ],
-                ],
+                ];
+            });
+
+            return [
+                'success' => true,
+                'data' => $data,
                 'message' => __('dashboard.messages.bookings_trend_fetched'),
             ];
         } catch (\Exception $e) {
@@ -372,23 +381,28 @@ final class DashboardService
                     ->format("Y-m-d")
             );
 
-            $revenueByMonth = $this->bookingRepository->getRevenueByMonth(
-                $startDate,
-                $endDate
-            );
+            $cacheKey = "admin_revenue_per_month_{$startDate}_{$endDate}";
+            $data = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate) {
+                $revenueByMonth = $this->bookingRepository->getRevenueByMonth(
+                    $startDate,
+                    $endDate
+                );
 
-            $totalRevenue = $revenueByMonth->sum("revenue");
+                $totalRevenue = $revenueByMonth->sum("revenue");
 
-            return [
-                "success" => true,
-                "data" => [
+                return [
                     "revenueByMonth" => $revenueByMonth,
                     "totalRevenue" => (float) $totalRevenue,
                     "dateRange" => [
                         "startDate" => $startDate,
                         "endDate" => $endDate,
                     ],
-                ],
+                ];
+            });
+
+            return [
+                "success" => true,
+                "data" => $data,
                 "message" => __("dashboard.messages.revenue_per_month_fetched"),
             ];
         } catch (\Exception $e) {
@@ -415,11 +429,15 @@ final class DashboardService
         try {
             $startDate = $request->input('start_date');
             $endDate = $request->input('end_date');
-            $bookingsByProperty = $this->bookingRepository->getBookingsByProperty($startDate, $endDate);
+
+            $cacheKey = "admin_properties_bookings_count_" . ($startDate ?? 'all') . "_" . ($endDate ?? 'all');
+            $data = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate) {
+                return $this->bookingRepository->getBookingsByProperty($startDate, $endDate);
+            });
 
             return [
                 "success" => true,
-                "data" => $bookingsByProperty,
+                "data" => $data,
                 "message" => __(
                     "dashboard.messages.all_properties_bookings_count_fetched"
                 ),
@@ -455,17 +473,21 @@ final class DashboardService
             );
             $endDate = $request->input('end_date', now()->format('Y-m-d'));
 
-            $breakdown = $this->bookingRepository->getBookingStatusBreakdown($startDate, $endDate);
-
-            return [
-                'success' => true,
-                'data' => [
+            $cacheKey = "admin_booking_status_breakdown_{$startDate}_{$endDate}";
+            $data = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate) {
+                $breakdown = $this->bookingRepository->getBookingStatusBreakdown($startDate, $endDate);
+                return [
                     'breakdown' => $breakdown,
                     'dateRange' => [
                         'startDate' => $startDate,
                         'endDate' => $endDate,
                     ],
-                ],
+                ];
+            });
+
+            return [
+                'success' => true,
+                'data' => $data,
                 'message' => __('dashboard.messages.booking_status_breakdown_fetched'),
             ];
         } catch (\Exception $e) {
@@ -505,52 +527,60 @@ final class DashboardService
                 $rangeStart = $rangeEnd->copy()->subDays(89);
             }
 
-            $totalRooms = (int) $this->roomsRepository->countRecord();
+            $startDateStr = $rangeStart->toDateString();
+            $endDateStr = $rangeEnd->toDateString();
 
-            $activeBookings = DB::table('bookings')
-                ->whereIn('bookings.status', [
-                    BookingStatus::CONFIRMED->value,
-                    BookingStatus::COMPLETED->value,
-                    BookingStatus::PENDING_CANCELLATION->value,
-                ])
-                ->where('bookings.start_date', '<=', $rangeEnd->toDateString())
-                ->where('bookings.end_date', '>', $rangeStart->toDateString())
-                ->get([
-                    'bookings.room_id',
-                    'bookings.start_date',
-                    'bookings.end_date',
-                ]);
+            $cacheKey = "admin_occupancy_chart_{$startDateStr}_{$endDateStr}";
+            $data = Cache::remember($cacheKey, 60, function () use ($rangeStart, $rangeEnd, $startDateStr, $endDateStr) {
+                $totalRooms = (int) $this->roomsRepository->countRecord();
 
-            $series = [];
-            for ($cursor = $rangeStart->copy(); $cursor->lte($rangeEnd); $cursor->addDay()) {
-                $dateString = $cursor->toDateString();
-                $occupiedRooms = $activeBookings
-                    ->filter(
-                        static fn ($booking): bool => $booking->start_date <= $dateString
-                            && $booking->end_date > $dateString,
-                    )
-                    ->pluck('room_id')
-                    ->unique()
-                    ->count();
+                $activeBookings = DB::table('bookings')
+                    ->whereIn('bookings.status', [
+                        BookingStatus::CONFIRMED->value,
+                        BookingStatus::COMPLETED->value,
+                        BookingStatus::PENDING_CANCELLATION->value,
+                    ])
+                    ->where('bookings.start_date', '<=', $endDateStr)
+                    ->where('bookings.end_date', '>', $startDateStr)
+                    ->get([
+                        'bookings.room_id',
+                        'bookings.start_date',
+                        'bookings.end_date',
+                    ]);
 
-                $series[] = [
-                    'date' => $dateString,
-                    'occupancyRate' => $totalRooms > 0
-                        ? round(($occupiedRooms / $totalRooms) * 100, 2)
-                        : 0.0,
+                $series = [];
+                for ($cursor = $rangeStart->copy(); $cursor->lte($rangeEnd); $cursor->addDay()) {
+                    $dateString = $cursor->toDateString();
+                    $occupiedRooms = $activeBookings
+                        ->filter(
+                            static fn ($booking): bool => $booking->start_date <= $dateString
+                                && $booking->end_date > $dateString,
+                        )
+                        ->pluck('room_id')
+                        ->unique()
+                        ->count();
+
+                    $series[] = [
+                        'date' => $dateString,
+                        'occupancyRate' => $totalRooms > 0
+                            ? round(($occupiedRooms / $totalRooms) * 100, 2)
+                            : 0.0,
+                    ];
+                }
+
+                return [
+                    'points' => $series,
+                    'dateRange' => [
+                        'startDate' => $startDateStr,
+                        'endDate' => $endDateStr,
+                    ],
+                    'totalRooms' => $totalRooms,
                 ];
-            }
+            });
 
             return [
                 'success' => true,
-                'data' => [
-                    'points' => $series,
-                    'dateRange' => [
-                        'startDate' => $rangeStart->toDateString(),
-                        'endDate' => $rangeEnd->toDateString(),
-                    ],
-                    'totalRooms' => $totalRooms,
-                ],
+                'data' => $data,
                 'message' => __('dashboard.messages.occupancy_chart_fetched'),
             ];
         } catch (\Exception $e) {
@@ -831,40 +861,40 @@ final class DashboardService
     public function getStatsForAdmin(): array
     {
         try {
-            $totalRooms = (int) $this->roomsRepository->countRecord();
-            $vacantRooms = (int) $this->roomsRepository->getEmptyRooms();
-            $occupancyRate = $totalRooms > 0
-                ? round((($totalRooms - $vacantRooms) / $totalRooms) * 100, 1)
-                : 0.0;
+            $data = Cache::remember('admin_dashboard_stats', 60, function () {
+                $totalRooms = (int) $this->roomsRepository->countRecord();
+                $vacantRooms = (int) $this->roomsRepository->getEmptyRooms();
+                $occupancyRate = $totalRooms > 0
+                    ? round((($totalRooms - $vacantRooms) / $totalRooms) * 100, 1)
+                    : 0.0;
 
-            $today = now()->format('Y-m-d');
+                $today = now()->format('Y-m-d');
 
-            $count = fn (array $filters): int => (int) $this->bookingRepository->countBookingsForAdmin($filters);
+                $summary = DB::table('bookings')
+                    ->selectRaw('COUNT(*) as totalBookingsCount')
+                    ->selectRaw('SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as pendingBookingsCount')
+                    ->selectRaw('SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) as pendingCancellationCount')
+                    ->selectRaw("SUM(CASE WHEN DATE(start_date) = ? AND status = 1 AND stay_status = 'pending' THEN 1 ELSE 0 END) as todayCheckInCount", [$today])
+                    ->selectRaw("SUM(CASE WHEN DATE(end_date) = ? AND status = 1 AND stay_status = 'checked_in' THEN 1 ELSE 0 END) as todayCheckOutCount", [$today])
+                    ->selectRaw("SUM(CASE WHEN status = 1 AND stay_status = 'checked_in' THEN 1 ELSE 0 END) as inStayCount")
+                    ->first();
 
-            return [
-                'success' => true,
-                'data' => [
+                return [
                     'totalRooms' => $totalRooms,
                     'vacantRooms' => $vacantRooms,
                     'occupancyRate' => (float) $occupancyRate,
-                    'pendingBookingsCount' => $count(['status' => 0]),
-                    'pendingCancellationCount' => $count(['status' => 4]),
-                    'todayCheckInCount' => $count([
-                        'start_date' => $today,
-                        'status' => 1,
-                        'stay_status' => 'pending',
-                    ]),
-                    'todayCheckOutCount' => $count([
-                        'end_date' => $today,
-                        'status' => 1,
-                        'stay_status' => 'checked_in',
-                    ]),
-                    'inStayCount' => $count([
-                        'status' => 1,
-                        'stay_status' => 'checked_in',
-                    ]),
-                    'totalBookingsCount' => $count([]),
-                ],
+                    'pendingBookingsCount' => (int) ($summary->pendingBookingsCount ?? 0),
+                    'pendingCancellationCount' => (int) ($summary->pendingCancellationCount ?? 0),
+                    'todayCheckInCount' => (int) ($summary->todayCheckInCount ?? 0),
+                    'todayCheckOutCount' => (int) ($summary->todayCheckOutCount ?? 0),
+                    'inStayCount' => (int) ($summary->inStayCount ?? 0),
+                    'totalBookingsCount' => (int) ($summary->totalBookingsCount ?? 0),
+                ];
+            });
+
+            return [
+                'success' => true,
+                'data' => $data,
                 'message' => __('dashboard.messages.stats_fetched_successfully'),
             ];
         } catch (Exception $e) {

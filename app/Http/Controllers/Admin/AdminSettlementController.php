@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 /**
@@ -263,7 +264,10 @@ class AdminSettlementController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->subDays(30)->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
-        $report = $this->reportingService->getRevenueDailyReport((string) $startDate, (string) $endDate);
+        $cacheKey = "admin_settlement_daily_report_{$startDate}_{$endDate}";
+        $report = Cache::remember($cacheKey, 60, function () use ($startDate, $endDate) {
+            return $this->reportingService->getRevenueDailyReport((string) $startDate, (string) $endDate);
+        });
 
         return response()->json([
             'success' => true,

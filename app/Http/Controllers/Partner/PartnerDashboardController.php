@@ -275,6 +275,56 @@ final class PartnerDashboardController extends Controller
     }
 
     /**
+     * Get consolidated partner dashboard data in a single request.
+     */
+    public function getConsolidatedData(Request $request): JsonResponse
+    {
+        $scope = $this->resolveScope($request);
+        if ($scope['error'] !== null) {
+            return $this->errorResponse($scope['error']['message'], null, $scope['error']['status']);
+        }
+
+        $partnerId = (int) Auth::id();
+        $propertyId = $scope['propertyId'];
+
+        try {
+            $stats = $this->dashboardService->getStatsForPartner($partnerId, $propertyId);
+            $kpis = $this->partnerKpiService->getDashboardKpis($partnerId, $propertyId);
+
+            $isPartner360Enabled = \App\Http\Middleware\EnsurePartner360Enabled::isEnabled();
+            $occupancyChart = $isPartner360Enabled
+                ? $this->partnerKpiService->getOccupancyChart($partnerId, $propertyId)
+                : ['success' => true, 'data' => null];
+            $gmvChart = $isPartner360Enabled
+                ? $this->partnerKpiService->getGmvChart($partnerId, $propertyId)
+                : ['success' => true, 'data' => null];
+
+            $limit = (int) ($request->input('limit') ?? 10);
+            $pendingBookings = $this->dashboardService->getPendingBookingsForPartner($partnerId, $limit, $propertyId);
+            $urgentMaintenances = $this->dashboardService->getUrgentMaintenancesForPartner($partnerId);
+
+            return $this->successResponse(
+                [
+                    'stats' => $stats['success'] ? $stats['data'] : null,
+                    'kpis' => $kpis['success'] ? $kpis['data'] : null,
+                    'occupancyChart' => $occupancyChart['success'] ? $occupancyChart['data'] : null,
+                    'gmvChart' => $gmvChart['success'] ? $gmvChart['data'] : null,
+                    'pendingBookings' => $pendingBookings['success'] ? $pendingBookings['data'] : null,
+                    'urgentMaintenances' => $urgentMaintenances['success'] ? $urgentMaintenances['data'] : null,
+                ],
+                'Consolidated partner dashboard data fetched successfully.',
+                HttpStatus::OK
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                null,
+                HttpStatus::BAD_REQUEST
+            );
+        }
+    }
+
+    /**
      * @return array{propertyId: int|null, error: array{message: string, status: HttpStatus}|null}
      */
     private function resolveScope(Request $request): array
