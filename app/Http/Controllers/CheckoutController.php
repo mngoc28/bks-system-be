@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Services\DepositService;
+use App\Services\LeaseDepositGateService;
+use App\Services\BookingPaymentStatusService;
 use App\Repositories\BookingRepository\BookingRepositoryInterface;
 use App\Events\BookingConfirmed;
 use App\Jobs\SendBooking;
@@ -36,9 +38,17 @@ final class CheckoutController extends Controller
             return response('Thiếu mã đặt phòng (booking_id)', 400);
         }
 
-        $booking = Booking::with(['user', 'room.property'])->find((int)$bookingId);
+        $booking = Booking::with(['user', 'room.property', 'price', 'contracts'])->find((int)$bookingId);
         if (!$booking) {
             return response('Không tìm thấy đơn đặt phòng', 404);
+        }
+
+        $depositBlockReason = LeaseDepositGateService::depositBlockReason($booking);
+        $isRemainderPhase = BookingPaymentStatusService::isRemainderPaymentPhase($booking)
+            || $request->query('payment_phase') === 'remainder';
+
+        if ($depositBlockReason !== null && !$isRemainderPhase) {
+            return response($depositBlockReason, 403);
         }
 
         $redirectTo = $request->query('redirect_to');
@@ -49,21 +59,40 @@ final class CheckoutController extends Controller
         }
 
         if ($booking->status === 1) {
-            if ($redirectTo) {
-                $request->session()->forget('payment_redirect_to');
-                $separator = str_contains($redirectTo, '?') ? '&' : '?';
-                return redirect($redirectTo . $separator . 'confirmed=true');
+            if ((string) $booking->payment_status === PaymentStatus::PAID->value) {
+                if ($redirectTo) {
+                    $request->session()->forget('payment_redirect_to');
+                    $separator = str_contains($redirectTo, '?') ? '&' : '?';
+                    return redirect($redirectTo . $separator . 'confirmed=true');
+                }
+                $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
+                $redirectUrl = $frontendUrl . '?' . http_build_query([
+                    'bookingId'     => $booking->id,
+                    'bookingCode'   => $booking->booking_code,
+                    'email'         => $booking->user?->email,
+                    'paymentStatus' => 'success',
+                ]);
+                return redirect($redirectUrl);
             }
-            $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
-            $redirectUrl = $frontendUrl . '?' . http_build_query([
-                'bookingId'     => $booking->id,
-                'bookingCode'   => $booking->booking_code,
-                'email'         => $booking->user?->email,
-                'paymentStatus' => 'success',
-            ]);
-            return redirect($redirectUrl);
+
+            if (!$isRemainderPhase) {
+                if ($redirectTo) {
+                    $request->session()->forget('payment_redirect_to');
+                    $separator = str_contains($redirectTo, '?') ? '&' : '?';
+                    return redirect($redirectTo . $separator . 'confirmed=true');
+                }
+                $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
+                $redirectUrl = $frontendUrl . '?' . http_build_query([
+                    'bookingId'     => $booking->id,
+                    'bookingCode'   => $booking->booking_code,
+                    'email'         => $booking->user?->email,
+                    'paymentStatus' => 'success',
+                ]);
+                return redirect($redirectUrl);
+            }
         }
 
+        $booking->loadMissing(['price', 'services']);
         $room = $booking->room;
         $property = $room?->property;
         $user = $booking->user;
@@ -74,12 +103,27 @@ final class CheckoutController extends Controller
         $bankId = env('VIETQR_BANK_ID', 'MB');
         $accountNo = env('VIETQR_ACCOUNT_NO', '0333494850');
         $accountName = env('VIETQR_ACCOUNT_NAME', 'HO MINH NGOC');
-        $qrAmount = $depositAmount > 0 ? (int)$depositAmount : (int)$totalPrice;
-        $paymentTypeLabel = $depositAmount > 0 ? "Số tiền đặt cọc cần đóng" : "Tổng tiền cần thanh toán";
+
+        if ($isRemainderPhase) {
+            $qrAmount = (int) BookingPaymentStatusService::getAmountRemaining($booking);
+            $paymentTypeLabel = 'Số tiền còn lại cần thanh toán';
+            $transferContent = 'BKS REMAIN ' . $booking->id;
+        } elseif ($depositAmount > 0) {
+            $qrAmount = (int) $depositAmount;
+            $paymentTypeLabel = 'Số tiền đặt cọc cần đóng';
+            $transferContent = 'BKS DEPOSIT ' . $booking->id;
+        } else {
+            $qrAmount = (int) $totalPrice;
+            $paymentTypeLabel = 'Tổng tiền cần thanh toán';
+            $transferContent = (string) $booking->booking_code;
+        }
+
+        $paymentPhaseValue = $isRemainderPhase ? 'remainder' : ($depositAmount > 0 ? 'deposit' : 'full');
 
         $qrUrlEncodedName = rawurlencode($accountName);
-        $qrDescription = rawurlencode((string)$booking->booking_code);
+        $qrDescription = rawurlencode($transferContent);
         $qrImageUrl = "https://img.vietqr.io/image/{$bankId}-{$accountNo}-compact.jpg?amount={$qrAmount}&addInfo={$qrDescription}&accountName={$qrUrlEncodedName}";
+        $transferContentDisplay = htmlspecialchars($transferContent, ENT_QUOTES, 'UTF-8');
 
         $startDateFormatted = Carbon::parse($booking->getRawOriginal('start_date'))->format('d/m/Y');
         $endDateFormatted = Carbon::parse($booking->getRawOriginal('end_date'))->format('d/m/Y');
@@ -184,7 +228,7 @@ HTML;
                     <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Chủ tài khoản</p>
                     <p class="text-sm font-extrabold text-slate-800">{$accountName}</p>
                     <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">Nội dung chuyển khoản</p>
-                    <p class="text-sm font-mono font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-xl inline-block border border-sky-100 select-all">{$booking->booking_code}</p>
+                    <p class="text-sm font-mono font-bold text-sky-600 bg-sky-50 px-3 py-1 rounded-xl inline-block border border-sky-100 select-all">{$transferContentDisplay}</p>
                 </div>
             </div>
 
@@ -209,6 +253,7 @@ HTML;
             <!-- CSRF Protection in Laravel requires token -->
             <input type="hidden" name="booking_id" value="{$booking->id}">
             <input type="hidden" name="redirect_to" value="{$redirectTo}">
+            <input type="hidden" name="payment_phase" value="{$paymentPhaseValue}">
             <input type="hidden" name="_token" value="{$request->session()->token()}">
             
             <button type="submit" name="status" value="check_payment" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg hover:shadow-sky-500/10 flex items-center justify-center gap-2">
@@ -245,9 +290,18 @@ HTML;
         $status = $request->input('status');
         $redirectTo = $request->input('redirect_to') ?? $request->session()->get('payment_redirect_to');
 
-        $booking = Booking::with(['user', 'room'])->find((int)$bookingId);
+        $booking = Booking::with(['user', 'room', 'price', 'contracts', 'services'])->find((int)$bookingId);
         if (!$booking) {
             return response('Không tìm thấy đơn đặt phòng', 404);
+        }
+
+        $paymentPhase = (string) $request->input('payment_phase', '');
+        $isRemainderPhase = $paymentPhase === 'remainder'
+            || BookingPaymentStatusService::isRemainderPaymentPhase($booking);
+
+        $depositBlockReason = LeaseDepositGateService::depositBlockReason($booking);
+        if ($depositBlockReason !== null && !$isRemainderPhase) {
+            return response($depositBlockReason, 403);
         }
 
         $frontendUrl = config('app.url_frontend', 'http://localhost:3000') . '/booking-success';
@@ -274,7 +328,11 @@ HTML;
 
         // 2. Handle SePay Verification Check
         if ($status === 'check_payment') {
-            if ($booking->status === 1) {
+            if ($isRemainderPhase && (string) $booking->payment_status === PaymentStatus::PAID->value) {
+                return $redirectFn(true);
+            }
+
+            if (!$isRemainderPhase && $booking->status === 1) {
                 return $redirectFn(true);
             }
 
@@ -290,21 +348,34 @@ HTML;
             DB::beginTransaction();
             try {
                 $now = Carbon::now();
+                $hasDeposit = (float) ($booking->deposit_amount ?? 0) > 0;
+                $wasConfirmed = (int) $booking->status === 1;
 
-                // Update booking status, payment_status and timestamp
-                $booking->update([
-                    'status'               => 1, // CONFIRMED
-                    'payment_status'       => PaymentStatus::PAID->value,
-                    'payment_collected_at' => $now,
-                ]);
+                if ($isRemainderPhase) {
+                    BookingPaymentStatusService::markFullyPaid($booking);
+                } elseif ($hasDeposit) {
+                    if ((int) $booking->status !== 1) {
+                        $booking->update([
+                            'status'               => 1,
+                            'payment_collected_at' => $now,
+                        ]);
+                    }
+                    $this->depositService->confirmReceiptByPartner((int) $booking->id);
+                    $booking->refresh();
+                    BookingPaymentStatusService::sync($booking);
+                } else {
+                    $booking->update([
+                        'status'               => 1,
+                        'payment_collected_at' => $now,
+                    ]);
+                    BookingPaymentStatusService::markFullyPaid($booking);
+                }
 
-                // Confirm deposit receipt
-                $this->depositService->confirmReceiptByPartner((int)$booking->id);
-
-                // Broadcast confirm event
-                $scope = $this->resolveBroadcastScope($booking);
-                if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
-                    event(new BookingConfirmed($booking, $scope['partner_id'], $scope['property_id'], null));
+                if (!$wasConfirmed && (int) $booking->status === 1) {
+                    $scope = $this->resolveBroadcastScope($booking);
+                    if ($scope['partner_id'] !== null && $scope['property_id'] !== null) {
+                        event(new BookingConfirmed($booking, $scope['partner_id'], $scope['property_id'], null));
+                    }
                 }
 
                 DB::commit();
@@ -352,6 +423,7 @@ HTML;
     private function sendConfirmationMail(Booking $booking): void
     {
         // Re-dispatch booking mail if user has email
+        $booking->loadMissing(['user', 'price']);
         $user = $booking->user;
         if ($user && $user->email) {
             // Fetch necessary mail info
@@ -367,31 +439,26 @@ HTML;
             $endDate = Carbon::parse($booking->end_date);
 
             $roomPrice = $booking->price;
-            $totalDays = \App\Services\BookingStayAmountCalculator::countStayDays(
-                $startDate->toDateString(),
-                $endDate->toDateString(),
-            );
-            $roomStayTotal = \App\Services\BookingStayAmountCalculator::computeRoomStayTotalForRoomPrice(
+            $pricingFields = \App\Services\BookingStayAmountCalculator::buildEmailPricingFields(
                 $startDate->toDateString(),
                 $endDate->toDateString(),
                 $roomPrice,
+                $servicesTotal,
+                (float) ($booking->deposit_amount ?? 0),
             );
 
-            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
-
-            $emailInfo = [
+            $emailInfo = array_merge([
                 'booking_code'       => $booking->booking_code,
                 'booking_created_at' => Carbon::parse($booking->created_at)
                     ->timezone('Asia/Ho_Chi_Minh')
                     ->format('d/m/Y H:i:s'),
                 'room_title'         => $room->title,
                 'room_description'   => $room->description,
-                'room_deposit'       => $room->deposit ?? 0,
                 'amenities'          => $room->amenities ?? [],
                 'services'           => $services,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $booking->room_id,
                 'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
-                'is_first_time'      => false, // assume existing user since they just checked out payment
+                'is_first_time'      => false,
                 'company_name'       => $room->property?->user?->partnerInfo?->company_name ?? '',
                 'company_phone'      => $room->property?->user?->partnerInfo?->phone ?? '',
                 'partner_address'    => $room->property?->user?->partnerInfo?->address ?? '',
@@ -399,18 +466,15 @@ HTML;
                 'property_address'   => $room->property?->address_detail ?? '',
                 'start_time'         => $startDate->format('d/m/Y'),
                 'end_time'           => $endDate->format('d/m/Y'),
-                'total_days'         => $totalDays,
-                'room_stay_amount'   => $roomStayTotal,
-                'services_total'     => $servicesTotal,
-                'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
-                'deposit_deadline'   => Carbon::now()->addHours(2)->toIso8601String(), // Mock deadline
+                'deposit_deadline'   => Carbon::now()->addHours(2)->toIso8601String(),
                 'cancellation_policy' => 'Refundable up to 24 hours before check-in',
-                'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => '',
                 'is_paid'            => true,
-            ];
+                'paid_amount'        => (float) ($booking->deposit_amount ?? 0) > 0
+                    ? (float) $booking->deposit_amount
+                    : $pricingFields['total_amount'],
+            ], $pricingFields);
 
             SendBooking::dispatch($user->email, $user->name, $emailInfo);
         }

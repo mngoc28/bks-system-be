@@ -89,6 +89,11 @@ final class DepositService
      */
     public function submitReceipt(int $bookingId, string $receiptPath): bool
     {
+        $booking = $this->bookingRepository->find($bookingId);
+        if (!$booking || !LeaseDepositGateService::canPayDeposit($booking)) {
+            return false;
+        }
+
         $deposit = $this->depositRepository->findOneBy(['booking_id' => $bookingId], false);
         if (!$deposit) {
             return false;
@@ -101,12 +106,9 @@ final class DepositService
                 'status' => 'payment_submitted',
             ]);
 
-            $booking = $this->bookingRepository->find($bookingId);
-            if ($booking) {
-                $booking->update([
-                    'deposit_status' => 'payment_submitted',
-                ]);
-            }
+            $booking->update([
+                'deposit_status' => 'payment_submitted',
+            ]);
 
             DB::commit();
             return true;

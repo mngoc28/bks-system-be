@@ -36,6 +36,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\BookingTimelineService;
 use App\Services\ConflictChecker;
 use App\Services\DepositService;
+use App\Services\BookingPaymentStatusService;
 use Throwable;
 
 final class BookingService
@@ -733,19 +734,15 @@ final class BookingService
             }
 
             $now = Carbon::now();
-            $paymentStatus = PaymentStatus::UNPAID->value;
-            if ($booking->payment_method === 'online') {
-                $paymentStatus = PaymentStatus::PAID->value;
-            } elseif ($booking->deposit_amount > 0 && $booking->deposit_status === 'confirmed_by_partner') {
-                $paymentStatus = PaymentStatus::PARTIALLY_PAID->value;
-            }
 
             $this->bookingRepository->update($id, [
-                'status'         => BookingStatus::CONFIRMED->value,
-                'confirmed_at'   => $now,
-                'payment_status' => $paymentStatus,
+                'status'       => BookingStatus::CONFIRMED->value,
+                'confirmed_at' => $now,
             ]);
             $updated = $this->bookingRepository->find($id);
+            if ($updated instanceof Booking) {
+                BookingPaymentStatusService::sync($updated);
+            }
 
             // Sinh hợp đồng (Generate Contract)
             $this->createContractDocumentForBooking($updated, $now);
@@ -1170,6 +1167,7 @@ final class BookingService
 
             // Create deposit if required by policy
             $this->depositService->createDeposit($booking);
+            $booking->refresh();
 
             // prepare room to send mail
             $room = $this->roomsRepository->getRoomInfoSendMail($roomId);
@@ -1180,15 +1178,6 @@ final class BookingService
             if ($roomPrice === null && $booking->price_id) {
                 $roomPrice = RoomPrice::query()->find($booking->price_id);
             }
-            $totalDays = BookingStayAmountCalculator::countStayDays(
-                $startDate->toDateString(),
-                $endDate->toDateString(),
-            );
-            $roomStayTotal = BookingStayAmountCalculator::computeRoomStayTotalForRoomPrice(
-                $startDate->toDateString(),
-                $endDate->toDateString(),
-                $roomPrice,
-            );
 
             // Format services for email template (from selected services in booking)
             $selectedServices = $booking->services()->select('name', 'price')->get();
@@ -1198,7 +1187,15 @@ final class BookingService
                 'amount' => (float) ($service->price ?? 0),
             ])->toArray();
 
-            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
+            $pricingFields = BookingStayAmountCalculator::buildEmailPricingFields(
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+                $roomPrice,
+                $servicesTotal,
+                (float) ($booking->deposit_amount ?? 0),
+            );
+            $roomStayTotal = $pricingFields['room_stay_amount'];
+            $grandTotal = $pricingFields['total_amount'];
 
             $responseData = [
                 'booking_id'         => (int) $booking->id,
@@ -1222,14 +1219,13 @@ final class BookingService
                 $responseData['payment_url'] = url('/api/v1/payments/checkout?booking_id=' . $booking->id);
             }
 
-            $emailInfo = [
+            $emailInfo = array_merge([
                 'booking_code'       => $bookingCode,
                 'booking_created_at' => Carbon::parse($booking->created_at)
                     ->timezone('Asia/Ho_Chi_Minh')
                     ->format('d/m/Y H:i:s'),
                 'room_title'         => $room->title,
                 'room_description'   => $room->description,
-                'room_deposit'       => $room->deposit ?? 0,
                 'amenities'          => $room->amenities ?? [],
                 'services'           => $services,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $roomId,
@@ -1242,17 +1238,11 @@ final class BookingService
                 'property_address'   => $room->property_address ?? '',
                 'start_time'         => $startDate->format('d/m/Y'),
                 'end_time'           => $endDate->format('d/m/Y'),
-                'total_days'         => $totalDays,
-                'room_stay_amount'   => $roomStayTotal,
-                'services_total'     => $servicesTotal,
-                'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => $this->computeDepositDeadline($startDate, Carbon::now()),
                 'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
-                'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => $token,
-            ];
+            ], $pricingFields);
             DB::commit();
 
             $this->bootstrapChatConversation($booking);
@@ -1441,21 +1431,23 @@ final class BookingService
             // Prepare email information for resend
             $room = $this->roomsRepository->getRoomInfoSendMail($booking->room_id);
             $roomPrice = $booking->price;
-            $totalDays = BookingStayAmountCalculator::countStayDays(
-                $booking->start_date,
-                $booking->end_date
-            );
-            $roomStayTotal = $this->computeRoomStayTotalForBooking($booking);
-            $servicesTotal = $this->computeServicesTotalForBooking($booking);
-            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
 
             $selectedServices = $booking->services()->select('name', 'price')->get();
+            $servicesTotal = (float) $selectedServices->sum(fn ($service) => (float) ($service->price ?? 0));
             $services = $selectedServices->map(fn ($service) => [
                 'name'   => $service->name,
                 'amount' => (float) ($service->price ?? 0),
             ])->toArray();
 
-            $emailInfo = [
+            $pricingFields = BookingStayAmountCalculator::buildEmailPricingFields(
+                (string) $booking->start_date,
+                (string) $booking->end_date,
+                $roomPrice,
+                $servicesTotal,
+                (float) ($booking->deposit_amount ?? 0),
+            );
+
+            $emailInfo = array_merge([
                 'booking_id'         => (int) $booking->id,
                 'booking_code'       => (string) $booking->booking_code,
                 'room_title'         => (string) ($room->title ?? ''),
@@ -1463,20 +1455,16 @@ final class BookingService
                 'property_address'   => (string) ($room->property_address ?? ''),
                 'start_time'         => Carbon::parse($booking->start_date)->format('d/m/Y'),
                 'end_time'           => Carbon::parse($booking->end_date)->format('d/m/Y'),
-                'total_days'         => $totalDays,
-                'room_stay_amount'   => $roomStayTotal,
-                'services_total'     => $servicesTotal,
-                'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => $this->computeDepositDeadline(Carbon::parse($booking->start_date), Carbon::now()),
                 'cancellation_policy' => $this->formatCancellationPolicyForEmail($booking),
-                'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => $newUser->verification_token,
                 'is_first_time'      => (bool) ($newUser->is_email_verified === 0),
                 'bookings_url'       => config('app.url_frontend') . '/bks-stay/bookings/' . $booking->id,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $booking->room_id,
-            ];
+                'services'           => $services,
+                'company_name'       => $room->company_name ?? '',
+            ], $pricingFields);
 
             DB::commit();
 
@@ -1809,6 +1797,11 @@ final class BookingService
             $success = $this->depositService->confirmReceiptByPartner($id);
             if (!$success) {
                 return ['success' => false, 'message' => 'Không thể xác thực đặt cọc cho đơn hàng này.'];
+            }
+
+            $booking = $this->bookingRepository->find($id);
+            if ($booking instanceof Booking) {
+                BookingPaymentStatusService::sync($booking);
             }
 
             return ['success' => true, 'message' => 'Xác thực đặt cọc thành công.'];
