@@ -172,5 +172,22 @@ final class PartnerInfoTableSeeder extends Seeder
                 'updated_at'   => Carbon::now()->subDays(rand(1, 40)),
             ]);
         }
+
+        $defaultPartnerUserId = DB::table('users')
+            ->where('email', 'partner@gmail.com')
+            ->value('id');
+
+        if ($defaultPartnerUserId !== null) {
+            DB::table('partner_info')
+                ->where('user_id', $defaultPartnerUserId)
+                ->where(function ($query): void {
+                    $query->whereNull('company_name')
+                        ->orWhere('company_name', '');
+                })
+                ->update([
+                    'company_name' => 'Aman Resorts & Villas',
+                    'updated_at' => Carbon::now(),
+                ]);
+        }
     }
 }

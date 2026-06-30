@@ -217,7 +217,7 @@
             @if(!empty($data['is_paid']))
             <div style="background:#f0fdf4; border:2px solid #bbf7d0; padding:16px; border-radius:8px; margin:16px 0; text-align:center;">
                 <p style="margin:0 0 6px 0; font-size:13px; color:#166534; font-weight:700;">✅ THANH TOÁN THÀNH CÔNG</p>
-                <p style="margin:0 0 6px 0; font-size:16px; font-weight:600; color:#14532d;">Đã xác nhận số tiền cọc: {{ number_format($data['room_deposit'], 0) }} VNĐ</p>
+                <p style="margin:0 0 6px 0; font-size:16px; font-weight:600; color:#14532d;">Đã xác nhận số tiền thanh toán: {{ number_format((float) ($data['paid_amount'] ?? $data['room_deposit'] ?? 0), 0) }} VNĐ</p>
                 <p style="margin:0; font-size:12px; color:#166534;">Cảm ơn bạn đã tin dùng dịch vụ BKS Stay.</p>
             </div>
             @elseif(!empty($data['deposit_deadline']))
@@ -282,8 +282,8 @@
                 
                 @php
                     $totalDays = (int) ($data['total_days'] ?? 0);
-                    $servicesTotal = 0;
-                    if (!empty($data['services'])) {
+                    $servicesTotal = (float) ($data['services_total'] ?? 0);
+                    if ($servicesTotal <= 0 && !empty($data['services'])) {
                         foreach ($data['services'] as $item) {
                             $servicesTotal += (float) ($item['amount'] ?? 0);
                         }
@@ -292,8 +292,9 @@
                     if ($roomStayAmount <= 0 && !empty($data['total_amount'])) {
                         $roomStayAmount = max(0, (float) $data['total_amount'] - $servicesTotal);
                     }
-                    $grandTotal = $roomStayAmount + $servicesTotal;
+                    $grandTotal = (float) ($data['total_amount'] ?? ($roomStayAmount + $servicesTotal));
                     $priceUnit = strtolower((string) ($data['price_unit'] ?? 'night'));
+                    $isMonthlyLease = !empty($data['is_monthly_lease']) || $priceUnit === 'month';
                     $isMonthly = $priceUnit === 'month';
                     $unitText = $isMonthly ? 'tháng' : 'đêm';
                     $unitSuffix = match ($priceUnit) {
@@ -302,7 +303,15 @@
                         'year'  => ' · gói năm',
                         default => '',
                     };
-                    $roomFeeLabel = 'Phí thuê phòng (' . $totalDays . ' ' . $unitText . $unitSuffix . ')';
+                    $firstMonthRent = (float) ($data['first_month_rent'] ?? 0);
+                    $remainingRent = (float) ($data['remaining_rent'] ?? 0);
+                    $installment1Total = (float) ($data['installment1_total'] ?? 0);
+                    $depositAmount = (float) ($data['room_deposit'] ?? 0);
+                    $amountDueNow = (float) ($data['amount_due_now'] ?? ($depositAmount > 0 ? $depositAmount : $grandTotal));
+                    $contractRoomFeeLabel = 'Tiền phòng cả kỳ (' . $totalDays . ' ' . $unitText . $unitSuffix . ')';
+                    $roomFeeLabel = $isMonthlyLease
+                        ? $contractRoomFeeLabel
+                        : 'Phí thuê phòng (' . $totalDays . ' ' . $unitText . $unitSuffix . ')';
                 @endphp
                 
                 <div class="list-items">
@@ -314,12 +323,28 @@
                             </span>
                         </div>
                     @endif
-                    <div class="list-item" style="justify-content: space-between;">
-                        <span class="item-name">{{ $roomFeeLabel }}</span>
-                        <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
-                            {{ number_format($roomStayAmount, 0) }} VNĐ
-                        </span>
+
+                    @if ($isMonthlyLease && $firstMonthRent > 0)
+                        <div class="list-item" style="justify-content: space-between;">
+                            <span class="item-name">{{ $roomFeeLabel }}</span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format($roomStayAmount, 0) }} VNĐ
+                            </span>
                         </div>
+                        <div class="list-item" style="justify-content: space-between;">
+                            <span class="item-name">Tiền thuê tháng đầu</span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format($firstMonthRent, 0) }} VNĐ
+                            </span>
+                        </div>
+                    @else
+                        <div class="list-item" style="justify-content: space-between;">
+                            <span class="item-name">{{ $roomFeeLabel }}</span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format($roomStayAmount, 0) }} VNĐ
+                            </span>
+                        </div>
+                    @endif
 
                     <!-- additional services -->
                     @if (!empty($data['services']))
@@ -335,19 +360,47 @@
                     <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 10px 0;">
 
                     <div class="list-item">
-                        <span class="item-name"><strong>Tổng tiền</strong></span>
+                        <span class="item-name"><strong>{{ $isMonthlyLease ? 'Tổng giá trị hợp đồng' : 'Tổng tiền' }}</strong></span>
                         <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
                             {{ number_format($grandTotal, 0) }} VNĐ
                         </span>
                     </div>
 
-                    <div class="list-item">
-                        <span class="item-name">Tiền đặt cọc phòng</span>
-                        <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
-                            {{ number_format($data['room_deposit'], 0) }} VNĐ
-                        </span>
-                    </div>
-                </hr>
+                    @if ($isMonthlyLease && $installment1Total > 0)
+                        <div class="list-item">
+                            <span class="item-name"><strong>Tổng thanh toán đợt 1</strong></span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format($installment1Total, 0) }} VNĐ
+                            </span>
+                        </div>
+                        @if ($remainingRent > 0)
+                            <div class="list-item">
+                                <span class="item-name">Các đợt tiền thuê tiếp theo</span>
+                                <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                    {{ number_format($remainingRent, 0) }} VNĐ
+                                </span>
+                            </div>
+                        @endif
+                    @endif
+
+                    @if ($depositAmount > 0)
+                        <div class="list-item">
+                            <span class="item-name">Tiền đặt cọc bảo đảm</span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block;">
+                                {{ number_format($depositAmount, 0) }} VNĐ
+                            </span>
+                        </div>
+                    @endif
+
+                    @if (empty($data['is_paid']) && $amountDueNow > 0)
+                        <div class="list-item" style="background:#eff6ff; margin-top:8px; padding:10px 12px; border-radius:6px;">
+                            <span class="item-name"><strong>Số tiền cần thanh toán ngay</strong></span>
+                            <span class="item-price" style="margin-left: auto; text-align: right; min-width: 120px; display: inline-block; color:#1d4ed8;">
+                                <strong>{{ number_format($amountDueNow, 0) }} VNĐ</strong>
+                            </span>
+                        </div>
+                    @endif
+                </div>
 
                 <p style="font-size: 12px; color: #6b7280; margin-top: 10px; text-align: center;">
                     *Vui lòng xác nhận lại số tiền thanh toán cuối cùng khi đăng ký với

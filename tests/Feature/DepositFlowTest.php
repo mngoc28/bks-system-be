@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\Booking;
 use App\Models\BookingDeposit;
+use App\Models\Contract;
 use App\Models\Room;
 use App\Models\RoomPrice;
 use App\Models\User;
@@ -164,7 +165,8 @@ final class DepositFlowTest extends TestCase
 
         $room = Room::query()->firstOrFail();
         $user = User::query()->where('email', 'user@gmail.com')->firstOrFail();
-        $price = RoomPrice::query()->where('room_id', $room->id)->first() ?? RoomPrice::query()->firstOrFail();
+        $price = RoomPrice::query()->where('room_id', $room->id)->where('unit', 'night')->first()
+            ?? RoomPrice::query()->where('unit', 'night')->firstOrFail();
 
         $booking = Booking::create([
             'room_id'        => $room->id,
@@ -194,5 +196,53 @@ final class DepositFlowTest extends TestCase
         $this->assertSame('payment_submitted', $booking->fresh()->deposit_status);
         $this->assertSame('payment_submitted', $deposit->fresh()->status);
         $this->assertSame('https://cloudinary.com/receipt_123.jpg', $deposit->fresh()->receipt_path);
+    }
+
+    public function test_long_term_deposit_receipt_blocked_until_lease_signed(): void
+    {
+        $token = $this->getUserToken();
+        $partner = User::query()->where('email', 'partner@gmail.com')->firstOrFail();
+
+        $room = Room::query()->firstOrFail();
+        $user = User::query()->where('email', 'user@gmail.com')->firstOrFail();
+        $price = RoomPrice::query()->where('unit', 'month')->first()
+            ?? RoomPrice::query()->firstOrFail();
+
+        $booking = Booking::create([
+            'room_id'        => $room->id,
+            'user_id'        => $user->id,
+            'price_id'       => $price->id,
+            'start_date'     => now()->addDays(2)->format('Y-m-d'),
+            'end_date'       => now()->addDays(62)->format('Y-m-d'),
+            'status'         => 1,
+            'stay_status'    => 'pending',
+            'deposit_amount' => 5000000.00,
+            'deposit_status' => 'pending',
+        ]);
+
+        BookingDeposit::create([
+            'booking_id' => $booking->id,
+            'amount'     => 5000000.00,
+            'status'     => 'pending',
+        ]);
+
+        Contract::create([
+            'booking_id'    => $booking->id,
+            'title'         => 'Hợp đồng thuê dài hạn',
+            'content'       => 'Nội dung hợp đồng',
+            'contract_type' => 'LEASE_AGREEMENT',
+            'status'        => 0,
+            'created_by'    => $partner->id,
+            'updated_by'    => $partner->id,
+        ]);
+
+        $response = $this->postJson("/api/v1/stay/bookings/{$booking->id}/submit-receipt", [
+            'receipt_path' => 'https://cloudinary.com/receipt_blocked.jpg',
+        ], [
+            'Authorization' => 'Bearer ' . $token,
+        ]);
+
+        $response->assertStatus(400);
+        $this->assertSame('pending', $booking->fresh()->deposit_status);
     }
 }

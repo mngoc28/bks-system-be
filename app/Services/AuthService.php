@@ -326,6 +326,7 @@ class AuthService
                     'name' => $user->name,
                     'role' => $user->role,
                     'email' => $user->email,
+                    'status' => (int) $user->status,
                 ],
             ];
         } catch (\Exception $e) {
@@ -477,9 +478,9 @@ class AuthService
 
             $updateData = [
                 'partner_type'        => $request->input('partner_type', $partnerInfo->partner_type ?? 'hotel'),
-                'company_name'        => $request->input('company_name', $partnerInfo->company_name),
-                'tax_code'           => $request->input('tax_code', $partnerInfo->tax_code),
-                'representative_name' => $request->input('representative_name', $partnerInfo->representative_name),
+                'company_name'        => $request->filled('company_name') ? $request->input('company_name') : $partnerInfo->company_name,
+                'tax_code'           => $request->filled('tax_code') ? $request->input('tax_code') : $partnerInfo->tax_code,
+                'representative_name' => $request->filled('representative_name') ? $request->input('representative_name') : $partnerInfo->representative_name,
                 'province_id'         => $request->input('province_id', $partnerInfo->province_id),
                 'ward_id'             => $request->input('ward_id', $partnerInfo->ward_id),
                 'address'             => $request->input('address', $partnerInfo->address),
@@ -667,9 +668,9 @@ class AuthService
             // Update data and clear rejection reason
             $updateData = [
                 'partner_type'        => $request->input('partner_type', $partnerInfo->partner_type),
-                'company_name'        => $request->input('company_name', $partnerInfo->company_name),
-                'tax_code'           => $request->input('tax_code', $partnerInfo->tax_code),
-                'representative_name' => $request->input('representative_name', $partnerInfo->representative_name),
+                'company_name'        => $request->filled('company_name') ? $request->input('company_name') : $partnerInfo->company_name,
+                'tax_code'           => $request->filled('tax_code') ? $request->input('tax_code') : $partnerInfo->tax_code,
+                'representative_name' => $request->filled('representative_name') ? $request->input('representative_name') : $partnerInfo->representative_name,
                 'province_id'         => $request->input('province_id', $partnerInfo->province_id),
                 'ward_id'             => $request->input('ward_id', $partnerInfo->ward_id),
                 'address'             => $request->input('address', $partnerInfo->address),

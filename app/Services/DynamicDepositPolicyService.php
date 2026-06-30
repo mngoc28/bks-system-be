@@ -104,16 +104,20 @@ final class DynamicDepositPolicyService
             );
 
             $amount = 0.0;
-            if ($roomPrice && $roomPrice->deposit_amount !== null && (float) $roomPrice->deposit_amount > 0) {
-                $amount = (float) $roomPrice->deposit_amount;
-            } elseif ($room->deposit !== null && (float) $room->deposit > 0) {
-                $amount = (float) $room->deposit;
-            } else {
-                if ($isLastMinute) {
+            if ($isLongTerm) {
+                if ($roomPrice && $roomPrice->deposit_amount !== null && (float) $roomPrice->deposit_amount > 0) {
+                    $amount = (float) $roomPrice->deposit_amount;
+                } elseif ($room->deposit !== null && (float) $room->deposit > 0) {
+                    $amount = (float) $room->deposit;
+                } elseif ($isLastMinute) {
                     $amount = $roomStayTotal;
                 } else {
                     $amount = round($roomStayTotal * 0.5, 2);
                 }
+            } elseif ($isLastMinute) {
+                $amount = $roomStayTotal;
+            } else {
+                $amount = round($roomStayTotal * 0.5, 2);
             }
 
             // Force minimums if required but amount is 0 or negative

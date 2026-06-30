@@ -53,7 +53,7 @@ final class Booking extends Model
      *
      * @var array<int, string>
      */
-    protected $appends = ['total_amount'];
+    protected $appends = ['total_amount', 'amount_paid', 'amount_remaining'];
 
     /**
      * The attributes that should be cast.
@@ -247,5 +247,15 @@ final class Booking extends Model
     public function getTotalAmountAttribute(): float
     {
         return \App\Services\BookingStayAmountCalculator::computeGrandTotalForBooking($this);
+    }
+
+    public function getAmountPaidAttribute(): float
+    {
+        return \App\Services\BookingPaymentStatusService::getAmountPaid($this);
+    }
+
+    public function getAmountRemainingAttribute(): float
+    {
+        return \App\Services\BookingPaymentStatusService::getAmountRemaining($this);
     }
 }

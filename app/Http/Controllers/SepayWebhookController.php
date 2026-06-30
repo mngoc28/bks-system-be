@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Services\DepositService;
+use App\Services\LeaseDepositGateService;
+use App\Services\BookingPaymentStatusService;
 use App\Events\BookingConfirmed;
 use App\Jobs\SendBooking;
 use App\Enums\PaymentStatus;
@@ -63,11 +65,19 @@ final class SepayWebhookController extends Controller
         // Try to match and retrieve the Booking using multiple patterns
         $booking = null;
         $bookingId = null;
+        $isRemainderPayment = false;
+
+        // Pattern 0: BKS REMAIN {booking_id}
+        if (preg_match('/BKS\s*REMAIN\s*(\d+)/i', $transactionContent, $matches)) {
+            $bookingId = (int) $matches[1];
+            $booking = Booking::with(['user', 'room.property', 'price', 'services'])->find($bookingId);
+            $isRemainderPayment = true;
+        }
 
         // Pattern 1: BKS DEPOSIT {booking_id}
-        if (preg_match('/BKS\s*DEPOSIT\s*(\d+)/i', $transactionContent, $matches)) {
+        if (!$booking && preg_match('/BKS\s*DEPOSIT\s*(\d+)/i', $transactionContent, $matches)) {
             $bookingId = (int)$matches[1];
-            $booking = Booking::with(['user', 'room.property'])->find($bookingId);
+            $booking = Booking::with(['user', 'room.property', 'price', 'services'])->find($bookingId);
         }
 
         // Pattern 2: RM-YYYY-ID (booking_code digits, supporting optional hyphens)
@@ -87,6 +97,27 @@ final class SepayWebhookController extends Controller
             return response()->json(['error' => 'Booking not found'], 404);
         }
 
+        $depositBlockReason = LeaseDepositGateService::depositBlockReason($booking);
+        $isDepositPayment = (bool) preg_match('/BKS\s*DEPOSIT/i', (string) $transactionContent);
+        $shouldProcessRemainder = $isRemainderPayment
+            || (BookingPaymentStatusService::isRemainderPaymentPhase($booking) && !$isDepositPayment);
+
+        if ($depositBlockReason !== null && !$shouldProcessRemainder) {
+            Log::warning('SePay Webhook: Deposit blocked — lease not signed for booking ID: ' . $booking->id);
+            return response()->json(['error' => $depositBlockReason], 422);
+        }
+
+        if ($shouldProcessRemainder) {
+            if ((string) $booking->payment_status === PaymentStatus::PAID->value) {
+                return response()->json(['success' => true, 'message' => 'Booking balance already paid']);
+            }
+
+            BookingPaymentStatusService::markFullyPaid($booking);
+            Log::info("SePay Webhook: Remainder payment recorded for booking ID: {$booking->id}");
+
+            return response()->json(['success' => true, 'message' => 'Remainder payment recorded successfully']);
+        }
+
         if ($booking->status === 1) {
             Log::info('SePay Webhook: Booking already confirmed: ' . $bookingId);
             return response()->json(['success' => true, 'message' => 'Booking was already confirmed']);
@@ -95,16 +126,20 @@ final class SepayWebhookController extends Controller
         DB::beginTransaction();
         try {
             $now = Carbon::now();
+            $hasDeposit = (float) ($booking->deposit_amount ?? 0) > 0;
 
-            // Update booking payment timestamp, status and payment_status
             $booking->update([
-                'status'               => 1, // CONFIRMED
-                'payment_status'       => PaymentStatus::PAID->value,
+                'status'               => 1,
                 'payment_collected_at' => $now,
             ]);
 
-            // Confirm deposit receipt
-            $this->depositService->confirmReceiptByPartner((int)$booking->id);
+            if ($hasDeposit) {
+                $this->depositService->confirmReceiptByPartner((int) $booking->id);
+                $booking->refresh();
+                BookingPaymentStatusService::sync($booking);
+            } else {
+                BookingPaymentStatusService::markFullyPaid($booking);
+            }
 
             // Broadcast confirm event
             $scope = $this->resolveBroadcastScope($booking);
@@ -148,6 +183,7 @@ final class SepayWebhookController extends Controller
 
     private function sendConfirmationMail(Booking $booking): void
     {
+        $booking->loadMissing(['user', 'price']);
         $user = $booking->user;
         if ($user && $user->email) {
             $room = Booking::with(['room.property.user.partnerInfo', 'services'])->find($booking->id)->room;
@@ -162,26 +198,21 @@ final class SepayWebhookController extends Controller
             $endDate = Carbon::parse($booking->end_date);
 
             $roomPrice = $booking->price;
-            $totalDays = \App\Services\BookingStayAmountCalculator::countStayDays(
-                $startDate->toDateString(),
-                $endDate->toDateString(),
-            );
-            $roomStayTotal = \App\Services\BookingStayAmountCalculator::computeRoomStayTotalForRoomPrice(
+            $pricingFields = \App\Services\BookingStayAmountCalculator::buildEmailPricingFields(
                 $startDate->toDateString(),
                 $endDate->toDateString(),
                 $roomPrice,
+                $servicesTotal,
+                (float) ($booking->deposit_amount ?? 0),
             );
 
-            $grandTotal = round($roomStayTotal + $servicesTotal, 2);
-
-            $emailInfo = [
+            $emailInfo = array_merge([
                 'booking_code'       => $booking->booking_code,
                 'booking_created_at' => Carbon::parse($booking->created_at)
                     ->timezone('Asia/Ho_Chi_Minh')
                     ->format('d/m/Y H:i:s'),
                 'room_title'         => $room->title,
                 'room_description'   => $room->description,
-                'room_deposit'       => $room->deposit ?? 0,
                 'amenities'          => $room->amenities ?? [],
                 'services'           => $services,
                 'room_url'           => config('app.url_frontend') . '/rooms/' . $booking->room_id,
@@ -194,18 +225,15 @@ final class SepayWebhookController extends Controller
                 'property_address'   => $room->property?->address_detail ?? '',
                 'start_time'         => $startDate->format('d/m/Y'),
                 'end_time'           => $endDate->format('d/m/Y'),
-                'total_days'         => $totalDays,
-                'room_stay_amount'   => $roomStayTotal,
-                'services_total'     => $servicesTotal,
-                'unit_price'         => (float) ($roomPrice?->price ?? 0),
-                'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
                 'deposit_deadline'   => Carbon::now()->addHours(2)->toIso8601String(),
                 'cancellation_policy' => 'Refundable up to 24 hours before check-in',
-                'total_amount'       => $grandTotal,
                 'goline_phone'       => '0243 795 7250',
                 'token'              => '',
                 'is_paid'            => true,
-            ];
+                'paid_amount'        => (float) ($booking->deposit_amount ?? 0) > 0
+                    ? (float) $booking->deposit_amount
+                    : $pricingFields['total_amount'],
+            ], $pricingFields);
 
             SendBooking::dispatch($user->email, $user->name, $emailInfo);
         }

@@ -39,6 +39,26 @@ final class BookingStayAmountCalculator
         return self::countStayNights($start, $end);
     }
 
+    /**
+     * Số lượng hiển thị trên email/UI theo đơn vị gói giá (đêm / tháng / tuần / năm).
+     */
+    public static function resolveStayDurationCount(
+        string|\DateTimeInterface $start,
+        string|\DateTimeInterface $end,
+        string $priceUnit = 'night',
+    ): int {
+        $normalized = strtolower(trim($priceUnit));
+        $nights = self::countStayNights($start, $end);
+        $calendarDays = self::countStayCalendarDays($start, $end);
+
+        return match ($normalized) {
+            'month' => max(1, (int) round($calendarDays / self::DAYS_PER_MONTH)),
+            'week'  => max(1, (int) round($nights / self::DAYS_PER_WEEK)),
+            'year'  => max(1, (int) round($nights / self::DAYS_PER_YEAR)),
+            default => $nights,
+        };
+    }
+
     public static function computeRoomStayTotal(
         string|\DateTimeInterface $start,
         string|\DateTimeInterface $end,
@@ -160,5 +180,69 @@ final class BookingStayAmountCalculator
             (float) $roomPrice->price,
             (string) ($roomPrice->unit ?? 'night'),
         );
+    }
+
+    /**
+     * Trường giá dùng cho email xác nhận đặt phòng — khớp domain thuê dài hạn (đợt 1 = tháng đầu + cọc).
+     *
+     * @return array{
+     *     room_stay_amount: float,
+     *     services_total: float,
+     *     total_amount: float,
+     *     room_deposit: float,
+     *     price_unit: string,
+     *     unit_price: float,
+     *     total_days: int,
+     *     is_monthly_lease: bool,
+     *     first_month_rent: float|null,
+     *     remaining_rent: float|null,
+     *     installment1_total: float|null,
+     *     amount_due_now: float,
+     * }
+     */
+    public static function buildEmailPricingFields(
+        string|\DateTimeInterface $start,
+        string|\DateTimeInterface $end,
+        ?RoomPrice $roomPrice,
+        float $servicesTotal,
+        float $bookingDepositAmount,
+    ): array {
+        $priceUnit = strtolower(trim((string) ($roomPrice?->unit ?? 'night')));
+        $unitPrice = (float) ($roomPrice?->price ?? 0);
+        $roomStayTotal = self::computeRoomStayTotalForRoomPrice($start, $end, $roomPrice);
+        $servicesTotal = round(max(0.0, $servicesTotal), 2);
+        $grandTotal = round($roomStayTotal + $servicesTotal, 2);
+        $depositAmount = round(max(0.0, $bookingDepositAmount), 2);
+        $isMonthlyLease = $priceUnit === 'month';
+
+        $fields = [
+            'room_stay_amount'   => $roomStayTotal,
+            'services_total'     => $servicesTotal,
+            'total_amount'       => $grandTotal,
+            'room_deposit'       => $depositAmount,
+            'price_unit'         => (string) ($roomPrice?->unit ?? 'night'),
+            'unit_price'         => $unitPrice,
+            'total_days'         => self::resolveStayDurationCount($start, $end, $priceUnit),
+            'is_monthly_lease'   => $isMonthlyLease,
+            'first_month_rent'   => null,
+            'remaining_rent'     => null,
+            'installment1_total' => null,
+            'amount_due_now'     => $depositAmount > 0 ? $depositAmount : $grandTotal,
+        ];
+
+        if ($isMonthlyLease && $unitPrice > 0) {
+            $firstMonthRent = round($unitPrice, 2);
+            $remainingRent = max(0.0, round($roomStayTotal - $firstMonthRent, 2));
+            $installment1Total = round($firstMonthRent + $depositAmount + $servicesTotal, 2);
+
+            $fields['first_month_rent'] = $firstMonthRent;
+            $fields['remaining_rent'] = $remainingRent;
+            $fields['installment1_total'] = $installment1Total;
+            $fields['amount_due_now'] = $depositAmount > 0
+                ? $depositAmount
+                : $installment1Total;
+        }
+
+        return $fields;
     }
 }

@@ -363,6 +363,14 @@ final class StayService
                 return ['success' => false, 'message' => 'Booking not found or unauthorized'];
             }
 
+            if (!LeaseDepositGateService::canPayDeposit($booking)) {
+                return [
+                    'success' => false,
+                    'code'    => 'DEPOSIT_LEASE_GATE',
+                    'message' => LeaseDepositGateService::DEPOSIT_BLOCKED_MESSAGE,
+                ];
+            }
+
             $success = $this->depositService->submitReceipt($bookingId, $receiptPath);
             if (!$success) {
                 return ['success' => false, 'message' => 'Failed to submit receipt'];
