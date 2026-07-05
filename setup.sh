@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Copy .env.dev to .env
-cp /var/www/.env.dev /var/www/.env
+# Copy .env.dev or .env.example to .env
+if [ -f /var/www/.env.dev ]; then
+    cp /var/www/.env.dev /var/www/.env
+else
+    cp /var/www/.env.example /var/www/.env
+fi
 
 # Install Composer dependencies
 composer install --ignore-platform-reqs

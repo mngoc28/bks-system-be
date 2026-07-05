@@ -130,6 +130,7 @@ final class PropertyImagesTableSeeder extends Seeder
             'photo-1522708323590-d24dbb6b0267'
         ];
 
+        $data = [];
         foreach ($propertyIds as $propertyId) {
             $sort = 1;
 
@@ -138,7 +139,7 @@ final class PropertyImagesTableSeeder extends Seeder
             $mainUrl = "https://images.unsplash.com/{$mainUnsplashId}?auto=format&fit=crop&w=800&q=80";
 
             // Always have at least one main image (type = 0)
-            DB::table('property_images')->insert([
+            $data[] = [
                 'property_id'          => $propertyId,
                 'image_url'            => $mainUrl,
                 'id_image_cloudinary'  => $mainUnsplashId,
@@ -148,7 +149,7 @@ final class PropertyImagesTableSeeder extends Seeder
                 'updated_by'           => $faker->randomElement($adminPartnerIds),
                 'created_at'           => Carbon::now()->subDays(rand(1, 40)),
                 'updated_at'           => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            ];
 
             // Add other images (1 exterior, 1 interior, 1 bathroom, 1 kitchen)
             $additionalImages = [
@@ -163,7 +164,7 @@ final class PropertyImagesTableSeeder extends Seeder
                 $unsplashId = $pool[($propertyId + $add['offset']) % count($pool)];
                 $url = "https://images.unsplash.com/{$unsplashId}?auto=format&fit=crop&w=800&q=80";
 
-                DB::table('property_images')->insert([
+                $data[] = [
                     'property_id'         => $propertyId,
                     'image_url'           => $url,
                     'id_image_cloudinary' => $unsplashId,
@@ -173,8 +174,17 @@ final class PropertyImagesTableSeeder extends Seeder
                     'updated_by'          => $faker->randomElement($adminPartnerIds),
                     'created_at'          => Carbon::now()->subDays(rand(1, 40)),
                     'updated_at'          => Carbon::now()->subDays(rand(1, 40)),
-                ]);
+                ];
             }
+
+            if (count($data) >= 500) {
+                DB::table('property_images')->insert($data);
+                $data = [];
+            }
+        }
+
+        if (!empty($data)) {
+            DB::table('property_images')->insert($data);
         }
     }
 }

@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     cron \
     nodejs \
     npm \
-    libonig-dev
+    libonig-dev \
+    nginx
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
@@ -24,6 +25,10 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 COPY --from=composer:2.8.1 /usr/bin/composer /usr/bin/composer
 
 COPY ./docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy Nginx configuration
+COPY ./docker/nginx/default.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Copy Cron configuration
 COPY ./docker/cron/crontab /etc/cron.d/laravel-cron
@@ -49,6 +54,6 @@ RUN bash ./setup.sh
 
 VOLUME ["/var/www"]
 
-EXPOSE 9000
+EXPOSE 80
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

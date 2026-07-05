@@ -163,6 +163,7 @@ final class RoomImagesTableSeeder extends Seeder
             return;
         }
 
+        $data = [];
         foreach ($rooms as $room) {
             $roomId = $room->id;
             $title = $room->title;
@@ -186,7 +187,7 @@ final class RoomImagesTableSeeder extends Seeder
             $coverUnsplashId = $bedroomPool[$roomId % count($bedroomPool)];
             $coverUrl = "https://images.unsplash.com/{$coverUnsplashId}?auto=format&fit=crop&w=800&q=80";
 
-            DB::table('room_images')->insert([
+            $data[] = [
                 'room_id'             => $roomId,
                 'image_url'           => $coverUrl,
                 'id_image_cloudinary' => $coverUnsplashId,
@@ -196,13 +197,13 @@ final class RoomImagesTableSeeder extends Seeder
                 'updated_by'          => $faker->randomElement($adminPartnerIds),
                 'created_at'          => Carbon::now()->subDays(rand(1, 40)),
                 'updated_at'          => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            ];
 
             // Bathroom Image (sort = 2, type = 3/bathroom)
             $bathroomUnsplashId = $bathrooms[$roomId % count($bathrooms)];
             $bathroomUrl = "https://images.unsplash.com/{$bathroomUnsplashId}?auto=format&fit=crop&w=800&q=80";
 
-            DB::table('room_images')->insert([
+            $data[] = [
                 'room_id'             => $roomId,
                 'image_url'           => $bathroomUrl,
                 'id_image_cloudinary' => $bathroomUnsplashId,
@@ -212,13 +213,13 @@ final class RoomImagesTableSeeder extends Seeder
                 'updated_by'          => $faker->randomElement($adminPartnerIds),
                 'created_at'          => Carbon::now()->subDays(rand(1, 40)),
                 'updated_at'          => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            ];
 
             // Kitchen / Dining Image (sort = 3, type = 4/kitchen)
             $kitchenUnsplashId = $kitchens[$roomId % count($kitchens)];
             $kitchenUrl = "https://images.unsplash.com/{$kitchenUnsplashId}?auto=format&fit=crop&w=800&q=80";
 
-            DB::table('room_images')->insert([
+            $data[] = [
                 'room_id'             => $roomId,
                 'image_url'           => $kitchenUrl,
                 'id_image_cloudinary' => $kitchenUnsplashId,
@@ -228,13 +229,13 @@ final class RoomImagesTableSeeder extends Seeder
                 'updated_by'          => $faker->randomElement($adminPartnerIds),
                 'created_at'          => Carbon::now()->subDays(rand(1, 40)),
                 'updated_at'          => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            ];
 
             // Interior Detail / Cozy corner Image (sort = 4, type = 2/interior)
             $detailUnsplashId = $details[$roomId % count($details)];
             $detailUrl = "https://images.unsplash.com/{$detailUnsplashId}?auto=format&fit=crop&w=800&q=80";
 
-            DB::table('room_images')->insert([
+            $data[] = [
                 'room_id'             => $roomId,
                 'image_url'           => $detailUrl,
                 'id_image_cloudinary' => $detailUnsplashId,
@@ -244,7 +245,16 @@ final class RoomImagesTableSeeder extends Seeder
                 'updated_by'          => $faker->randomElement($adminPartnerIds),
                 'created_at'          => Carbon::now()->subDays(rand(1, 40)),
                 'updated_at'          => Carbon::now()->subDays(rand(1, 40)),
-            ]);
+            ];
+
+            if (count($data) >= 500) {
+                DB::table('room_images')->insert($data);
+                $data = [];
+            }
+        }
+
+        if (!empty($data)) {
+            DB::table('room_images')->insert($data);
         }
     }
 }
