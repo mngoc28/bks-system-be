@@ -111,6 +111,16 @@ final class Room extends Model
     }
 
     /**
+     * Calendar blocks (maintenance / owner_use / off_market) for this room.
+     *
+     * @return HasMany
+     */
+    public function roomBlocks(): HasMany
+    {
+        return $this->hasMany(RoomBlock::class, 'room_id');
+    }
+
+    /**
      * Get the utility fees for this room.
      *
      * @return HasMany

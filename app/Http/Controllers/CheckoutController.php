@@ -44,8 +44,10 @@ final class CheckoutController extends Controller
         }
 
         $depositBlockReason = LeaseDepositGateService::depositBlockReason($booking);
-        $isRemainderPhase = BookingPaymentStatusService::isRemainderPaymentPhase($booking)
-            || $request->query('payment_phase') === 'remainder';
+        // Chỉ hiển thị form thanh toán phần còn lại khi client truyền payment_phase=remainder.
+        // Không tự chuyển phase sau khi cọc thành công — tránh nhảy từ 10k cọc sang 820k remain
+        // khi user bấm "Tôi đã chuyển khoản" trên form cọc.
+        $isRemainderPhase = $request->query('payment_phase') === 'remainder';
 
         if ($depositBlockReason !== null && !$isRemainderPhase) {
             return response($depositBlockReason, 403);
@@ -296,8 +298,8 @@ HTML;
         }
 
         $paymentPhase = (string) $request->input('payment_phase', '');
-        $isRemainderPhase = $paymentPhase === 'remainder'
-            || BookingPaymentStatusService::isRemainderPaymentPhase($booking);
+        $isRemainderPhase = $paymentPhase === 'remainder';
+        $isDepositPhase = $paymentPhase === 'deposit';
 
         $depositBlockReason = LeaseDepositGateService::depositBlockReason($booking);
         if ($depositBlockReason !== null && !$isRemainderPhase) {
@@ -326,13 +328,17 @@ HTML;
             return $redirectFn(false);
         }
 
-        // 2. Handle SePay Verification Check
+        // 2. Handle SePay Verification Check — chỉ kiểm tra DB, không gọi SePay API.
         if ($status === 'check_payment') {
-            if ($isRemainderPhase && (string) $booking->payment_status === PaymentStatus::PAID->value) {
-                return $redirectFn(true);
-            }
-
-            if (!$isRemainderPhase && $booking->status === 1) {
+            if ($isDepositPhase) {
+                if (BookingPaymentStatusService::isDepositConfirmed($booking) || (int) $booking->status === 1) {
+                    return $redirectFn(true);
+                }
+            } elseif ($isRemainderPhase) {
+                if ((string) $booking->payment_status === PaymentStatus::PAID->value) {
+                    return $redirectFn(true);
+                }
+            } elseif ((int) $booking->status === 1 || (string) $booking->payment_status === PaymentStatus::PAID->value) {
                 return $redirectFn(true);
             }
 
