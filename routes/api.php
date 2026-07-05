@@ -75,30 +75,6 @@ Route::group([
         return 'pong';
     });
 
-    Route::get('ping-db', function () {
-        try {
-            $caPath = env('MYSQL_ATTR_SSL_CA');
-            $fileCheck = [
-                'path' => $caPath,
-                'exists' => $caPath ? file_exists($caPath) : false,
-                'readable' => $caPath ? is_readable($caPath) : false,
-                'size' => ($caPath && file_exists($caPath)) ? filesize($caPath) : 0,
-            ];
-            
-            \Illuminate\Support\Facades\DB::connection()->getPdo();
-            return response()->json([
-                'status' => 'connected',
-                'file_check' => $fileCheck,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
-                'file_check' => $fileCheck ?? null,
-            ], 500);
-        }
-    });
-
     /**
      *  Refresh JWT token
      */

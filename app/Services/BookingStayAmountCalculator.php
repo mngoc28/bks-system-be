@@ -13,11 +13,11 @@ use Carbon\Carbon;
  */
 final class BookingStayAmountCalculator
 {
-    public const int DAYS_PER_MONTH = 30;
+    public const DAYS_PER_MONTH = 30;
 
-    public const int DAYS_PER_WEEK = 7;
+    public const DAYS_PER_WEEK = 7;
 
-    public const int DAYS_PER_YEAR = 365;
+    public const DAYS_PER_YEAR = 365;
 
     /** Số đêm lưu trú (checkout exclusive) — REQ-STAY-002. */
     public static function countStayNights(string|\DateTimeInterface $start, string|\DateTimeInterface $end): int

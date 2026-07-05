@@ -11,7 +11,7 @@ use Carbon\Carbon;
  */
 final class StayClassificationService
 {
-    public const int LONG_TERM_NIGHTS_THRESHOLD = 30;
+    public const LONG_TERM_NIGHTS_THRESHOLD = 30;
 
     public static function countStayNights(string|\DateTimeInterface $start, string|\DateTimeInterface $end): int
     {

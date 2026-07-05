@@ -11,7 +11,7 @@ use App\Models\Booking;
  */
 final class LeaseDepositGateService
 {
-    public const string DEPOSIT_BLOCKED_MESSAGE = 'Vui lòng ký hợp đồng thuê trước khi thanh toán tiền đặt cọc.';
+    public const DEPOSIT_BLOCKED_MESSAGE = 'Vui lòng ký hợp đồng thuê trước khi thanh toán tiền đặt cọc.';
 
     public static function canPayDeposit(Booking $booking): bool
     {
