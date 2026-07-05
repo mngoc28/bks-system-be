@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
     libjpeg-dev \
+    libwebp-dev \
     libfreetype6-dev \
     libzip-dev \
     unzip \
@@ -18,8 +19,9 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     nginx
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+# Configure and Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
 # Configure PHP-FPM to inherit system environment variables (for Render Dashboard variables)
 RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
