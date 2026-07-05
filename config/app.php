@@ -226,7 +226,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\RepositoryServiceProvider::class,
         App\Providers\AwsSnsProvider::class,
-        App\Providers\CognitoAuthServiceProvider::class,
+        // App\Providers\CognitoAuthServiceProvider::class,
         //        App\Providers\GmoPaymentGatewayServiceProvider::class,
         Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
     ],
