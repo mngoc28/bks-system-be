@@ -16,8 +16,8 @@ composer update
 # Migration
 # php artisan migrate
 
-# Optimize Laravel cache
-php artisan optimize
+# Clear Laravel cache to ensure environment variables are read dynamically at runtime
+php artisan optimize:clear
 
 # Install npm
 npm install
