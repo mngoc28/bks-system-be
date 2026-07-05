@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y \
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
+# Configure PHP-FPM to inherit system environment variables (for Render Dashboard variables)
+RUN echo "clear_env = no" >> /usr/local/etc/php-fpm.d/www.conf
+
 # Install Composer
 COPY --from=composer:2.8.1 /usr/bin/composer /usr/bin/composer
 
