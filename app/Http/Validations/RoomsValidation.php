@@ -42,6 +42,8 @@ final class RoomsValidation
                 'price_min' => ['nullable', 'numeric', 'min:0'],
                 'price_max' => ['nullable', 'numeric', 'min:0'],
                 'guests' => ['nullable', 'integer', 'min:1'],
+                'start_date' => ['nullable', 'date', 'required_with:end_date'],
+                'end_date' => ['nullable', 'date', 'required_with:start_date', 'after:start_date'],
                 'rent_type' => [
                     'nullable',
                     'string',

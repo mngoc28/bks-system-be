@@ -34,7 +34,7 @@ final class GeminiChatController extends Controller
 
         // 2. Load API credentials
         $apiKey = config('services.gemini.api_key');
-        $configuredModel = config('services.gemini.model', 'gemini-1.5-flash');
+        $configuredModel = config('services.gemini.model', 'gemini-2.5-flash');
 
         if (empty($apiKey)) {
             Log::error('Gemini API key is not configured.');
@@ -112,73 +112,133 @@ final class GeminiChatController extends Controller
             ];
         }
 
-        // 6. Execute chat session with the configured model
-        try {
-            $sessionContents = $contents;
-            $replyText = $this->executeChatSession($configuredModel, $apiKey, $sessionContents, $systemInstructionText, $tools);
-            return $this->successResponse([
-                'reply' => $replyText,
-                'history' => $sessionContents
-            ], 'Gửi tin nhắn chatbot thành công.');
-        } catch (\Exception $e) {
-            $rawMessage = $e->getMessage();
-            Log::error("Gemini model {$configuredModel} failed: " . $rawMessage);
+        // 6. Execute chat session — primary model, then configured fallbacks
+        $modelsToTry = $this->resolveModelsToTry($configuredModel);
+        $rawMessage = 'Không thể kết nối dịch vụ AI.';
+        $rateLimitMessage = null;
+        $serviceUnavailableMessage = null;
 
-            // Fallback to gemini-2.5-flash-lite first for any failures (including 429)
-            $fallbackModel = 'gemini-2.5-flash-lite';
-            if ($configuredModel !== $fallbackModel) {
-                try {
-                    Log::warning("Model {$configuredModel} failed. Attempting fallback to {$fallbackModel}. Error: " . $rawMessage);
-                    $fallbackContents = $contents;
-                    $replyText = $this->executeChatSession($fallbackModel, $apiKey, $fallbackContents, $systemInstructionText, $tools);
-                    return $this->successResponse([
-                        'reply' => $replyText,
-                        'history' => $fallbackContents
-                    ], 'Gửi tin nhắn chatbot thành công.');
-                } catch (\Exception $fallbackException) {
-                    $rawMessage = $fallbackException->getMessage();
-                    Log::error("Gemini fallback model {$fallbackModel} failed: " . $rawMessage);
-                }
-            }
+        foreach ($modelsToTry as $index => $model) {
+            try {
+                $sessionContents = $contents;
+                $replyText = $this->executeChatSession($model, $apiKey, $sessionContents, $systemInstructionText, $tools);
 
-            // Check for Rate Limit / Quota Exceeded (429)
-            if (
-                str_contains($rawMessage, 'exceeded your current quota') ||
-                str_contains($rawMessage, 'Quota exceeded') ||
-                str_contains($rawMessage, '429')
-            ) {
-                $seconds = 60; // Default fallback
-                if (preg_match('/Please retry in ([\d\.]+)s?/', $rawMessage, $matches)) {
-                    $seconds = ceil((float)$matches[1]);
+                if ($index > 0) {
+                    Log::warning("Gemini chat recovered using fallback model {$model}.");
                 }
 
-                return $this->errorResponse(
-                    "Trợ lý AI đang bận xử lý nhiều yêu cầu cùng lúc. Vui lòng thử lại sau {$seconds} giây.",
-                    'GEMINI_RATE_LIMIT_EXCEEDED',
-                    HttpStatus::TOO_MANY_REQUESTS
-                );
+                return $this->successResponse([
+                    'reply' => $replyText,
+                    'history' => $sessionContents
+                ], 'Gửi tin nhắn chatbot thành công.');
+            } catch (\Exception $e) {
+                $rawMessage = $e->getMessage();
+
+                if ($this->isGeminiRateLimitMessage($rawMessage)) {
+                    $rateLimitMessage = $rawMessage;
+                } elseif ($this->isGeminiServiceUnavailableMessage($rawMessage)) {
+                    $serviceUnavailableMessage = $rawMessage;
+                }
+
+                if ($index === 0) {
+                    Log::error("Gemini model {$model} failed: {$rawMessage}");
+                    continue;
+                }
+
+                Log::warning("Gemini fallback model {$model} failed: {$rawMessage}");
+            }
+        }
+
+        if ($rateLimitMessage !== null) {
+            return $this->buildGeminiErrorResponse($rateLimitMessage);
+        }
+
+        if ($serviceUnavailableMessage !== null) {
+            return $this->buildGeminiErrorResponse($serviceUnavailableMessage);
+        }
+
+        Log::error('Gemini chat failed on all models: ' . $rawMessage);
+
+        return $this->buildGeminiErrorResponse($rawMessage);
+    }
+
+    /**
+     * Build ordered unique model list: primary first, then fallbacks.
+     *
+     * @param string $configuredModel
+     * @return array<int, string>
+     */
+    private function resolveModelsToTry(string $configuredModel): array
+    {
+        $fallbackModels = config('services.gemini.fallback_models', [
+            'gemini-2.5-flash-lite',
+            'gemini-3.1-flash-lite',
+        ]);
+
+        $models = array_merge([$configuredModel], is_array($fallbackModels) ? $fallbackModels : []);
+        $seen = [];
+        $orderedModels = [];
+
+        foreach ($models as $model) {
+            if (!is_string($model) || $model === '' || isset($seen[$model])) {
+                continue;
             }
 
-            // Check for Service Unavailable / Overloaded (503)
-            if (
-                str_contains($rawMessage, 'experiencing high demand') ||
-                str_contains($rawMessage, '503') ||
-                str_contains($rawMessage, 'UNAVAILABLE')
-            ) {
-                return $this->errorResponse(
-                    'Dịch vụ AI hiện đang quá tải tạm thời. Vui lòng thử lại sau ít phút.',
-                    'GEMINI_SERVICE_UNAVAILABLE',
-                    HttpStatus::INTERNAL_SERVER_ERROR
-                );
+            $seen[$model] = true;
+            $orderedModels[] = $model;
+        }
+
+        return $orderedModels;
+    }
+
+    /**
+     * Map Gemini API failure to a user-facing JSON error response.
+     *
+     * @param string $rawMessage
+     * @return JsonResponse
+     */
+    private function buildGeminiErrorResponse(string $rawMessage): JsonResponse
+    {
+        if ($this->isGeminiRateLimitMessage($rawMessage)) {
+            $seconds = 60;
+            if (preg_match('/Please retry in ([\d\.]+)s?/', $rawMessage, $matches)) {
+                $seconds = ceil((float) $matches[1]);
             }
 
-            // Other errors
             return $this->errorResponse(
-                'Lỗi kết nối dịch vụ AI: ' . $rawMessage,
-                'GEMINI_API_ERROR',
-                HttpStatus::BAD_REQUEST
+                "Trợ lý AI đang bận xử lý nhiều yêu cầu cùng lúc. Vui lòng thử lại sau {$seconds} giây.",
+                'GEMINI_RATE_LIMIT_EXCEEDED',
+                HttpStatus::TOO_MANY_REQUESTS
             );
         }
+
+        if ($this->isGeminiServiceUnavailableMessage($rawMessage)) {
+            return $this->errorResponse(
+                'Dịch vụ AI hiện đang quá tải tạm thời. Vui lòng thử lại sau ít phút.',
+                'GEMINI_SERVICE_UNAVAILABLE',
+                HttpStatus::INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return $this->errorResponse(
+            'Trợ lý AI tạm thời không phản hồi. Vui lòng thử lại sau ít phút.',
+            'GEMINI_API_ERROR',
+            HttpStatus::BAD_REQUEST
+        );
+    }
+
+    private function isGeminiRateLimitMessage(string $rawMessage): bool
+    {
+        return str_contains($rawMessage, 'exceeded your current quota')
+            || str_contains($rawMessage, 'Quota exceeded')
+            || str_contains($rawMessage, '429');
+    }
+
+    private function isGeminiServiceUnavailableMessage(string $rawMessage): bool
+    {
+        return str_contains($rawMessage, 'experiencing high demand')
+            || str_contains($rawMessage, '503')
+            || str_contains($rawMessage, 'UNAVAILABLE');
     }
 
     /**
@@ -370,10 +430,7 @@ final class GeminiChatController extends Controller
                 // 3. Try to match any active tourist spot in the search query
                 $spots = TouristSpot::where('is_active', true)->get();
                 foreach ($spots as $s) {
-                    $sNameSlug = \Illuminate\Support\Str::slug($s->name, ' ');
-                    $sSlug = str_replace('-', ' ', $s->slug);
-
-                    if (mb_stripos($normalizedLocation, $sNameSlug) !== false || mb_stripos($normalizedLocation, $sSlug) !== false) {
+                    if ($this->locationMatchesTouristSpot($normalizedLocation, $s)) {
                         $matchedSpot = $s;
                         break;
                     }
@@ -398,12 +455,17 @@ final class GeminiChatController extends Controller
                 unset($searchParams['location']);
             }
 
+            $isMonthlyIntent = $this->isMonthlyRentIntent($searchParams);
+            $hasDailyBudget = !$isMonthlyIntent
+                && (isset($searchParams['price_max']) || isset($searchParams['price_min']));
+
             // 5. Map sorting parameters
             // If the user specified a maximum budget (price_max) but no explicit sorting was requested,
             // default to sorting by price descending so we show premium rooms fitting their budget first.
             if (isset($searchParams['price_max']) && !isset($searchParams['sort_by'])) {
                 $searchParams['sort_by'] = 'cheapest_daily_price';
-                $searchParams['sort_direction'] = 'desc';
+                // Budget by night: asc surfaces real nightly packages; desc favors month/30-only rows.
+                $searchParams['sort_direction'] = $hasDailyBudget ? 'asc' : 'desc';
             }
 
             // Request a reasonable batch of candidate rooms
@@ -411,8 +473,14 @@ final class GeminiChatController extends Controller
             $searchParams['with_details'] = true;
             $searchParams['include_tourist_summary'] = true;
 
+            // Daily budget must not use cheapest_daily_price at DB layer (it includes month/30).
+            $dbSearchParams = $searchParams;
+            if ($hasDailyBudget) {
+                unset($dbSearchParams['price_max'], $dbSearchParams['price_min']);
+            }
+
             // Merge parameters into global request so pipeline filters can read them
-            request()->merge($searchParams);
+            request()->merge($dbSearchParams);
 
             $searchResult = $roomsService->handleRoomList(request());
 
@@ -448,19 +516,29 @@ final class GeminiChatController extends Controller
                 }
             }
 
+            if ($hasDailyBudget) {
+                $roomCollection = $roomCollection->filter(function ($room) {
+                    return !empty($room->cheapest_nightly_price) && floatval($room->cheapest_nightly_price) > 0;
+                });
+            }
+
             // Filter by price_max (secondary check)
             if (isset($searchParams['price_max'])) {
                 $priceMax = floatval($searchParams['price_max']);
-                $roomCollection = $roomCollection->filter(function ($room) use ($priceMax) {
-                    return ($room->cheapest_daily_price ?? 0) <= $priceMax;
+                $roomCollection = $roomCollection->filter(function ($room) use ($priceMax, $isMonthlyIntent, $hasDailyBudget) {
+                    $price = $this->resolveComparablePrice($room, $isMonthlyIntent, $hasDailyBudget);
+
+                    return $price > 0 && $price <= $priceMax;
                 });
             }
 
             // Filter by price_min (secondary check)
             if (isset($searchParams['price_min'])) {
                 $priceMin = floatval($searchParams['price_min']);
-                $roomCollection = $roomCollection->filter(function ($room) use ($priceMin) {
-                    return ($room->cheapest_daily_price ?? 0) >= $priceMin;
+                $roomCollection = $roomCollection->filter(function ($room) use ($priceMin, $isMonthlyIntent, $hasDailyBudget) {
+                    $price = $this->resolveComparablePrice($room, $isMonthlyIntent, $hasDailyBudget);
+
+                    return $price >= $priceMin;
                 });
             }
 
@@ -477,7 +555,7 @@ final class GeminiChatController extends Controller
                 $rentType = $searchParams['rent_type'];
                 $roomCollection = $roomCollection->filter(function ($room) use ($rentType) {
                     if ($rentType === 'daily') {
-                        return !empty($room->cheapest_daily_price) && floatval($room->cheapest_daily_price) > 0;
+                        return !empty($room->cheapest_nightly_price) && floatval($room->cheapest_nightly_price) > 0;
                     } elseif ($rentType === 'monthly') {
                         return !empty($room->cheapest_monthly_price) && floatval($room->cheapest_monthly_price) > 0;
                     }
@@ -509,7 +587,7 @@ final class GeminiChatController extends Controller
                     'room_type' => $room->room_type,
                     'people' => $room->people,
                     'area' => $room->area,
-                    'price_per_day' => $room->cheapest_daily_price,
+                    'price_per_day' => $this->formatChatbotPricePerDay($room, $isMonthlyIntent, $hasDailyBudget, $searchParams),
                     'price_per_month' => $room->cheapest_monthly_price ?? null,
                     'property_address' => $room->property_address,
                     'province_name' => $room->province_name,
@@ -535,6 +613,74 @@ final class GeminiChatController extends Controller
             Log::error('Chatbot search rooms execution failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return [];
         }
+    }
+
+    private function isMonthlyRentIntent(array $searchParams): bool
+    {
+        return isset($searchParams['rent_type']) && $searchParams['rent_type'] === 'monthly';
+    }
+
+    private function locationMatchesTouristSpot(string $normalizedLocation, TouristSpot $spot): bool
+    {
+        $spotNameSlug = \Illuminate\Support\Str::slug($spot->name, ' ');
+        $spotSlug = str_replace('-', ' ', $spot->slug);
+
+        if (mb_stripos($normalizedLocation, $spotNameSlug) !== false || mb_stripos($normalizedLocation, $spotSlug) !== false) {
+            return true;
+        }
+
+        $stopWords = [
+            'bai', 'bien', 'ho', 'chua', 'den', 'nha', 'cho', 'vinh', 'ban', 'dao',
+            'thi', 'tran', 'dinh', 'lang', 'thanh', 'dinh', 'vin', 'wonders',
+        ];
+        $slugTokens = array_values(array_filter(
+            explode(' ', $spotSlug),
+            static fn (string $token): bool => strlen($token) >= 2 && !in_array($token, $stopWords, true)
+        ));
+
+        if ($slugTokens === []) {
+            return false;
+        }
+
+        foreach ($slugTokens as $token) {
+            if (!str_contains($normalizedLocation, $token)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param object $room
+     */
+    private function resolveComparablePrice(object $room, bool $isMonthlyIntent, bool $hasDailyBudget): float
+    {
+        if ($isMonthlyIntent) {
+            return floatval($room->cheapest_monthly_price ?? 0);
+        }
+
+        if ($hasDailyBudget) {
+            return floatval($room->cheapest_nightly_price ?? 0);
+        }
+
+        return floatval($room->cheapest_daily_price ?? 0);
+    }
+
+    /**
+     * @param object $room
+     */
+    private function formatChatbotPricePerDay(object $room, bool $isMonthlyIntent, bool $hasDailyBudget, array $searchParams): ?float
+    {
+        if ($isMonthlyIntent) {
+            return isset($room->cheapest_daily_price) ? floatval($room->cheapest_daily_price) : null;
+        }
+
+        if ($hasDailyBudget || (($searchParams['rent_type'] ?? '') === 'daily')) {
+            return !empty($room->cheapest_nightly_price) ? floatval($room->cheapest_nightly_price) : null;
+        }
+
+        return isset($room->cheapest_daily_price) ? floatval($room->cheapest_daily_price) : null;
     }
 
     /**

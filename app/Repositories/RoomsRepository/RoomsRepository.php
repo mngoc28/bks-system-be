@@ -306,6 +306,7 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
                 \App\QueryFilters\Rooms\TouristSpotSlug::class,
                 \App\QueryFilters\Rooms\AmenityIds::class,
                 \App\QueryFilters\Rooms\ServiceIds::class,
+                \App\QueryFilters\Rooms\DateAvailability::class,
             ])
             ->thenReturn();
 
@@ -401,7 +402,8 @@ class RoomsRepository extends BaseRepository implements RoomsRepositoryInterface
             || $request->filled('price_min')
             || $request->filled('price_max')
             || $request->filled('guests')
-            || $request->filled('rent_type');
+            || $request->filled('rent_type')
+            || ($request->filled('start_date') && $request->filled('end_date'));
     }
 
     /**
