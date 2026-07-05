@@ -71,6 +71,10 @@ Route::group([
     'prefix' => 'v1',
 ], function () {
 
+    Route::get('ping', function () {
+        return 'pong';
+    });
+
     /**
      *  Refresh JWT token
      */
