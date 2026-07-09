@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BroadcastAuthController;
@@ -71,9 +72,8 @@ Route::group([
     'prefix' => 'v1',
 ], function () {
 
-    Route::get('ping', function () {
-        return 'pong';
-    });
+    Route::get('ping', [HealthController::class, 'ping']);
+    Route::get('health/db', [HealthController::class, 'db']);
 
     /**
      *  Refresh JWT token

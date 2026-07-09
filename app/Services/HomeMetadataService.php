@@ -25,16 +25,26 @@ final class HomeMetadataService
         try {
             $data = $this->homePageCacheService->rememberBootstrapMetadata(function (): array {
                 $provincesResult = $this->provincesService->getAllProvinces();
+                if (! ($provincesResult['success'] ?? false) || empty($provincesResult['data'])) {
+                    throw new \RuntimeException((string) ($provincesResult['message'] ?? 'Failed to load provinces'));
+                }
+
                 $propertyTypesResult = $this->propertiesService->getAllPropertyTypes();
+                if (! ($propertyTypesResult['success'] ?? false) || ! $this->hasResultItems($propertyTypesResult['data'] ?? null)) {
+                    throw new \RuntimeException((string) ($propertyTypesResult['message'] ?? 'Failed to load property types'));
+                }
 
                 $touristSpotsRequest = Request::create('/', 'GET', [
                     'limit' => (int) config('homepage.bootstrap.tourist_spots_limit', 50),
                 ]);
                 $touristSpotsResult = $this->touristSpotService->listPublicSuggestions($touristSpotsRequest);
+                if (! ($touristSpotsResult['success'] ?? false)) {
+                    throw new \RuntimeException((string) ($touristSpotsResult['message'] ?? 'Failed to load tourist spots'));
+                }
 
                 return [
-                    'provinces' => $provincesResult['data'] ?? [],
-                    'property_types' => $propertyTypesResult['data'] ?? [],
+                    'provinces' => $provincesResult['data'],
+                    'property_types' => $propertyTypesResult['data'],
                     'tourist_spots' => $touristSpotsResult['data'],
                 ];
             });
@@ -55,5 +65,18 @@ final class HomeMetadataService
                 'message' => __('province.messages.get_all_provinces_failed'),
             ];
         }
+    }
+
+    private function hasResultItems(mixed $value): bool
+    {
+        if (is_array($value)) {
+            return $value !== [];
+        }
+
+        if ($value instanceof \Countable) {
+            return count($value) > 0;
+        }
+
+        return false;
     }
 }

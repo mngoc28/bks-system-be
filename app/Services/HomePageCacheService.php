@@ -55,14 +55,26 @@ final class HomePageCacheService
      */
     public function rememberBootstrapMetadata(callable $resolver): array
     {
-        $ttl = (int) config('homepage.cache.metadata_ttl', 3600);
+        $cacheKey = $this->bootstrapMetadataCacheKey();
+        $cached = Cache::get($cacheKey);
+
+        if (is_array($cached) && $this->isBootstrapMetadataComplete($cached)) {
+            return $cached;
+        }
+
+        if ($cached !== null) {
+            Cache::forget($cacheKey);
+        }
 
         /** @var array<string, mixed> $payload */
-        $payload = Cache::remember(
-            $this->bootstrapMetadataCacheKey(),
-            $ttl,
-            $resolver,
-        );
+        $payload = $resolver();
+
+        if (! $this->isBootstrapMetadataComplete($payload)) {
+            throw new \RuntimeException('Bootstrap metadata payload is incomplete.');
+        }
+
+        $ttl = (int) config('homepage.cache.metadata_ttl', 3600);
+        Cache::put($cacheKey, $payload, $ttl);
 
         return $payload;
     }
@@ -145,5 +157,27 @@ final class HomePageCacheService
         }
 
         Cache::put($key, 2, now()->addDays(30));
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function isBootstrapMetadataComplete(array $payload): bool
+    {
+        return $this->hasItems($payload['provinces'] ?? null)
+            && $this->hasItems($payload['property_types'] ?? null);
+    }
+
+    private function hasItems(mixed $value): bool
+    {
+        if (is_array($value)) {
+            return $value !== [];
+        }
+
+        if ($value instanceof \Countable) {
+            return count($value) > 0;
+        }
+
+        return false;
     }
 }

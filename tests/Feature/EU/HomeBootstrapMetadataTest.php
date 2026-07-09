@@ -66,4 +66,26 @@ final class HomeBootstrapMetadataTest extends TestCase
         $second->assertOk();
         $this->assertSame($first->json('data'), $second->json('data'));
     }
+
+    public function test_home_bootstrap_metadata_ignores_stale_empty_cache(): void
+    {
+        Cache::flush();
+
+        $version = (int) Cache::get('homepage:metadata:version', 1);
+        $limit = (int) config('homepage.bootstrap.tourist_spots_limit', 50);
+        $cacheKey = sprintf('homepage:metadata:v%d:bootstrap:spots-%d', $version, $limit);
+
+        Cache::put($cacheKey, [
+            'provinces' => [],
+            'property_types' => [],
+            'tourist_spots' => [],
+        ], 3600);
+
+        $response = $this->getJson('/api/v1/home/bootstrap-metadata');
+
+        $response->assertOk();
+        $response->assertJsonPath('status', 'success');
+        $this->assertNotEmpty($response->json('data.provinces'));
+        $this->assertNotEmpty($response->json('data.property_types'));
+    }
 }
